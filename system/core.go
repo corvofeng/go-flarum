@@ -116,7 +116,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	fMd5, _ := util.HashFileMD5(currentFilePath)
 	scf.MD5Sums = fMd5
 	scf.MainDomain = strings.Trim(scf.MainDomain, "/")
-	log.Println("MainDomain:", scf.MainDomain)
+	// log.Println("MainDomain:", scf.MainDomain)
 	if scf.TimeZone < -12 || scf.TimeZone > 12 {
 		scf.TimeZone = 0
 	}

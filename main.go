@@ -30,6 +30,8 @@ import (
 func main() {
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
+
+	httpPort := flag.String("HTTP_PORT", "8082", "http port")
 	mysqlHost := flag.String("MySQL_HOST", "127.0.0.1", "MySql host")
 	mysqlUser := flag.String("MySQL_USER", "root", "MySql user")
 	mysqlPass := flag.String("MySQL_PASS", "", "MySQL pass")
@@ -148,12 +150,13 @@ func main() {
 
 	} else {
 		// http
-		srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HttpPort), Handler: root}
+		// srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HttpPort), Handler: root}
+		srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
 		go func() {
 			log.Fatal(srv.ListenAndServe())
 		}()
 
-		log.Println("Web server Listen port", mcf.HttpPort)
+		log.Println("Web server Listen port", *httpPort)
 	}
 
 	<-stopChan // wait for SIGINT
