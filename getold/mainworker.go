@@ -5,15 +5,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ego008/goyoubbs/model"
-	"github.com/ego008/goyoubbs/system"
-	"github.com/ego008/goyoubbs/util"
-	"github.com/ego008/youdb"
-	"github.com/weint/httpclient"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
+
+	"../model"
+	"../system"
+	"../util"
+	"github.com/ego008/youdb"
+	"github.com/weint/httpclient"
 )
 
 type BaseHandler struct {

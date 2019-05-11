@@ -3,12 +3,13 @@ package model
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ego008/goyoubbs/util"
-	"github.com/ego008/youdb"
 	"html"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/ego008/goyoubbs/util"
+	"github.com/ego008/youdb"
 )
 
 type Article struct {
