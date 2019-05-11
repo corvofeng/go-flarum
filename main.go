@@ -40,7 +40,7 @@ func main() {
 
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
-	sqlDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s:%s/%s", mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDB))
+	sqlDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", *mysqlUser, *mysqlPass, *mysqlHost, *mysqlPort, *mysqlDB))
 	if err != nil {
 		log.Printf("Connect mysql error, %s", err)
 		return

@@ -145,5 +145,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 
 func (app *Application) Close() {
 	app.Db.Close()
+	app.MySQLdb.Close()
 	log.Println("db cloded")
 }

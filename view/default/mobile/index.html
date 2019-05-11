@@ -14,13 +14,25 @@
 
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
+
+        {{ if $item.Uid }}
         <div class="item-avatar">
             <a href="/member/{{$item.Uid}}">
             <img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" />
-            </a></div>
+            </a>
+        </div>
+        {{ else }}
+         <div class="item-avatar">
+            <a href="/member/{{$item.Uid}}">
+                <img src="http://yiqi.ml/static/upload/avatar/1552139583_2x128.jpg" alt="{{$item.Name}}" />
+            </a>
+        </div>
+        {{ end }}
+
         <div class="item-content">
-            <h1><a href="/t/{{$item.Id}}">{{$item.Title}}</a></h1>
+            <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
             <span class="item-date">
+                • 点击数 {{$item.ClickCnt}}
                 <a href="/n/{{$item.Cid}}">{{$item.Cname}}</a>
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}

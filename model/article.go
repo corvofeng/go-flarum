@@ -1,8 +1,10 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html"
 	"sort"
 	"strings"
@@ -51,6 +53,7 @@ type ArticleListItem struct {
 	Title       string `json:"title"`
 	EditTime    uint64 `json:"edittime"`
 	EditTimeFmt string `json:"edittimefmt"`
+	ClickCnt    uint64 `json:"clickcnt"`
 	Comments    uint64 `json:"comments"`
 }
 
@@ -93,6 +96,33 @@ type ArticleTag struct {
 	NewTags string
 }
 
+func SqlArticleGetById(db *sql.DB, aid string) (Article, error) {
+	obj := Article{}
+	// rs := db.Hget("article", youdb.DS2b(aid))
+	rows, err := db.Query("SELECT id, title, content FROM topic WHERE id = ?", aid)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Title, &obj.Content) //不scan会导致连接不释放
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
+		obj.Cid = 0
+	}
+
+	return obj, nil
+}
+
 func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	obj := Article{}
 	rs := db.Hget("article", youdb.DS2b(aid))
@@ -101,6 +131,55 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 		return obj, nil
 	}
 	return obj, errors.New(rs.State)
+}
+
+func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) ArticlePageInfo {
+	var items []ArticleListItem
+	// var keys [][]byte
+	var hasPrev, hasNext bool
+	var firstKey, firstScore, lastKey, lastScore uint64
+	rows, err := db.Query("SELECT id, title FROM topic WHERE id > ? ORDER BY id limit ?", start, limit)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+		return ArticlePageInfo{}
+	}
+	for rows.Next() {
+		item := ArticleListItem{}
+		err = rows.Scan(&item.Id, &item.Title) //不scan会导致连接不释放
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			// return ArticlePageInfo{}
+			continue
+		}
+		rep := cntDB.Hget("article_views", youdb.I2b(item.Id))
+		item.ClickCnt = rep.Uint64()
+		items = append(items, item)
+	}
+	if len(items) > 0 {
+		firstKey = items[0].Id
+		lastKey = items[len(items)-1].Id
+		hasNext = true
+		hasPrev = true
+	}
+	if start < uint64(limit) {
+		hasPrev = false
+	}
+
+	return ArticlePageInfo{
+		Items:      items,
+		HasPrev:    hasPrev,
+		HasNext:    hasNext,
+		FirstKey:   firstKey,
+		FirstScore: firstScore,
+		LastKey:    lastKey,
+		LastScore:  lastScore,
+	}
 }
 
 func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) ArticlePageInfo {

@@ -91,6 +91,8 @@
 
             {{else}}
 
+            {{/*
+
             {{if .SiteCf.WeiboClientID}}
             <a href="/wblogin" rel="nofollow"><img src="/static/img/weibo_login_55_24.png" alt="微博登录" title="用微博帐号登录"/></a>&nbsp;&nbsp;
             {{end}}
@@ -104,6 +106,7 @@
             &nbsp;&nbsp;<a href="/register" rel="nofollow">注册</a>
             {{end}}
             {{end}}
+            */}}
 
             {{end}}
         </div>
@@ -133,7 +136,13 @@
         <p>&copy; Copyright <a href="/">{{.SiteCf.Name}}</a> • <a rel="nofollow" href="/feed">Atom Feed</a>
             • <a href="/view?tpl=mobile">手机模式</a>
         </p>
+        {{/*
         <p>Powered by <a href="https://www.youbbs.org" target="_blank">youBBS </a> - {{.SiteCf.GoVersion}}</p>
+        */}}
+        <p>Powered by
+            <a href="mailto:wannakissfire@outlook.com">wannakissfire</a>
+        </p>
+
         <p>MD5SUMS: {{.SiteCf.MD5Sums}}</p>
     </div>
     <a style="display: none; " rel="nofollow" href="#top" id="go-to-top">▲</a>
@@ -205,6 +214,7 @@
 {{ end }}
 
 {{if eq .PageName "home"}}
+{{/*
 {{if .Links}}
 <div class="sider-box">
     <div class="sider-box-title">链接</div>
@@ -218,6 +228,7 @@
     </div>
 </div>
 {{ end }}
+*/}}
 
 {{if .SiteInfo}}
 <div class="sider-box">
