@@ -2,6 +2,10 @@ Main:
     HttpPort: 8082
     HttpsOn: false
     Domain: ""
+    MySQL_HOST: "127.0.0.1"
+    MySQL_USER: "root"
+    MySQL_PASS: ""
+    MySQL_DB: "goyoubbs"
     HttpsPort: 443
     PubDir: "static"
     ViewDir: "view/default"

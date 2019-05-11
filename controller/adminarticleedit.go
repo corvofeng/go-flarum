@@ -5,14 +5,15 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ego008/goyoubbs/model"
-	"github.com/ego008/goyoubbs/util"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
-	"goji.io/pat"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"../model"
+	"../util"
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
+	"goji.io/pat"
 )
 
 func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {

@@ -3,14 +3,15 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"github.com/ego008/goyoubbs/model"
-	"github.com/ego008/goyoubbs/system"
-	"github.com/ego008/youdb"
 	"html/template"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"../model"
+	"../system"
+	"github.com/ego008/youdb"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)

@@ -3,16 +3,9 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"flag"
-	"github.com/ego008/goyoubbs/cronjob"
-	"github.com/ego008/goyoubbs/getold"
-	"github.com/ego008/goyoubbs/router"
-	"github.com/ego008/goyoubbs/system"
-	"github.com/xi2/httpgzip"
-	"goji.io"
-	"goji.io/pat"
-	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/net/http2"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -21,16 +14,39 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"./cronjob"
+	"./getold"
+	"./router"
+	"./system"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/xi2/httpgzip"
+	goji "goji.io"
+	"goji.io/pat"
+	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/http2"
 )
 
 func main() {
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
+	mysqlHost := flag.String("MySQL_HOST", "127.0.0.1", "MySql host")
+	mysqlUser := flag.String("MySQL_USER", "root", "MySql user")
+	mysqlPass := flag.String("MySQL_PASS", "", "MySQL pass")
+	mysqlPort := flag.String("MySQL_PORT", "3306", "MySql port")
+	mysqlDB := flag.String("MySQL_DB", "youbbs", "MySql db")
+
 	flag.Parse()
 
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
-	app.Init(c, os.Args[0])
+	sqlDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s:%s/%s", mysqlUser, mysqlPass, mysqlHost, mysqlPort, mysqlDB))
+	if err != nil {
+		log.Printf("Connect mysql error, %s", err)
+		return
+	}
+
+	app.Init(c, os.Args[0], sqlDb)
 
 	if *getOldSite == "1" || *getOldSite == "2" {
 		bh := &getold.BaseHandler{
@@ -103,7 +119,7 @@ func main() {
 
 			go func() {
 				// 必须是 80 端口
-				log.Fatal(http.ListenAndServe(":http", certManager.HTTPHandler(nil)))
+				// log.Fatal(http.ListenAndServe(":http", certManager.HTTPHandler(nil)))
 			}()
 
 		} else {

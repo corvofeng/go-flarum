@@ -4,13 +4,17 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/ego008/goyoubbs/util"
+	"net/url"
+	"strings"
+
+	"database/sql"
+
+	"../util"
+
 	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"
 	"github.com/qiniu/api.v7/storage"
 	"github.com/weint/config"
-	"net/url"
-	"strings"
 )
 
 type MainConf struct {
@@ -77,10 +81,11 @@ type AppConf struct {
 }
 
 type Application struct {
-	Cf     *AppConf
-	Db     *youdb.DB
-	Sc     *securecookie.SecureCookie
-	QnZone *storage.Zone
+	Cf      *AppConf
+	Db      *youdb.DB
+	MySQLdb *sql.DB
+	Sc      *securecookie.SecureCookie
+	QnZone  *storage.Zone
 }
 
 func LoadConfig(filename string) *config.Engine {
@@ -89,7 +94,7 @@ func LoadConfig(filename string) *config.Engine {
 	return c
 }
 
-func (app *Application) Init(c *config.Engine, currentFilePath string) {
+func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sql.DB) {
 
 	mcf := &MainConf{}
 	c.GetStruct("Main", mcf)
@@ -126,6 +131,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		log.Fatalf("Connect Error: %v", err)
 	}
 	app.Db = db
+	app.MySQLdb = sqlDb
 
 	// set main node
 	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIds))

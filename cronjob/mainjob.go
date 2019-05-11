@@ -2,14 +2,15 @@ package cronjob
 
 import (
 	"encoding/json"
-	"github.com/boltdb/bolt"
-	"github.com/ego008/goyoubbs/model"
-	"github.com/ego008/goyoubbs/system"
-	"github.com/ego008/youdb"
-	"github.com/weint/httpclient"
 	"os"
 	"strings"
 	"time"
+
+	"../model"
+	"../system"
+	"github.com/boltdb/bolt"
+	"github.com/ego008/youdb"
+	"github.com/weint/httpclient"
 )
 
 type BaseHandler struct {
