@@ -29,7 +29,12 @@
                 {{end}}
            </div>
         </div>
+
+        {{ if .Aobj.Uid }}
         <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="/static/avatar/{{.Aobj.Avatar}}.jpg" alt="{{.Aobj.Name}}" /></a></div>
+        {{ else }}
+        <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="/static/avatar/2.jpg" alt="{{.Aobj.Name}}" /></a></div>
+        {{ end }}
         <div class="c"></div>
     </div>
     <div class="topic-content">
