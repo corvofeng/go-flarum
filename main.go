@@ -23,9 +23,21 @@ import (
 	"github.com/xi2/httpgzip"
 	goji "goji.io"
 	"goji.io/pat"
+
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
 )
+
+func tracker(next http.Handler) http.Handler {
+
+	f := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+
+		log.Printf("Track service %s time %s", r.URL.Path, time.Since(start))
+	}
+	return http.HandlerFunc(f)
+}
 
 func main() {
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
@@ -84,6 +96,7 @@ func main() {
 		http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 
 	root.Handle(pat.New("/*"), router.NewRouter(app))
+	root.Use(tracker)
 
 	// normal http
 	// http.ListenAndServe(listenAddr, root)
