@@ -1,9 +1,12 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
-	"github.com/ego008/youdb"
+	"fmt"
 	"sort"
+
+	"github.com/ego008/youdb"
 )
 
 type Link struct {
@@ -30,6 +33,37 @@ func LinkSet(db *youdb.DB, obj Link) {
 	}
 	jb, _ := json.Marshal(obj)
 	db.Hset("link", youdb.I2b(obj.Id), jb)
+}
+
+func SqlLinkList(db *sql.DB, getAll bool) []Link {
+	var items []Link
+	// itemMap := map[uint64]Link{}
+	rows, err := db.Query("SELECT id, title FROM topic limit 20")
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+		return items
+	}
+	for rows.Next() {
+		item := Link{}
+
+		// Id    uint64 `json:"id"`
+		// Name  string `json:"name"`
+		// Url   string `json:"url"`
+		err = rows.Scan(&item.Id, &item.Name) //不scan会导致连接不释放
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return items
+		}
+		fmt.Print(item)
+		items = append(items, item)
+	}
+
+	return items
 }
 
 func LinkList(db *youdb.DB, getAll bool) []Link {

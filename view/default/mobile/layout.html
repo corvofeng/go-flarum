@@ -53,6 +53,7 @@
         <div class="banner">
 
             {{if .CurrentUser.Id}}
+            {{/*
             <a href="/member/{{.CurrentUser.Id}}"><img class="avatar avatar24" src="/static/avatar/{{.CurrentUser.Avatar}}.jpg" alt="{{.CurrentUser.Name}}"/></a>&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;<a href="/logout">退出</a>
             {{else}}
             {{if .SiteCf.WeiboClientID}}
@@ -69,6 +70,7 @@
             &nbsp;&nbsp;<a href="/register" rel="nofollow">注册</a>
             {{end}}
             {{end}}
+            */}}
 
             {{end}}
         </div>
@@ -133,7 +135,13 @@
         <p class="float-left">&copy; <a href="/">{{.SiteCf.Name}}</a>
             • <a href="/view?tpl=desktop">桌面模式</a>
         </p>
+        {{/*
         <p class="float-right">by <a href="https://www.youbbs.org" target="_blank">youBBS </a> - {{.SiteCf.GoVersion}}</p>
+        */}}
+        <p class="float-right">Powered by
+            <a href="mailto:wannakissfire@outlook.com">wannakissfire</a>
+        </p>
+
         <div class="c"></div>
 
     </div>
@@ -188,6 +196,7 @@
 {{ end }}
 
 {{if eq .PageName "home"}}
+{{/*
 {{if .Links}}
 <div class="nav-title">链接</div>
 <div class="main-box main-box-node">
@@ -199,6 +208,7 @@
     <div class="c"></div>
 </div>
 {{ end }}
+*/}}
 
 {{if .SiteInfo}}
 <div class="nav-title">本站已稳定运行 {{.SiteInfo.Days}} 天</div>

@@ -28,9 +28,17 @@
 
             </div>
         </div>
+        {{ if .Aobj.Uid }}
         <div class="detail-avatar">
             <a href="/member/{{.Aobj.Uid}}"><img src="/static/avatar/{{.Aobj.Avatar}}.jpg" alt="{{.Aobj.Name}}" /></a></div>
         <div class="c"></div>
+        {{else}}
+        <div class="detail-avatar">
+            <a href="/member/{{.Aobj.Uid}}">
+                <img src="http://yiqi.ml/static/upload/avatar/1552139583_2x128.jpg" alt="{{.Aobj.Name}}" />
+            </a></div>
+        <div class="c"></div>
+        {{end}}
     </div>
     <div class="topic-content">
 
