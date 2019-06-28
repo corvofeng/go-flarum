@@ -11,6 +11,32 @@ import (
 
 // CategoryDetailNew 新版的使用sql的页面
 func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) {
+
+	var start uint64
+	var err error
+
+	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
+	if len(key) > 0 {
+		start, err = strconv.ParseUint(key, 10, 64)
+		if err != nil {
+			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
+			return
+		}
+	}
+	if len(score) > 0 {
+		_, err = strconv.ParseUint(score, 10, 64)
+		if err != nil {
+			w.Write([]byte(`{"retcode":400,"retmsg":"score type err"}`))
+			return
+		}
+	}
+	cid := pat.Param(r, "cid")
+	_, err = strconv.Atoi(cid)
+	if err != nil {
+		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
+		return
+	}
+
 	tpl := h.CurrentTpl(r)
 
 	type pageData struct {
@@ -24,20 +50,17 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 
-	cid := pat.Param(r, "cid")
-	_, err := strconv.Atoi(cid)
-	if err != nil {
-		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
-		return
-	}
-
 	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, 0, scf.HomeShowNum, scf.TimeZone)
+	if btn == "prev" {
+		start = start - uint64(scf.HomeShowNum) - 1
+	}
+
+	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, start, scf.HomeShowNum, scf.TimeZone)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
 
