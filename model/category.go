@@ -1,11 +1,14 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/ego008/youdb"
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/ego008/youdb"
 )
 
 type Category struct {
@@ -37,6 +40,58 @@ func CategoryGetById(db *youdb.DB, cid string) (Category, error) {
 		return obj, nil
 	}
 	return obj, errors.New(rs.State)
+}
+
+// SQLGetAllCategory 获取所有分类
+func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
+	var categories []CategoryMini
+	rows, err := db.Query("SELECT id, name FROM node limit 30")
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+	}
+	for rows.Next() {
+		obj := CategoryMini{}
+		err = rows.Scan(&obj.Id, &obj.Name) //不scan会导致连接不释放
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return categories, errors.New("No result")
+		}
+		categories = append(categories, obj)
+	}
+
+	return categories, nil
+}
+
+// SQLCategoryGetById 通过id获取节点
+func SQLCategoryGetById(db *sql.DB, cid string) (Category, error) {
+	obj := Category{}
+
+	rows, err := db.Query("SELECT id, name, summary, topic_count FROM node WHERE id =  ?", cid)
+
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+	}
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Name, &obj.About, &obj.Articles) //不scan会导致连接不释放
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
+	}
+
+	return obj, nil
 }
 
 func CategoryHot(db *youdb.DB, limit int) []CategoryMini {

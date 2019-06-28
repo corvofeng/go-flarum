@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -358,6 +359,9 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		start = start - uint64(scf.HomeShowNum) - 1
 	}
 	pageInfo = model.SqlArticleList(sqlDB, db, start, scf.HomeShowNum, scf.TimeZone)
+	categories, err := model.SQLGetAllCategory(sqlDB)
+	fmt.Println(categories)
+
 	/// End mysql
 
 	tpl := h.CurrentTpl(r)
@@ -371,8 +375,9 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = false
 	evn.PageName = "home"
-	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
+	evn.NewestNodes = categories
+	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
+	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
 	evn.SiteInfo = si
 	evn.PageInfo = pageInfo

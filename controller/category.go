@@ -1,12 +1,62 @@
 package controller
 
 import (
+	"net/http"
+	"strconv"
+
 	"../model"
 	"github.com/ego008/youdb"
 	"goji.io/pat"
-	"net/http"
-	"strconv"
 )
+
+// CategoryDetailNew 新版的使用sql的页面
+func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) {
+	tpl := h.CurrentTpl(r)
+
+	type pageData struct {
+		PageData
+		Cobj     model.Category
+		PageInfo model.ArticlePageInfo
+	}
+
+	evn := &pageData{}
+	db := h.App.Db
+	scf := h.App.Cf.Site
+	sqlDB := h.App.MySQLdb
+
+	cid := pat.Param(r, "cid")
+	_, err := strconv.Atoi(cid)
+	if err != nil {
+		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
+		return
+	}
+
+	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, 0, scf.HomeShowNum, scf.TimeZone)
+	evn.Cobj = cobj
+	evn.PageInfo = pageInfo
+
+	evn.SiteCf = scf
+	evn.Title = cobj.Name + " - " + scf.Name
+	evn.Keywords = cobj.Name
+	evn.Description = cobj.About
+	evn.IsMobile = tpl == "mobile"
+
+	currentUser, _ := h.CurrentUser(w, r)
+
+	evn.CurrentUser = currentUser
+	evn.ShowSideAd = true
+	evn.PageName = "category_detail"
+	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
+	evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
+
+	h.Render(w, tpl, evn, "layout.html", "category.html")
+}
 
 func (h *BaseHandler) CategoryDetail(w http.ResponseWriter, r *http.Request) {
 	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
@@ -78,6 +128,9 @@ func (h *BaseHandler) CategoryDetail(w http.ResponseWriter, r *http.Request) {
 
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
+
+	// pageInfo = model.SqlArticleList(sqlDB, db, start, scf.HomeShowNum, scf.TimeZone)
+	// End mysql
 
 	h.Render(w, tpl, evn, "layout.html", "category.html")
 }
