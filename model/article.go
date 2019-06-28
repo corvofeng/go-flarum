@@ -133,6 +133,58 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	return obj, errors.New(rs.State)
 }
 
+// SqlCidArticleList 返回某个节点的主题
+func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz int) ArticlePageInfo {
+
+	var items []ArticleListItem
+	// var keys [][]byte
+	var hasPrev, hasNext bool
+	var firstKey, firstScore, lastKey, lastScore uint64
+	rows, err := db.Query("SELECT id, title FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?", cid, start, limit)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+		return ArticlePageInfo{}
+	}
+	for rows.Next() {
+		item := ArticleListItem{}
+		err = rows.Scan(&item.Id, &item.Title) //不scan会导致连接不释放
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			// return ArticlePageInfo{}
+			continue
+		}
+		rep := cntDB.Hget("article_views", youdb.I2b(item.Id))
+		item.ClickCnt = rep.Uint64()
+		items = append(items, item)
+	}
+	if len(items) > 0 {
+		firstKey = items[0].Id
+		lastKey = items[len(items)-1].Id
+		hasNext = true
+		hasPrev = true
+	}
+	if start < uint64(limit) {
+		hasPrev = false
+	}
+
+	return ArticlePageInfo{
+		Items:      items,
+		HasPrev:    hasPrev,
+		HasNext:    hasNext,
+		FirstKey:   firstKey,
+		FirstScore: firstScore,
+		LastKey:    lastKey,
+		LastScore:  lastScore,
+	}
+}
+
+// SqlArticleList 返回所有节点的主题
 func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	// var keys [][]byte
