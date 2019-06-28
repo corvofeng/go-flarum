@@ -186,7 +186,7 @@
 <div class="main-box main-box-node">
     <div class="btn">
         {{range $_, $v := .NewestNodes}}
-        <a href="/n/{{$v.Id}}">{{$v.Name}}</a>
+        <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
         {{end}}
         <div class="c"></div>
     </div>
@@ -199,7 +199,7 @@
 <div class="main-box main-box-node">
     <div class="btn">
         {{range $_, $v := .HotNodes}}
-        <a href="/n/{{$v.Id}}">{{$v.Name}}</a>
+        <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
         {{end}}
         <div class="c"></div>
     </div>

@@ -191,7 +191,7 @@
     <div class="sider-box-content">
         <div class="btn">
             {{range $_, $v := .HotNodes}}
-            <a href="/n/{{$v.Id}}">{{$v.Name}}</a>
+            <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
             {{end}}
         </div>
         <div class="c"></div>
@@ -218,7 +218,7 @@
     <div class="sider-box-content">
         <div class="btn">
             {{range $_, $v := .NewestNodes}}
-            <a href="/n/{{$v.Id}}">{{$v.Name}}</a>
+            <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
             {{end}}
         </div>
         <div class="c"></div>
