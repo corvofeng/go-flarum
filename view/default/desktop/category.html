@@ -22,7 +22,7 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}"><img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.Uid}}"><img src="/static/avatar/2.jpg" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
             <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
@@ -44,10 +44,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/n/{{.Cobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
+        <a href="/node/{{.Cobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/n/{{.Cobj.Id}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
+        <a href="/node/{{.Cobj.Id}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>
