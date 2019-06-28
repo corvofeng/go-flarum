@@ -135,9 +135,7 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 
 // SqlCidArticleList 返回某个节点的主题
 func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz int) ArticlePageInfo {
-
 	var items []ArticleListItem
-	// var keys [][]byte
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
 	rows, err := db.Query("SELECT id, title FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?", cid, start, limit)
@@ -156,7 +154,6 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
-			// return ArticlePageInfo{}
 			continue
 		}
 		rep := cntDB.Hget("article_views", youdb.I2b(item.Id))
@@ -171,6 +168,9 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz
 	}
 	if start < uint64(limit) {
 		hasPrev = false
+	}
+	if len(items) < limit {
+		hasNext = false
 	}
 
 	return ArticlePageInfo{
@@ -221,6 +221,9 @@ func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) Ar
 	}
 	if start < uint64(limit) {
 		hasPrev = false
+	}
+	if len(items) < limit {
+		hasNext = false
 	}
 
 	return ArticlePageInfo{

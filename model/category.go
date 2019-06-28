@@ -45,7 +45,7 @@ func CategoryGetById(db *youdb.DB, cid string) (Category, error) {
 // SQLGetAllCategory 获取所有分类
 func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 	var categories []CategoryMini
-	rows, err := db.Query("SELECT id, name FROM node limit 30")
+	rows, err := db.Query("SELECT id, name FROM node order by topic_count desc limit 30")
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
