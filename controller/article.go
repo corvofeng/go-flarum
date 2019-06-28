@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -360,8 +359,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	}
 	pageInfo = model.SqlArticleList(sqlDB, db, start, scf.HomeShowNum, scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
-	fmt.Println(categories)
-
 	/// End mysql
 
 	tpl := h.CurrentTpl(r)
@@ -423,8 +420,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	/// MySQL start
 	sqlDB := h.App.MySQLdb
-	aobj, err = model.SqlArticleGetById(sqlDB, aid)
-
+	aobj, err = model.SQLArticleGetByID(sqlDB, aid)
 	/// MySQL end
 	if err != nil {
 		w.Write([]byte(err.Error()))
@@ -457,6 +453,10 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
+	/// MySQL start
+	cobj, err = model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
+	/// MySQL end
+
 	// hack the obj
 	err = nil
 	cobj.Hidden = false

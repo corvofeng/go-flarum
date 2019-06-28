@@ -96,10 +96,10 @@ type ArticleTag struct {
 	NewTags string
 }
 
-func SqlArticleGetById(db *sql.DB, aid string) (Article, error) {
+// SQLArticleGetByID 通过 article id获取内容
+func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	obj := Article{}
-	// rs := db.Hget("article", youdb.DS2b(aid))
-	rows, err := db.Query("SELECT id, title, content FROM topic WHERE id = ?", aid)
+	rows, err := db.Query("SELECT id, node_id, title, content FROM topic WHERE id = ?", aid)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -111,13 +111,12 @@ func SqlArticleGetById(db *sql.DB, aid string) (Article, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Title, &obj.Content) //不scan会导致连接不释放
+		err = rows.Scan(&obj.Id, &obj.Cid, &obj.Title, &obj.Content) //不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			return obj, errors.New("No result")
 		}
-		obj.Cid = 0
 	}
 
 	return obj, nil

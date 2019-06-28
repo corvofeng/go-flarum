@@ -61,6 +61,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	}
 
 	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, start, scf.HomeShowNum, scf.TimeZone)
+	categories, err := model.SQLGetAllCategory(sqlDB)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
 
@@ -76,7 +77,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	evn.ShowSideAd = true
 	evn.PageName = "category_detail"
 	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
+	evn.NewestNodes = categories
 
 	h.Render(w, tpl, evn, "layout.html", "category.html")
 }
