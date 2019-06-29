@@ -3,10 +3,11 @@ package util
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"github.com/ego008/youdb"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ego008/youdb"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 	youku2Regexp  = regexp.MustCompile(`https?://v\.youku\.com/v_show/id_([a-zA-Z0-9=]+)(/|\.html?)?`)
 )
 
-// 文本格式化
+// ContentFmt 防止XSS漏洞, 并处理样式
 func ContentFmt(db *youdb.DB, input string) string {
 	if strings.Index(input, "```") >= 0 {
 		sepNum := strings.Count(input, "```")
@@ -61,7 +62,8 @@ type urlInfo struct {
 	Click string
 }
 
-func ContentRich(db *youdb.DB, input string) string {
+// ContentRich 用来转换文本, 转义以及允许用户添加一些富文本样式
+func ContentRich(cacheDB *youdb.DB, input string) string {
 	input = strings.TrimSpace(input)
 	input = " " + input // fix Has url Prefix
 	input = strings.Replace(input, "<", "&lt;", -1)
@@ -98,7 +100,7 @@ func ContentRich(db *youdb.DB, input string) string {
 		})
 
 		if len(urlMd5Map) > 0 {
-			rs := db.Hmget("url_md5_click", keys)
+			rs := cacheDB.Hmget("url_md5_click", keys)
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				key := rs.Data[i].String()
 				tmp := urlMd5Map[key]

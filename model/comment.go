@@ -25,6 +25,7 @@ type CommentListItem struct {
 	Aid        uint64 `json:"aid"`
 	Uid        uint64 `json:"uid"`
 	Name       string `json:"name"`
+	UserName   string `json:"username"`
 	Avatar     string `json:"avatar"`
 	Content    string `json:"content"`
 	ContentFmt template.HTML
@@ -99,6 +100,7 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct
 		item := CommentListItem{}
 		err = rows.Scan(&item.Id, &item.Uid, &item.Aid, &item.Content, &item.AddTime)
 		item.Avatar = GetAvatarByID(db, cacheDB, item.Uid)
+		item.UserName = GetUserNameByID(db, cacheDB, item.Uid)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -106,7 +108,11 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct
 		}
 
 		item.AddTimeFmt = util.TimeFmt(item.AddTime, "2006-01-02 15:04", tz)
-		item.ContentFmt = template.HTML(util.ContentFmt(cacheDB, item.Content))
+
+		// 预防XSS漏洞
+		item.ContentFmt = template.HTML(
+			util.ContentFmt(cacheDB, item.Content))
+
 		items = append(items, item)
 	}
 
