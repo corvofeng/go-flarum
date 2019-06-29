@@ -140,43 +140,32 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"retcode":400,"retmsg":"stop to new register"}`))
 			return
 		}
-		if db.Hget("user_name2uid", []byte(nameLow)).State == "ok" {
+		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err != nil {
 			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaId":"` + captcha.New() + `"}`))
 			return
 		}
 
-		userId, _ := db.HnextSequence("user")
-		flag := 5
-		if siteCf.RegReview {
-			flag = 1
-		}
-
-		if userId == 1 {
-			flag = 99
-		}
-
 		uobj := model.User{
-			Id:            userId,
 			Name:          rec.Name,
 			Password:      rec.Password,
-			Flag:          flag,
 			RegTime:       timeStamp,
 			LastLoginTime: timeStamp,
 			Session:       xid.New().String(),
 		}
+		uobj.SQLRegister(sqlDB)
 
-		uidStr := strconv.FormatUint(userId, 10)
-		err = util.GenerateAvatar("male", rec.Name, 73, 73, "static/avatar/"+uidStr+".jpg")
-		if err != nil {
-			uobj.Avatar = "0"
-		} else {
-			uobj.Avatar = uidStr
-		}
+		// uidStr := strconv.FormatUint(uobj.Id, 10)
+		// err = util.GenerateAvatar("male", rec.Name, 73, 73, "static/avatar/"+uidStr+".jpg")
+		// if err != nil {
+		// 	uobj.Avatar = "0"
+		// } else {
+		// 	uobj.Avatar = uidStr
+		// }
 
 		jb, _ := json.Marshal(uobj)
 		db.Hset("user", youdb.I2b(uobj.Id), jb)
-		db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(userId))
-		db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.Id), []byte(""))
+		// db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.Id))
+		// db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.Id), []byte(""))
 
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.Id, 10)+":"+uobj.Session, 365)
 	}

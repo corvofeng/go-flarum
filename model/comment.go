@@ -54,9 +54,10 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 		comment.AddTime,
 		comment.AddTime,
 	)
-	util.CheckError(err, "回复失败")
+	if util.CheckError(err, "回复失败") {
+		return
+	}
 	cid, err := rows.LastInsertId()
-	fmt.Println(cid)
 	comment.Id = uint64(cid)
 }
 
