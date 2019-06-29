@@ -89,16 +89,16 @@
 
             <div class="commont-data-date">
                 <div class="float-left">
-                    <a href="/member/{{$item.Uid}}">{{$item.Name}}</a> at {{$item.AddTimeFmt}}
-                    {{if ge $.CurrentUser.Flag 99}}
+                    By <a href="/member/{{$item.Uid}}">{{$item.UserName}}</a> at {{$item.AddTimeFmt}}
+                    {{if $.CurrentUser.IsAdmin }}
                     &nbsp;&nbsp;&nbsp; • <a href="/admin/comment/edit/{{$item.Aid}}/{{$item.Id}}">编辑</a>
                     {{end}}
                 </div>
                 <div class="float-right">
-                    {{if .CurrentUser.CanReply }}
+                    {{if $.CurrentUser.CanReply }}
                     {{if not $.Aobj.CloseComment}}
                     {{if ne $.CurrentUser.Id $item.Uid}}
-                    &laquo; <a href="#new-comment" onclick="replyto('{{$item.Name}}');">回复</a>
+                    &laquo; <a href="#new-comment" onclick="replyto('{{$item.UserName}}');">回复</a>
                     {{end}}
                     {{end}}
                     {{end}}

@@ -19,6 +19,7 @@ import (
 	"goji.io/pat"
 )
 
+// ArticleAdd 添加新的帖子
 func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	cid := pat.Param(r, "cid")
 	_, err := strconv.Atoi(cid)
@@ -32,7 +33,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 5 {
+	if !currentUser.CanCreateTopic() {
 		var msg string
 		if currentUser.Flag == 1 {
 			msg = "注册验证中，等待管理员通过"
@@ -43,9 +44,10 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+	// db := h.App.Db
 
-	cobj, err := model.CategoryGetById(db, cid)
+	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -58,7 +60,9 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 
 	type pageData struct {
 		PageData
-		Cobj      model.Category
+		Cobj model.Category
+
+		// 可能是想获取当前节点的父节点下的所有子节点
 		MainNodes []model.CategoryMini
 	}
 
@@ -72,7 +76,9 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "article_add"
 
 	evn.Cobj = cobj
-	evn.MainNodes = model.CategoryGetMain(db, cobj)
+
+	// 当前的主节点就直接从数据库中读取所有节点了
+	evn.MainNodes, _ = model.SQLGetAllCategory(sqlDB)
 
 	h.SetCookie(w, "token", xid.New().String(), 1)
 	h.Render(w, tpl, evn, "layout.html", "articlecreate.html")
@@ -93,7 +99,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
-	if currentUser.Flag < 5 {
+	if !currentUser.CanCreateTopic() || !currentUser.CanReply() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"user flag err"}`))
 		return
 	}
@@ -117,6 +123,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	rec.Title = strings.TrimSpace(rec.Title)
 	rec.Content = strings.TrimSpace(rec.Content)
 
+	sqlDB := h.App.MySQLdb
 	db := h.App.Db
 	if rec.Act == "preview" {
 		tmp := struct {
@@ -141,7 +148,8 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	now := uint64(time.Now().UTC().Unix())
 	scf := h.App.Cf.Site
 
-	if currentUser.Flag < 99 && currentUser.LastPostTime > 0 {
+	// 控制发帖间隔, 不能太短
+	if !currentUser.IsAdmin() && currentUser.LastPostTime > 0 {
 		if (now - currentUser.LastPostTime) < uint64(scf.PostInterval) {
 			w.Write([]byte(`{"retcode":403,"retmsg":"PostInterval limited"}`))
 			return
@@ -161,7 +169,8 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cobj, err := model.CategoryGetById(db, strconv.FormatUint(rec.Cid, 10))
+	// cobj, err := model.CategoryGetById(db, strconv.FormatUint(rec.Cid, 10))
+	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(rec.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -183,6 +192,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		EditTime: now,
 		ClientIp: r.Header.Get("X-FORWARDED-FOR"),
 	}
+	aobj.SQLCreateTopic(sqlDB)
 
 	jb, _ := json.Marshal(aobj)
 	aidB := youdb.I2b(newAid)
@@ -635,9 +645,8 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	author, _ := model.SQLUserGetByID(sqlDB, aobj.Uid)
 	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.Id), 1)
 	evn.Aobj = articleForDetail{
-		Article: aobj,
-		// ContentFmt:  template.HTML(util.ContentFmt(db, aobj.Content)),
-		ContentFmt:  template.HTML(aobj.Content),
+		Article:     aobj,
+		ContentFmt:  template.HTML(util.ContentFmt(db, aobj.Content)),
 		CommentsCnt: commentsCnt,
 		Name:        author.Name,
 		Avatar:      author.Avatar,
@@ -824,6 +833,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(rsp)
 }
 
+// ContentPreviewPost 预览主题以及评论
 func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	token := h.GetCookie(r, "token")
@@ -833,7 +843,7 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Flag < 5 {
+	if !currentUser.CanCreateTopic() || !currentUser.CanReply() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"forbidden"}`))
 		return
 	}

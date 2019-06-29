@@ -83,7 +83,7 @@
     <div class="commont-item">
         <div class="commont-avatar">
             <a href="/member/{{$item.Uid}}">
-                <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
+                <img src="{{$item.Avatar}}" alt="{{$item.UserName}}" />
             </a>
         </div>
         <div class="commont-data">
@@ -92,17 +92,22 @@
             </div>
 
             <div class="commont-data-date">
+                {{/*
+                By <a href="/member/{{$item.Uid}}">{{$item.UserName}}</a>
+                at {{$item.AddTimeFmt}} • {{$item.Views}}次点击
+                */}}
+
                 <div class="float-left">
-                    <a href="/member/{{$item.Uid}}">{{$item.Name}}</a> at {{$item.AddTimeFmt}}
-                    {{if ge $.CurrentUser.Flag 99}}
+                    By <a href="/member/{{$item.Uid}}">{{$item.UserName}}</a> at {{$item.AddTimeFmt}}
+                    {{if $.CurrentUser.IsAdmin }}
                     &nbsp;&nbsp;&nbsp; • <a href="/admin/comment/edit/{{$item.Aid}}/{{$item.Id}}">编辑</a>
                     {{end}}
                 </div>
                 <div class="float-right">
-                    {{if ge $.CurrentUser.Flag 5}}
+                    {{if $.CurrentUser.CanReply }}
                     {{if not $.Aobj.CloseComment}}
                     {{if ne $.CurrentUser.Id $item.Uid}}
-                    &laquo; <a href="#new-comment" onclick="replyto('{{$item.Name}}');">回复</a>
+                    &laquo; <a href="#new-comment" onclick="replyto('{{$item.UserName}}');">回复</a>
                     {{end}}
                     {{end}}
                     {{end}}

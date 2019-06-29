@@ -35,8 +35,8 @@ func NewRouter(app *system.Application) *goji.Mux {
 	sp.HandleFunc(pat.Get("/setting"), h.UserSetting)
 	sp.HandleFunc(pat.Post("/setting"), h.UserSettingPost)
 
-	// sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
-	// sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
+	sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
+	sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
 
 	sp.HandleFunc(pat.Get("/login"), h.UserLogin)
 	sp.HandleFunc(pat.Post("/login"), h.UserLoginPost)
@@ -48,7 +48,7 @@ func NewRouter(app *system.Application) *goji.Mux {
 	// sp.HandleFunc(pat.Get("/wblogin"), h.WeiboOauthHandler)
 	// sp.HandleFunc(pat.Get("/oauth/wb/callback"), h.WeiboOauthCallback)
 
-	// sp.HandleFunc(pat.Post("/content/preview"), h.ContentPreviewPost)
+	sp.HandleFunc(pat.Post("/content/preview"), h.ContentPreviewPost)
 	// sp.HandleFunc(pat.Post("/file/upload"), h.FileUpload)
 
 	// sp.HandleFunc(pat.Get("/admin/post/edit/:aid"), h.ArticleEdit)

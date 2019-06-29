@@ -15,12 +15,12 @@
     <p><input id="id-title" type="text" name="title" value="" class="sll" /></p>
     <p><textarea id="id-content" name="content" class="mll tall"></textarea></p>
 
-    <div class="float-right grey fs12">
+    <!-- <div class="float-right grey fs12">
         <input id="file_upload" name="file_upload" type="file" multiple="true">
         <div id="file-queue"></div>
         <div class="c"></div>
     </div>
-    <div class="c"></div>
+    <div class="c"></div> -->
 
     <p><div class="float-left">
         <input id="btn-preview" type="button" value=" 预 览 " name="submit" class="textbtn" />
@@ -80,7 +80,7 @@
                 contentType: "application/json",
                 success: function(data){
                     if(data.retcode == 200){
-                        window.location.href = "/t/"+data.aid;
+                        window.location.href = "/topic/"+data.aid;
                         return
                     }
                     $.toast(data.retmsg);

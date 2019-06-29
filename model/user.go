@@ -317,3 +317,24 @@ func GetAvatarByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
 	logger.Debug("key not found for ", user.Id, user.Name, "but we refresh!")
 	return avatar
 }
+
+// GetUserNameByID 获取用户头像
+func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
+	var username string
+	logger := util.GetLogger()
+
+	rs := cntDB.Hget("username", youdb.I2b(uid))
+	if rs.State == "ok" {
+		return rs.String()
+	}
+
+	user, err := SQLUserGetByID(db, uid)
+	if util.CheckError(err, "查询用户") {
+		return username
+	}
+	username = user.Name
+
+	cntDB.Hset("username", youdb.I2b(uid), []byte(username))
+	logger.Debug("key not found for ", user.Id, user.Name, "but we refresh!")
+	return username
+}

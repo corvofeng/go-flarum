@@ -7,7 +7,7 @@
         &nbsp;&nbsp;&nbsp; Hidden is {{.Cobj.Hidden}}• <a href="/admin/category/list?cid={{.Cobj.Id}}">编辑</a>
         {{end}}
     </div>
-    {{if ge .CurrentUser.Flag 5}}
+    {{if .CurrentUser.CanCreateTopic }}
     <div class="float-right"><a href="/newpost/{{.Cobj.Id}}" class="newpostbtn">+发新帖</a></div>
     {{end}}
     <div class="c"></div>

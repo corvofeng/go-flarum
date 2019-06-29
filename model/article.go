@@ -100,7 +100,7 @@ type ArticleTag struct {
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	obj := Article{}
-	rows, err := db.Query("SELECT id, node_id, user_id, title, content FROM topic WHERE id = ?", aid)
+	rows, err := db.Query("SELECT id, node_id, user_id, title, content, updated_at FROM topic WHERE id = ?", aid)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -112,7 +112,14 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Cid, &obj.Uid, &obj.Title, &obj.Content) //不scan会导致连接不释放
+		err = rows.Scan(
+			&obj.Id,
+			&obj.Cid,
+			&obj.Uid,
+			&obj.Title,
+			&obj.Content,
+			&obj.EditTime,
+		)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -121,6 +128,30 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	}
 
 	return obj, nil
+}
+
+// SQLCreateTopic 创建主题
+func (article *Article) SQLCreateTopic(db *sql.DB) bool {
+	row, err := db.Exec(
+		("INSERT INTO `topic` " +
+			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip)" +
+			" VALUES " +
+			" (?, ?, ?, ?, ?, ?, ?)"),
+		article.Cid,
+		article.Uid,
+		article.Title,
+		article.Content,
+		article.AddTime,
+		article.EditTime,
+		article.ClientIp,
+	)
+	if util.CheckError(err, "创建主题") {
+		return false
+	}
+	aid, err := row.LastInsertId()
+	article.Id = uint64(aid)
+
+	return true
 }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
@@ -141,7 +172,6 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) Artic
 	}
 	sql := "select id, title, user_id from topic where id in (" + articleListStr + ")"
 
-	fmt.Println(sql)
 	rows, err = db.Query(sql)
 	defer func() {
 		if rows != nil {
@@ -188,23 +218,24 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 }
 
 // SQLCidArticleList 返回某个节点的主题
-// topicID 为0 表示全部主题
-func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
+// nodeID 为0 表示全部主题
+func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
 	var rows *sql.Rows
 	var err error
 	logger := util.GetLogger()
-	if topicID == 0 {
+	valueList := "id, title, user_id, node_id, updated_at"
+	if nodeID == 0 {
 		if btnAct == "" || btnAct == "next" {
 			rows, err = db.Query(
-				"SELECT id, title, user_id FROM topic WHERE id > ? ORDER BY id limit ?",
+				"SELECT "+valueList+" FROM topic WHERE id > ? ORDER BY id limit ?",
 				start, limit,
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT * FROM (SELECT id, title, user_id FROM topic WHERE id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
+				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
 				start, limit,
 			)
 		} else {
@@ -213,13 +244,13 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAc
 	} else {
 		if btnAct == "" || btnAct == "next" {
 			rows, err = db.Query(
-				"SELECT id, title, user_id FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?",
-				topicID, start, limit,
+				"SELECT "+valueList+" FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?",
+				nodeID, start, limit,
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT * FROM (SELECT id, title, user_id FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
-				topicID, start, limit,
+				"SELECT * FROM (SELECT "+valueList+"FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
+				nodeID, start, limit,
 			)
 		} else {
 			logger.Error("Get wrond button action")
@@ -237,9 +268,9 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAc
 	}
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
+		err = rows.Scan(&item.Id, &item.Title, &item.Uid, &item.Cid, &item.EditTime) //不scan会导致连接不释放
 		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
-
+		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
