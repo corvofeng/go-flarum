@@ -115,10 +115,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/t/{{.Aobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}" class="float-left">&laquo; 上一页</a>
+        <a href="/topic/{{.Aobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/t/{{.Aobj.Id}}?btn=next&key={{.PageInfo.LastKey}}" class="float-right">下一页 &raquo;</a>
+        <a href="/topic/{{.Aobj.Id}}?btn=next&key={{.PageInfo.LastKey}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>
