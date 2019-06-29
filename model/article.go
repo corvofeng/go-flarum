@@ -249,7 +249,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT * FROM (SELECT "+valueList+"FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
+				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
 				nodeID, start, limit,
 			)
 		} else {
