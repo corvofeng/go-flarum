@@ -14,6 +14,7 @@ func NewRouter(app *system.Application) *goji.Mux {
 	h := controller.BaseHandler{App: app}
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
+	sp.HandleFunc(pat.Get("/luck"), h.IFeelLucky)
 	sp.HandleFunc(pat.Get("/view"), h.ViewAtTpl)
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)

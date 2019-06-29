@@ -56,11 +56,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if btn == "prev" {
-		start = start - uint64(scf.HomeShowNum) - 1
-	}
-
-	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, start, scf.HomeShowNum, scf.TimeZone)
+	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, start, btn, scf.HomeShowNum, scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo

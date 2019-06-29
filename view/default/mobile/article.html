@@ -95,7 +95,7 @@
                     {{end}}
                 </div>
                 <div class="float-right">
-                    {{if ge $.CurrentUser.Flag 5}}
+                    {{if .CurrentUser.CanReply }}
                     {{if not $.Aobj.CloseComment}}
                     {{if ne $.CurrentUser.Id $item.Uid}}
                     &laquo; <a href="#new-comment" onclick="replyto('{{$item.Name}}');">回复</a>
@@ -142,7 +142,7 @@
 <div class="no-comment">该帖评论已关闭</div>
 {{end}}
 
-{{if ge .CurrentUser.Flag 5}}
+{{if .CurrentUser.CanReply }}
 {{if not .Aobj.CloseComment}}
 <a name="new-comment"></a>
 <div class="nav-title">
@@ -168,7 +168,7 @@
                 <input id="btn-submit" type="submit" value=" 提 交 " name="submit" class="textbtn" />
             </div>
             <div class="float-right fs12 grey">
-                • 请尽量让自己的回复能够对别人有帮助！</div>
+                • 请不要发广告, 一经发现, 直接封号！</div>
             <div class="c"></div>
         </p>
     </form>

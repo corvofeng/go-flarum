@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"html"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ego008/goyoubbs/util"
+	"../util"
 	"github.com/ego008/youdb"
 )
 
@@ -122,6 +123,60 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	return obj, nil
 }
 
+// SQLArticleGetByList 通过id列表获取对应的帖子
+func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) ArticlePageInfo {
+	var items []ArticleListItem
+	var hasPrev, hasNext bool
+	var firstKey, firstScore, lastKey, lastScore uint64
+	var rows *sql.Rows
+	var err error
+	logger := util.GetLogger()
+	articleListStr := ""
+
+	for _, v := range articleList {
+		if len(articleListStr) > 0 {
+			articleListStr += ", "
+		}
+		articleListStr += strconv.Itoa(v)
+	}
+	sql := "select id, title, user_id from topic where id in (" + articleListStr + ")"
+
+	fmt.Println(sql)
+	rows, err = db.Query(sql)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return ArticlePageInfo{}
+	}
+	for rows.Next() {
+		item := ArticleListItem{}
+		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
+		item.Avatar = GetAvatarByID(db, cacheDB, item.Uid)
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			continue
+		}
+		rep := cacheDB.Hget("article_views", youdb.I2b(item.Id))
+		item.ClickCnt = rep.Uint64()
+		items = append(items, item)
+	}
+
+	return ArticlePageInfo{
+		Items:      items,
+		HasPrev:    hasPrev,
+		HasNext:    hasNext,
+		FirstKey:   firstKey,
+		FirstScore: firstScore,
+		LastKey:    lastKey,
+		LastScore:  lastScore,
+	}
+}
+
 func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	obj := Article{}
 	rs := db.Hget("article", youdb.DS2b(aid))
@@ -133,23 +188,56 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 }
 
 // SQLCidArticleList 返回某个节点的主题
-func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topic_id, start uint64, limit, tz int) ArticlePageInfo {
+// topicID 为0 表示全部主题
+func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	rows, err := db.Query("SELECT id, title FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?", topic_id, start, limit)
+	var rows *sql.Rows
+	var err error
+	logger := util.GetLogger()
+	if topicID == 0 {
+		if btnAct == "" || btnAct == "next" {
+			rows, err = db.Query(
+				"SELECT id, title, user_id FROM topic WHERE id > ? ORDER BY id limit ?",
+				start, limit,
+			)
+		} else if btnAct == "prev" {
+			rows, err = db.Query(
+				"SELECT id, title, user_id FROM topic WHERE id <= ? ORDER BY id limit ?",
+				start, limit,
+			)
+		} else {
+			logger.Error("Get wrond button action")
+		}
+	} else {
+		if btnAct == "" || btnAct == "next" {
+			rows, err = db.Query(
+				"SELECT id, title, user_id FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?",
+				topicID, start, limit,
+			)
+		} else if btnAct == "prev" {
+			rows, err = db.Query(
+				"SELECT id, title, user_id FROM topic WHERE node_id = ? And id <= ? ORDER BY id limit ?",
+				topicID, start, limit,
+			)
+		} else {
+			logger.Error("Get wrond button action")
+		}
+	}
+
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
 		}
 	}()
 	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
+		logger.Errorf("Query failed,err:%v", err)
 		return ArticlePageInfo{}
 	}
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title) //不scan会导致连接不释放
+		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
 		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
 
 		if err != nil {
@@ -166,9 +254,15 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topic_id, start uint64, limi
 		hasNext = true
 		hasPrev = true
 	}
-	if start < uint64(limit) {
+	// 前一页, 后一页的判断其实比较复杂的, 这里只针对最容易的情况进行了判断,
+	// 因为帖子较多时, 这算是一种近似
+
+	// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
+	if items[0].Id == 1 || start < uint64(limit) {
 		hasPrev = false
 	}
+
+	// 查询出的数量比要求的数量要少, 说明没有下一页
 	if len(items) < limit {
 		hasNext = false
 	}
@@ -184,58 +278,11 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topic_id, start uint64, limi
 	}
 }
 
-// SqlArticleList 返回所有节点的主题
-func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-	// var keys [][]byte
-	var hasPrev, hasNext bool
-	var firstKey, firstScore, lastKey, lastScore uint64
-	rows, err := db.Query("SELECT id, title, user_id FROM topic WHERE id > ? ORDER BY id limit ?", start, limit)
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
-	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
-		return ArticlePageInfo{}
-	}
-	for rows.Next() {
-		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
-
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			// return ArticlePageInfo{}
-			continue
-		}
-		rep := cntDB.Hget("article_views", youdb.I2b(item.Id))
-		item.ClickCnt = rep.Uint64()
-		items = append(items, item)
-	}
-	if len(items) > 0 {
-		firstKey = items[0].Id
-		lastKey = items[len(items)-1].Id
-		hasNext = true
-		hasPrev = true
-	}
-	if start < uint64(limit) {
-		hasPrev = false
-	}
-	if len(items) < limit {
-		hasNext = false
-	}
-
-	return ArticlePageInfo{
-		Items:      items,
-		HasPrev:    hasPrev,
-		HasNext:    hasNext,
-		FirstKey:   firstKey,
-		FirstScore: firstScore,
-		LastKey:    lastKey,
-		LastScore:  lastScore,
-	}
+// SQLArticleList 返回所有节点的主题
+func SQLArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
+	return SQLCidArticleList(
+		db, cntDB, 0, start, btnAct, limit, tz,
+	)
 }
 
 func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) ArticlePageInfo {

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,8 +98,6 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaId":"` + captcha.New() + `"}`))
 		return
 	}
-
-	fmt.Println(act, rec.Name, rec.Password)
 
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
