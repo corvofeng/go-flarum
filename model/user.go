@@ -219,6 +219,28 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	return obj, nil
 }
 
+// SQLRegister 用户注册
+func (user *User) SQLRegister(db *sql.DB) bool {
+	row, err := db.Exec(
+		("INSERT INTO `user` " +
+			" (`name`, `email`, `urlname`, `password`, `reputation`)" +
+			" VALUES " +
+			" (?, ?,?, ?, ?)"),
+		user.Name,
+		user.Name,
+		user.Name,
+		user.Password,
+		20, // 初始声望值20
+	)
+	if util.CheckError(err, "用户注册") {
+		return false
+	}
+	uid, err := row.LastInsertId()
+	user.Id = uint64(uid)
+
+	return true
+}
+
 // IsForbid 检查当前用户是否被禁用
 func (user *User) IsForbid() bool {
 	if user == nil {
