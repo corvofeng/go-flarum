@@ -253,18 +253,19 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAc
 		lastKey = items[len(items)-1].Id
 		hasNext = true
 		hasPrev = true
-	}
-	// 前一页, 后一页的判断其实比较复杂的, 这里只针对最容易的情况进行了判断,
-	// 因为帖子较多时, 这算是一种近似
 
-	// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
-	if items[0].Id == 1 || start < uint64(limit) {
-		hasPrev = false
-	}
+		// 前一页, 后一页的判断其实比较复杂的, 这里只针对最容易的情况进行了判断,
+		// 因为帖子较多时, 这算是一种近似
 
-	// 查询出的数量比要求的数量要少, 说明没有下一页
-	if len(items) < limit {
-		hasNext = false
+		// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
+		if items[0].Id == 1 || start < uint64(limit) {
+			hasPrev = false
+		}
+
+		// 查询出的数量比要求的数量要少, 说明没有下一页
+		if len(items) < limit {
+			hasNext = false
+		}
 	}
 
 	return ArticlePageInfo{
