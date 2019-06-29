@@ -2,16 +2,18 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/dchest/captcha"
-	"../model"
-	"../util"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
-	"goji.io/pat"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"../model"
+	"../util"
+	"github.com/dchest/captcha"
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
+	"goji.io/pat"
 )
 
 func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +52,8 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "userlogin.html")
 }
 
+// UserLoginPost 用于用户登录及注册
+// 保存密码时, 用户前端传来的密码为md5值, 因此我们也不需要保存明文密码, 也就不需要token了
 func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -96,7 +100,10 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(act, rec.Name, rec.Password)
+
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 	timeStamp := uint64(time.Now().UTC().Unix())
 
 	if act == "login" {
@@ -107,7 +114,9 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
 			//return
 		}
-		uobj, err := model.UserGetByName(db, nameLow)
+		// uobj, err := model.UserGetByName(db, nameLow)
+		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
+
 		if err != nil {
 			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaId":"` + captcha.New() + `"}`))
 			return

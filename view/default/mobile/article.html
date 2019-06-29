@@ -4,7 +4,7 @@
     <div class="float-left fs14">
         &raquo; <a href="/node/{{.Cobj.Id}}">{{.Cobj.Name}}</a> ({{.Cobj.Articles}})
     </div>
-    {{if ge .CurrentUser.Flag 5}}
+    {{if .CurrentUser.CanCreateTopic }}
     <div class="float-right"><a href="/newpost/{{.Cobj.Id}}" rel="nofollow" class="newpostbtn">+发新帖</a></div>
     {{end}}
     <div class="c"></div>
@@ -18,22 +18,22 @@
                 <a href="/member/{{.Aobj.Uid}}">{{.Aobj.Name}}</a>
                 {{.Aobj.AddTimeFmt}} • {{.Aobj.Views}}次点击
 
-                {{if ge .CurrentUser.Flag 5}}
+                {{if .CurrentUser.CanCreateTopic }}
                 {{if not .Aobj.CloseComment}}
                 • <a href="#new-comment">回复</a>
                 {{end}}
                 {{end}}
 
-                {{if ge .CurrentUser.Flag 99}}
+                {{if .CurrentUser.CanEdit }}
                 &nbsp;&nbsp;• <a href="/admin/post/edit/{{.Aobj.Id}}">编辑</a>
                 {{end}}
            </div>
         </div>
 
         {{ if .Aobj.Uid }}
-        <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="/static/avatar/{{.Aobj.Avatar}}.jpg" alt="{{.Aobj.Name}}" /></a></div>
+        <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="{{.Aobj.Avatar}}" alt="{{.Aobj.Name}}" /></a></div>
         {{ else }}
-        <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="/static/avatar/2.jpg" alt="{{.Aobj.Name}}" /></a></div>
+        <div class="detail-avatar"><a href="/member/{{.Aobj.Uid}}"><img src="{{.Aobj.Avatar}}" alt="{{.Aobj.Name}}" /></a></div>
         {{ end }}
         <div class="c"></div>
     </div>
@@ -55,7 +55,7 @@
             <h3>相关帖子：</h3>
             <ul class="rel_list">
                 {{range $_, $item := .Relative.Articles}}
-                <li><a href="/t/{{$item.Id}}" title="{{$item.Title}}">{{$item.Title}}</a></li>
+                <li><a href="/topic/{{$item.Id}}" title="{{$item.Title}}">{{$item.Title}}</a></li>
                 {{end}}
                 <div class="c"></div>
             </ul>
@@ -68,9 +68,9 @@
 </div>
 <!-- post main content end -->
 
-{{if .Aobj.Comments}}
+{{if .Aobj.CommentsCnt }}
 <div class="nav-title">
-    共 {{.Aobj.Comments}} 条回复
+    共 {{.Aobj.CommentsCnt}} 条回复
 </div>
 <div class="main-box home-box-list">
 
@@ -79,7 +79,7 @@
     <div class="commont-item">
         <div class="commont-avatar">
             <a href="/member/{{$item.Uid}}">
-                <img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" />
+                <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         <div class="commont-data">

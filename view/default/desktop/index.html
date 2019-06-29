@@ -4,7 +4,7 @@
     <div class="float-left fs14">
         <a href="/">{{.SiteCf.Name}}</a>
     </div>
-    {{if ge .CurrentUser.Flag 5}}
+    {{if .CurrentUser.CanCreateTopic }}
     <div class="float-right"><a href="/newpost/1" class="newpostbtn">+发新帖</a></div>
     {{end}}
     <div class="c"></div>
@@ -18,13 +18,13 @@
         {{ if $item.Uid }}
         <div class="item-avatar">
             <a href="/member/{{$item.Uid}}">
-            <img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" />
+            <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ else }}
          <div class="item-avatar">
             <a href="/member/{{$item.Uid}}">
-                <img src="/static/avatar/2.jpg" alt="{{$item.Name}}" />
+                <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ end }}

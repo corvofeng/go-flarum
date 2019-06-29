@@ -84,27 +84,26 @@
         <div class="banner">
 
             {{if .CurrentUser.Id}}
-            <img class="avatar avatar24" src="/static/avatar/{{.CurrentUser.Avatar}}.jpg" alt="{{.CurrentUser.Name}}"/>&nbsp;&nbsp;&nbsp;
+            <img class="avatar avatar24" src="{{.CurrentUser.Avatar}}" alt="{{.CurrentUser.Name}}"/>&nbsp;&nbsp;&nbsp;
 
             {{if not .CurrentUser.Password }}
                 <!--<a href="/setting#3" style="color:yellow;">设置登录密码</a>&nbsp;&nbsp;&nbsp;-->
-            {{end}}
+            {{ end }}
 
             {{if gt .CurrentUser.NoticeNum 0}}
                 <a href="/notification" style="color:yellow;">{{.CurrentUser.NoticeNum}}条提醒</a>&nbsp;&nbsp;&nbsp;
             {{end}}
 
-            {{if eq .CurrentUser.Flag 0}}
+            {{if .CurrentUser.IsForbid }}
                 <span style="color:yellow;">已被禁用</span>&nbsp;&nbsp;&nbsp;
             {{else if eq .CurrentUser.Flag 1}}
                 <span style="color:yellow;">在等待审核</span>&nbsp;&nbsp;&nbsp;
-            {{end}}
+            {{ end }}
 
             <a href="/member/{{.CurrentUser.Id}}">{{.CurrentUser.Name}}</a>&nbsp;&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;&nbsp;<a href="/logout">退出</a>
 
             {{else}}
 
-            {{/*
 
             {{if .SiteCf.WeiboClientID}}
             <a href="/wblogin" rel="nofollow"><img src="/static/img/weibo_login_55_24.png" alt="微博登录" title="用微博帐号登录"/></a>&nbsp;&nbsp;
@@ -119,7 +118,6 @@
             &nbsp;&nbsp;<a href="/register" rel="nofollow">注册</a>
             {{end}}
             {{end}}
-            */}}
 
             {{end}}
         </div>
@@ -184,6 +182,18 @@
 </div>
 {{ end }}
 
+<div class="sider-box">
+    <div class="sider-box-title">站内链接</div>
+    <div class="sider-box-content">
+        <div class="btn">
+            <a href="" target="_blank">帖子热度排序</a>
+        </div>
+        <div class="btn">
+            <a href="" target="_blank">站内留言</a>
+        </div>
+        <div class="c"></div>
+    </div>
+</div>
 
 {{if .HotNodes}}
 <div class="sider-box">

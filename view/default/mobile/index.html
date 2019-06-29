@@ -18,13 +18,13 @@
         {{ if $item.Uid }}
         <div class="item-avatar">
             <a href="/member/{{$item.Uid}}">
-            <img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" />
+            <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ else }}
          <div class="item-avatar">
             <a href="/member/{{$item.Uid}}">
-                <img src="/static/avatar/2.jpg" alt="{{$item.Name}}" />
+                <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ end }}

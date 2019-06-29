@@ -3,6 +3,7 @@ package router
 import (
 	"../controller"
 	"../system"
+	"github.com/dchest/captcha"
 
 	"goji.io"
 	"goji.io/pat"
@@ -17,29 +18,29 @@ func NewRouter(app *system.Application) *goji.Mux {
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
 
-	// sp.Handle(pat.Get("/captcha/*"), captcha.Server(captcha.StdWidth, captcha.StdHeight))
+	sp.Handle(pat.Get("/captcha/*"), captcha.Server(captcha.StdWidth, captcha.StdHeight))
 
 	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
 	// sp.HandleFunc(pat.Get("/member/:uid"), h.UserDetail)
 	// sp.HandleFunc(pat.Get("/tag/:tag"), h.TagDetail)
 	// sp.HandleFunc(pat.Get("/search"), h.SearchDetail)
 
-	// sp.HandleFunc(pat.Get("/logout"), h.UserLogout)
+	sp.HandleFunc(pat.Get("/logout"), h.UserLogout)
 	// sp.HandleFunc(pat.Get("/notification"), h.UserNotification)
 
 	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	// sp.HandleFunc(pat.Post("/topic/:aid"), h.ArticleDetailPost)
+	sp.HandleFunc(pat.Post("/topic/:aid"), h.ArticleDetailPost)
 
-	// sp.HandleFunc(pat.Get("/setting"), h.UserSetting)
-	// sp.HandleFunc(pat.Post("/setting"), h.UserSettingPost)
+	sp.HandleFunc(pat.Get("/setting"), h.UserSetting)
+	sp.HandleFunc(pat.Post("/setting"), h.UserSettingPost)
 
 	// sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
 	// sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
 
-	// sp.HandleFunc(pat.Get("/login"), h.UserLogin)
-	// sp.HandleFunc(pat.Post("/login"), h.UserLoginPost)
-	// sp.HandleFunc(pat.Get("/register"), h.UserLogin)
-	// sp.HandleFunc(pat.Post("/register"), h.UserLoginPost)
+	sp.HandleFunc(pat.Get("/login"), h.UserLogin)
+	sp.HandleFunc(pat.Post("/login"), h.UserLoginPost)
+	sp.HandleFunc(pat.Get("/register"), h.UserLogin)
+	sp.HandleFunc(pat.Post("/register"), h.UserLoginPost)
 
 	// sp.HandleFunc(pat.Get("/qqlogin"), h.QQOauthHandler)
 	// sp.HandleFunc(pat.Get("/oauth/qq/callback"), h.QQOauthCallback)

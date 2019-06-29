@@ -19,6 +19,7 @@ import (
 	"./getold"
 	"./router"
 	"./system"
+	"./util"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/xi2/httpgzip"
 	goji "goji.io"
@@ -30,16 +31,18 @@ import (
 
 func tracker(next http.Handler) http.Handler {
 
+	logger := util.GetLogger()
 	f := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-
-		log.Printf("Track service %s time %s", r.URL.Path, time.Since(start))
+		logger.Noticef("Track service %s time %s", r.URL.Path, time.Since(start))
 	}
 	return http.HandlerFunc(f)
 }
 
 func main() {
+	util.InitLogger()
+	logger := util.GetLogger()
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
 
@@ -56,7 +59,7 @@ func main() {
 	app := &system.Application{}
 	sqlDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", *mysqlUser, *mysqlPass, *mysqlHost, *mysqlPort, *mysqlDB))
 	if err != nil {
-		log.Printf("Connect mysql error, %s", err)
+		logger.Debug("Connect mysql error, %s", err)
 		return
 	}
 
@@ -110,9 +113,9 @@ func main() {
 
 	if mcf.HttpsOn {
 		// https
-		log.Println("Register sll for domain:", mcf.Domain)
-		log.Println("TLSCrtFile : ", mcf.TLSCrtFile)
-		log.Println("TLSKeyFile : ", mcf.TLSKeyFile)
+		logger.Debug("Register sll for domain:", mcf.Domain)
+		logger.Debug("TLSCrtFile : ", mcf.TLSCrtFile)
+		logger.Debug("TLSKeyFile : ", mcf.TLSKeyFile)
 
 		root.Use(stlAge)
 
@@ -141,7 +144,7 @@ func main() {
 			// rewrite
 			go func() {
 				if err := http.ListenAndServe(":"+strconv.Itoa(mcf.HttpPort), http.HandlerFunc(redirectHandler)); err != nil {
-					log.Println("Http2https server failed ", err)
+					logger.Debug("Http2https server failed ", err)
 				}
 			}()
 		}
@@ -155,11 +158,11 @@ func main() {
 
 		go func() {
 			// 如何获取 TLSCrtFile、TLSKeyFile 文件参见 https://www.youbbs.org/t/2169
-			log.Fatal(srv.ListenAndServeTLS(mcf.TLSCrtFile, mcf.TLSKeyFile))
+			logger.Fatal(srv.ListenAndServeTLS(mcf.TLSCrtFile, mcf.TLSKeyFile))
 		}()
 
-		log.Println("Web server Listen port", mcf.HttpsPort)
-		log.Println("Web server URL", "https://"+mcf.Domain)
+		logger.Debug("Web server Listen port", mcf.HttpsPort)
+		logger.Debug("Web server URL", "https://"+mcf.Domain)
 
 	} else {
 		// http
@@ -169,7 +172,7 @@ func main() {
 			log.Fatal(srv.ListenAndServe())
 		}()
 
-		log.Println("Web server Listen port", *httpPort)
+		logger.Debug("Web server Listen port", *httpPort)
 	}
 
 	<-stopChan // wait for SIGINT
@@ -180,7 +183,7 @@ func main() {
 	srv.Shutdown(ctx)
 	app.Close()
 
-	log.Println("Server gracefully stopped")
+	logger.Notice("Server gracefully stopped")
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {

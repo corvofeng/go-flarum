@@ -77,6 +77,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "articlecreate.html")
 }
 
+// ArticleAddPost 添加新帖, 文章预览接口
 func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -385,10 +386,14 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
+// ArticleDetail 帖子的详情
 func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
+	var start uint64
+	var err error
+
 	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
 	if len(key) > 0 {
-		_, err := strconv.ParseUint(key, 10, 64)
+		start, err = strconv.ParseUint(key, 10, 64)
 		if err != nil {
 			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
 			return
@@ -403,25 +408,25 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aid := pat.Param(r, "aid")
-	_, err := strconv.Atoi(aid)
+	_, err = strconv.Atoi(aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"aid type err"}`))
 		return
 	}
 
-	cmd := "hscan"
-	if btn == "prev" {
-		cmd = "hrscan"
-	}
-
+	var commentsCnt uint64
 	db := h.App.Db
 	scf := h.App.Cf.Site
-	aobj, err := model.ArticleGetById(db, aid)
+	// logger := h.App.Logger
 
-	/// MySQL start
 	sqlDB := h.App.MySQLdb
-	aobj, err = model.SQLArticleGetByID(sqlDB, aid)
-	/// MySQL end
+	// 获取帖子详情
+	aobj, err := model.SQLArticleGetByID(sqlDB, aid)
+
+	// 获取帖子评论数目
+	err = sqlDB.QueryRow("SELECT COUNT(*) FROM reply where topic_id = ?", aid).Scan(&commentsCnt)
+	util.CheckError(err, "帖子评论数")
+
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
@@ -452,15 +457,11 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
-	/// MySQL start
-	cobj, err = model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
-	/// MySQL end
+	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
 
 	// hack the obj
 	err = nil
 	cobj.Hidden = false
-	//
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
@@ -479,8 +480,19 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if btn == "prev" {
+		start = start - uint64(scf.HomeShowNum) - 1
+	}
+
 	cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.Id)).Uint64()
-	pageInfo := model.CommentList(db, cmd, "article_comment:"+aid, key, scf.CommentListNum, scf.TimeZone)
+	pageInfo := model.SQLCommentList(
+		sqlDB,
+		db,
+		aobj.Id,
+		start,
+		scf.CommentListNum,
+		scf.TimeZone,
+	)
 
 	type articleForDetail struct {
 		model.Article
@@ -491,6 +503,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		Views       uint64
 		AddTimeFmt  string
 		EditTimeFmt string
+		CommentsCnt uint64
 	}
 
 	type pageData struct {
@@ -517,12 +530,13 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	author, _ := model.UserGetById(db, aobj.Uid)
+	author, _ := model.SQLUserGetByID(sqlDB, aobj.Uid)
 	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.Id), 1)
 	evn.Aobj = articleForDetail{
 		Article: aobj,
 		// ContentFmt:  template.HTML(util.ContentFmt(db, aobj.Content)),
 		ContentFmt:  template.HTML(aobj.Content),
+		CommentsCnt: commentsCnt,
 		Name:        author.Name,
 		Avatar:      author.Avatar,
 		Views:       viewsNum,
@@ -551,6 +565,9 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "article.html")
 }
 
+// ArticleDetailPost 负责处理用户的评论
+// 原有的程序中帖子与评论一起保存在文件中, 经过修改后
+// 当前的所有帖子与评论均保存在数据库中, 评论数量可以保存在文件中
 func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	token := h.GetCookie(r, "token")
@@ -613,7 +630,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 	} else if rec.Act == "comment_submit" {
 		timeStamp := uint64(time.Now().UTC().Unix())
 		currentUser, _ := h.CurrentUser(w, r)
-		if currentUser.Flag < 5 {
+		if !currentUser.CanReply() {
 			w.Write([]byte(`{"retcode":403,"retmsg":"forbidden"}`))
 			return
 		}
@@ -621,7 +638,9 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"out off comment interval"}`))
 			return
 		}
-		aobj, err := model.ArticleGetById(db, aid)
+		sqlDB := h.App.MySQLdb
+		// 获取当前的话题
+		aobj, err := model.SQLArticleGetByID(sqlDB, aid)
 		if err != nil {
 			w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 			return
@@ -639,6 +658,8 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			AddTime:  timeStamp,
 			ClientIp: r.Header.Get("X-FORWARDED-FOR"),
 		}
+
+		obj.SQLSaveComment(sqlDB)
 		jb, _ := json.Marshal(obj)
 
 		db.Hset("article_comment:"+aid, youdb.I2b(obj.Id), jb) // 文章评论bucket

@@ -66,7 +66,7 @@
 
             {{if .CurrentUser.Id}}
             {{/*
-            <a href="/member/{{.CurrentUser.Id}}"><img class="avatar avatar24" src="/static/avatar/{{.CurrentUser.Avatar}}.jpg" alt="{{.CurrentUser.Name}}"/></a>&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;<a href="/logout">退出</a>
+            <a href="/member/{{.CurrentUser.Id}}"><img class="avatar avatar24" src="{{.CurrentUser.Avatar}}" alt="{{.CurrentUser.Name}}"/></a>&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;<a href="/logout">退出</a>
             {{else}}
             {{if .SiteCf.WeiboClientID}}
             <a href="/wblogin" rel="nofollow"><img src="/static/img/weibo_login_55_24.png" alt="微博登录"/></a>
@@ -97,7 +97,7 @@
 
             {{if .CurrentUser.Id}}
 
-            {{if eq .CurrentUser.Flag 0}}
+            {{if .CurrentUser.IsForbid }}
             <div class="tiptitle">站内提醒 &raquo; <span style="color:yellow;">帐户已被管理员禁用</span></div>
             {{else if eq .CurrentUser.Flag 1}}
             <div class="tiptitle">站内提醒 &raquo; <span style="color:yellow;">帐户在等待管理员审核</span></div>
@@ -112,7 +112,6 @@
             {{end}}
 
             {{end}}
-
 
 
             {{if eq .CurrentUser.Flag 99}}
