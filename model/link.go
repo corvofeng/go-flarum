@@ -37,7 +37,6 @@ func LinkSet(db *youdb.DB, obj Link) {
 
 func SqlLinkList(db *sql.DB, getAll bool) []Link {
 	var items []Link
-	// itemMap := map[uint64]Link{}
 	rows, err := db.Query("SELECT id, title FROM topic limit 20")
 	defer func() {
 		if rows != nil {
@@ -51,15 +50,11 @@ func SqlLinkList(db *sql.DB, getAll bool) []Link {
 	for rows.Next() {
 		item := Link{}
 
-		// Id    uint64 `json:"id"`
-		// Name  string `json:"name"`
-		// Url   string `json:"url"`
 		err = rows.Scan(&item.Id, &item.Name) //不scan会导致连接不释放
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			return items
 		}
-		fmt.Print(item)
 		items = append(items, item)
 	}
 

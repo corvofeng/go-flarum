@@ -65,6 +65,10 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	var user model.User
 	var uid uint64
 	var err error
+
+	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
 		return user, errors.New("SessionID cookie not found ")
@@ -79,8 +83,6 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 			return user, nil
 		}
 	}
-	db := h.App.Db
-	sqlDB := h.App.MySQLdb
 	// 首先通过数据库获取当前用户
 	user, err = model.SQLUserGetByID(sqlDB, uid)
 
@@ -114,6 +116,7 @@ func (h *BaseHandler) SetCookie(w http.ResponseWriter, name, value string, days 
 	return err
 }
 
+// GetCookie 根据name获取当前所存的cookie值
 func (h *BaseHandler) GetCookie(r *http.Request, name string) string {
 	if cookie, err := r.Cookie(name); err == nil {
 		var value string

@@ -2,7 +2,9 @@ package system
 
 import (
 	"log"
+	"math/rand"
 	"runtime"
+	"time"
 
 	"net/url"
 	"strings"
@@ -31,6 +33,10 @@ type MainConf struct {
 	OldSiteDomain  string
 	TLSCrtFile     string
 	TLSKeyFile     string
+
+	// secure cookie 初始化时需要
+	SCHashKey  string
+	SCBlockKey string
 }
 
 type SiteConf struct {
@@ -88,6 +94,7 @@ type Application struct {
 	Sc      *securecookie.SecureCookie
 	QnZone  *storage.Zone
 	Logger  *logging.Logger
+	Rand    *rand.Rand // 负责处理随机数
 }
 
 func LoadConfig(filename string) *config.Engine {
@@ -100,6 +107,8 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 
 	mcf := &MainConf{}
 	c.GetStruct("Main", mcf)
+
+	app.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 
 	// check domain
 	if strings.HasPrefix(mcf.Domain, "http") {
@@ -139,8 +148,12 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	// set main node
 	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIds))
 
-	app.Sc = securecookie.New(securecookie.GenerateRandomKey(64),
-		securecookie.GenerateRandomKey(32))
+	app.Sc = securecookie.New(
+		[]byte(app.Cf.Main.SCHashKey),
+		[]byte(app.Cf.Main.SCBlockKey),
+		// securecookie.GenerateRandomKey(64),
+		// securecookie.GenerateRandomKey(32),
+	)
 	//app.Sc.SetSerializer(securecookie.JSONEncoder{})
 
 	app.Logger.Debug("youdb Connect to", mcf.Youdb)
