@@ -1,8 +1,13 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+
+	"../util"
+
 	"github.com/ego008/youdb"
 )
 
@@ -26,6 +31,8 @@ type User struct {
 	NoticeNum     int    `json:"noticenum"`
 	Hidden        bool   `json:"hidden"`
 	Session       string `json:"session"`
+	Token         string `json:"token"`
+	Reputation    uint64 `json:"reputation"`
 }
 
 type UserMini struct {
@@ -133,4 +140,158 @@ func UserListByFlag(db *youdb.DB, cmd, tb, key string, limit int) UserPageInfo {
 		FirstKey: firstKey,
 		LastKey:  lastKey,
 	}
+}
+
+// SQLUserGetByID 获取数据库用户
+func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
+	obj := User{}
+
+	rows, err := db.Query(
+		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE id =  ?",
+		uid)
+
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+		return obj, err
+	}
+	for rows.Next() {
+		err = rows.Scan(
+			&obj.Id,
+			&obj.Name,
+			&obj.Password,
+			&obj.Reputation,
+			&obj.Email,
+			&obj.Avatar,
+			&obj.Url,
+			&obj.Token,
+			&obj.RegTime,
+		)
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
+	}
+
+	return obj, nil
+}
+
+// SQLUserGetByName 获取数据库中用户
+func SQLUserGetByName(db *sql.DB, name string) (User, error) {
+	obj := User{}
+
+	rows, err := db.Query(
+		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE name =  ?",
+		name)
+
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+	}
+	for rows.Next() {
+		err = rows.Scan(
+			&obj.Id,
+			&obj.Name,
+			&obj.Password,
+			&obj.Reputation,
+			&obj.Email,
+			&obj.Avatar,
+			&obj.Url,
+			&obj.Token,
+			&obj.RegTime,
+		)
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
+	}
+
+	return obj, nil
+}
+
+// IsForbid 检查当前用户是否被禁用
+func (user *User) IsForbid() bool {
+	if user == nil {
+		return true
+	}
+	// flag为0 并且 声望值较小
+	if user.Flag == 0 && user.Reputation < 10 {
+		return true
+	}
+	return false
+}
+
+// CanReply 检查当前用户是否可以回复帖子
+func (user *User) CanReply() bool {
+	return !user.IsForbid()
+}
+
+// CanCreateTopic 检查当前用户是否可以创建帖子
+func (user *User) CanCreateTopic() bool {
+	return !user.IsForbid()
+}
+
+// IsAdmin 检查当前用户是否为管理员
+func (user *User) IsAdmin() bool {
+	if user == nil {
+		return false
+	}
+	if user.Reputation > 99 {
+		return true
+	}
+	return false
+}
+
+// CanEdit 检查当前用户是否可以创建帖子
+func (user *User) CanEdit() bool {
+	return user.IsAdmin()
+}
+
+// SaveAvatar 更新用户头像
+func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, avatar string) {
+	logger := util.GetLogger()
+
+	if user == nil {
+		return
+	}
+	_, err := db.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.Id)
+	if err != nil {
+		logger.Error("Set ", user, " avatar ", avatar, " failed!!")
+		return
+	}
+
+	cntDB.Hdel("avatar", youdb.I2b(user.Id))
+	logger.Notice("Refresh user avatar", user)
+	return
+}
+
+// GetAvatarByID 获取用户头像
+func GetAvatarByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
+	var avatar string
+	logger := util.GetLogger()
+
+	rs := cntDB.Hget("avatar", youdb.I2b(uid))
+	if rs.State == "ok" {
+		return rs.String()
+	}
+
+	user, err := SQLUserGetByID(db, uid)
+	if util.CheckError(err, "查询用户") {
+		return avatar
+	}
+	avatar = user.Avatar
+
+	cntDB.Hset("avatar", youdb.I2b(uid), []byte(avatar))
+	logger.Debug("key not found for ", user.Id, user.Name, "but we refresh!")
+	return avatar
 }

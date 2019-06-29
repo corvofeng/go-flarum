@@ -99,7 +99,7 @@ type ArticleTag struct {
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	obj := Article{}
-	rows, err := db.Query("SELECT id, node_id, title, content FROM topic WHERE id = ?", aid)
+	rows, err := db.Query("SELECT id, node_id, user_id, title, content FROM topic WHERE id = ?", aid)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -111,7 +111,7 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Cid, &obj.Title, &obj.Content) //不scan会导致连接不释放
+		err = rows.Scan(&obj.Id, &obj.Cid, &obj.Uid, &obj.Title, &obj.Content) //不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -132,12 +132,12 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	return obj, errors.New(rs.State)
 }
 
-// SqlCidArticleList 返回某个节点的主题
-func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz int) ArticlePageInfo {
+// SQLCidArticleList 返回某个节点的主题
+func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topic_id, start uint64, limit, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	rows, err := db.Query("SELECT id, title FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?", cid, start, limit)
+	rows, err := db.Query("SELECT id, title FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?", topic_id, start, limit)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -150,6 +150,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, cid, start uint64, limit, tz
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.Id, &item.Title) //不scan会导致连接不释放
+		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -189,7 +190,7 @@ func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) Ar
 	// var keys [][]byte
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	rows, err := db.Query("SELECT id, title FROM topic WHERE id > ? ORDER BY id limit ?", start, limit)
+	rows, err := db.Query("SELECT id, title, user_id FROM topic WHERE id > ? ORDER BY id limit ?", start, limit)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -201,7 +202,8 @@ func SqlArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, limit, tz int) Ar
 	}
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title) //不scan会导致连接不释放
+		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
+		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)

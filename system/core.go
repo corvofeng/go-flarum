@@ -13,6 +13,7 @@ import (
 
 	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"
+	logging "github.com/op/go-logging"
 	"github.com/qiniu/api.v7/storage"
 	"github.com/weint/config"
 )
@@ -86,6 +87,7 @@ type Application struct {
 	MySQLdb *sql.DB
 	Sc      *securecookie.SecureCookie
 	QnZone  *storage.Zone
+	Logger  *logging.Logger
 }
 
 func LoadConfig(filename string) *config.Engine {
@@ -132,6 +134,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	}
 	app.Db = db
 	app.MySQLdb = sqlDb
+	app.Logger = util.GetLogger()
 
 	// set main node
 	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIds))
@@ -140,11 +143,11 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 		securecookie.GenerateRandomKey(32))
 	//app.Sc.SetSerializer(securecookie.JSONEncoder{})
 
-	log.Println("youdb Connect to", mcf.Youdb)
+	app.Logger.Debug("youdb Connect to", mcf.Youdb)
 }
 
 func (app *Application) Close() {
 	app.Db.Close()
 	app.MySQLdb.Close()
-	log.Println("db cloded")
+	app.Logger.Debug("db cloded")
 }

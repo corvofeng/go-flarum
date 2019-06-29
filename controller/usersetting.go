@@ -3,14 +3,16 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"../model"
-	"../util"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"../model"
+	"../util"
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
 )
 
 func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +62,9 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger := h.App.Logger
+	sqlDB := h.App.MySQLdb
+
 	// r.ParseForm() // don't use ParseForm !important
 	act := r.FormValue("act")
 	if act == "avatar" {
@@ -95,17 +100,17 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		uid := strconv.FormatUint(currentUser.Id, 10)
-		err = util.AvatarResize(img, 73, 73, "static/avatar/"+uid+".jpg")
+		avatarPath := fmt.Sprintf("static/avatar/%s.jpg", uid)
+		logger.Debug("Save avatar", avatarPath)
+
+		err = util.AvatarResize(img, 73, 73, avatarPath)
 		if err != nil {
 			w.Write([]byte(`{"retcode":400,"retmsg":"fail to resize avatar ` + err.Error() + `"}`))
 			return
 		}
 
-		if currentUser.Avatar == "0" || len(currentUser.Avatar) == 0 {
-			currentUser.Avatar = uid
-			jb, _ := json.Marshal(currentUser)
-			h.App.Db.Hset("user", youdb.I2b(currentUser.Id), jb)
-		}
+		// 存储到数据库时, 需要带上前面的'/', 保证为绝对路径
+		currentUser.SaveAvatar(sqlDB, h.App.Db, "/"+avatarPath)
 
 		http.Redirect(w, r, "/setting#2", http.StatusSeeOther)
 		return

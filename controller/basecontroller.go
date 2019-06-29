@@ -1,17 +1,16 @@
 package controller
 
 import (
-	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"../model"
 	"../system"
-	"github.com/ego008/youdb"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
@@ -59,23 +58,41 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	return err
 }
 
+// CurrentUser 当前用户
+// 原有的策略是保存用户到文件中, 现在经过重新改写, 将从数据库中获取用户,
+// 但session的使用与原来一致, 仍然从文件中加载, 为了减轻数据库的负担.
 func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model.User, error) {
 	var user model.User
+	var uid uint64
+	var err error
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
 		return user, errors.New("SessionID cookie not found ")
 	}
 	z := strings.Split(ssValue, ":")
-	uid := z[0]
+	rawUID := z[0]
 	sessionID := z[1]
 
-	rs := h.App.Db.Hget("user", youdb.DS2b(uid))
-	if rs.State == "ok" {
-		json.Unmarshal(rs.Data[0], &user)
-		if sessionID == user.Session {
-			h.SetCookie(w, "SessionID", ssValue, 365)
+	if len(rawUID) > 0 {
+		uid, err = strconv.ParseUint(rawUID, 10, 64)
+		if err != nil {
 			return user, nil
 		}
+	}
+	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+	// 首先通过数据库获取当前用户
+	user, err = model.SQLUserGetByID(sqlDB, uid)
+
+	if err != nil {
+		return user, err
+	}
+
+	// 但是session仍然使用原文件, 是通过用户名来获取session值
+	uobj, err := model.UserGetByName(db, user.Name)
+	if sessionID == uobj.Session {
+		h.SetCookie(w, "SessionID", ssValue, 365)
+		return user, nil
 	}
 
 	return user, errors.New("user not found")
