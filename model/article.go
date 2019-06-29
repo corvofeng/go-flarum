@@ -204,7 +204,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAc
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT id, title, user_id FROM topic WHERE id <= ? ORDER BY id limit ?",
+				"SELECT * FROM (SELECT id, title, user_id FROM topic WHERE id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
 				start, limit,
 			)
 		} else {
@@ -218,7 +218,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, topicID, start uint64, btnAc
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT id, title, user_id FROM topic WHERE node_id = ? And id <= ? ORDER BY id limit ?",
+				"SELECT * FROM (SELECT id, title, user_id FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
 				topicID, start, limit,
 			)
 		} else {
