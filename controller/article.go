@@ -190,7 +190,10 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		Content:  rec.Content,
 		AddTime:  now,
 		EditTime: now,
-		ClientIp: r.Header.Get("X-FORWARDED-FOR"),
+		ClientIp: r.Header.Get("X-REAL-IP"),
+
+		Active:        1, // 帖子为激活状态
+		FatherTopicID: 0, // 没有原始主题
 	}
 	aobj.SQLCreateTopic(sqlDB)
 
@@ -785,7 +788,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			Uid:      currentUser.Id,
 			Content:  rec.Content,
 			AddTime:  timeStamp,
-			ClientIp: r.Header.Get("X-FORWARDED-FOR"),
+			ClientIp: r.Header.Get("X-REAL-IP"),
 		}
 
 		obj.SQLSaveComment(sqlDB)

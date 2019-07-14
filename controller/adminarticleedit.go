@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"../model"
 	"../util"
@@ -16,6 +17,7 @@ import (
 	"goji.io/pat"
 )
 
+// ArticleEdit 超级管理员可以编辑帖子
 func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	aid := pat.Param(r, "aid")
 	_, err := strconv.Atoi(aid)
@@ -29,21 +31,25 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
 
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 
-	aobj, err := model.ArticleGetById(db, aid)
+	// aobj, err := model.ArticleGetById(db, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
 	}
 	aidB := youdb.I2b(aobj.Id)
 
-	cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
+	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
+	// cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -115,6 +121,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "adminarticleedit.html")
 }
 
+// ArticleEditPost 超级用户修改帖子
 func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -136,7 +143,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
@@ -170,6 +177,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	rec.Tags = util.CheckTags(rec.Tags)
 
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 	if rec.Act == "preview" {
 		tmp := struct {
 			normalRsp
@@ -206,13 +214,15 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = model.CategoryGetById(db, strconv.FormatUint(rec.Cid, 10))
+	// 获取当前分类
+	_, err = model.SQLCategoryGetById(sqlDB, strconv.FormatUint(rec.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
 	}
 
-	aobj, err := model.ArticleGetById(db, aidS)
+	// 获取原始的帖子
+	aobj, err := model.SQLArticleGetByID(sqlDB, aidS)
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -237,6 +247,9 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	aobj.Content = rec.Content
 	aobj.Tags = rec.Tags
 	aobj.CloseComment = closeComment
+	aobj.ClientIp = r.Header.Get("X-REAL-IP")
+	aobj.EditTime = uint64(time.Now().UTC().Unix())
+	aobj.SQLArticleUpdate(sqlDB)
 
 	jb, _ := json.Marshal(aobj)
 	db.Hset("article", aidB, jb)
