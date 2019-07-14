@@ -15,8 +15,12 @@
         <div class="topic-title-main float-left">
             <h1>{{.Aobj.Title}}</h1>
             <div class="topic-title-date">
-                <a href="/member/{{.Aobj.Uid}}">{{.Aobj.Name}}</a>
+                By <a href="/member/{{.Aobj.Uid}}">{{.Aobj.Name}}</a>
                 {{.Aobj.AddTimeFmt}} • {{.Aobj.Views}}次点击
+
+                {{if ne .Aobj.AddTimeFmt .Aobj.EditTimeFmt }}
+                • 最后更新于: {{.Aobj.EditTimeFmt}}
+                {{end}}
 
                 {{if .CurrentUser.CanCreateTopic }}
                 {{if not .Aobj.CloseComment}}

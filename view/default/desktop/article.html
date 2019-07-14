@@ -16,6 +16,10 @@
                 By <a href="/member/{{.Aobj.Uid}}">{{.Aobj.Name}}</a>
                 at {{.Aobj.AddTimeFmt}} • {{.Aobj.Views}}次点击
 
+                {{if ne .Aobj.AddTimeFmt .Aobj.EditTimeFmt }}
+                • 最后更新于: {{.Aobj.EditTimeFmt}}
+                {{end}}
+
                 {{if .CurrentUser.CanReply }}
                 {{if not .Aobj.CloseComment}}
                  • <a href="#new-comment">回复</a>
