@@ -107,7 +107,7 @@ type ArticleTag struct {
 func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	obj := Article{}
 	rows, err := db.Query(
-		"SELECT id, node_id, user_id, title, content, updated_at, client_ip FROM topic WHERE id = ? and active !=0",
+		"SELECT id, node_id, user_id, title, content, created_at, updated_at, client_ip FROM topic WHERE id = ? and active !=0",
 		aid,
 	)
 	defer func() {
@@ -127,6 +127,7 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 			&obj.Uid,
 			&obj.Title,
 			&obj.Content,
+			&obj.AddTime,
 			&obj.EditTime,
 			&obj.ClientIp,
 		)
