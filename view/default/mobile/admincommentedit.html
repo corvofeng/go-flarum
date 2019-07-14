@@ -20,7 +20,7 @@
         <input id="btn-submit" type="submit" value=" 提 交 " name="submit" class="textbtn" />
     </div><div class="c"></div></p>
 
-    <p>clientIP: {{.Cobj.ClientIp}}</p>
+    <p>原用户IP: {{.Cobj.ClientIp}}</p>
 
     <div id="id_preview" class="topic-content"></div>
 
@@ -74,7 +74,7 @@
                 success: function(data){
                     console.log(data);
                     if(data.retcode == 200){
-                        window.location.href = "/t/"+data.aid;
+                        window.location.href = "/topic/"+data.aid;
                         return
                     }
                     $.toast(data.retmsg);

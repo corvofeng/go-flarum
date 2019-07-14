@@ -51,8 +51,8 @@ func NewRouter(app *system.Application) *goji.Mux {
 	sp.HandleFunc(pat.Post("/content/preview"), h.ContentPreviewPost)
 	// sp.HandleFunc(pat.Post("/file/upload"), h.FileUpload)
 
-	// sp.HandleFunc(pat.Get("/admin/post/edit/:aid"), h.ArticleEdit)
-	// sp.HandleFunc(pat.Post("/admin/post/edit/:aid"), h.ArticleEditPost)
+	sp.HandleFunc(pat.Get("/admin/post/edit/:aid"), h.ArticleEdit)
+	sp.HandleFunc(pat.Post("/admin/post/edit/:aid"), h.ArticleEditPost)
 	// sp.HandleFunc(pat.Get("/admin/comment/edit/:aid/:cid"), h.CommentEdit)
 	// sp.HandleFunc(pat.Post("/admin/comment/edit/:aid/:cid"), h.CommentEditPost)
 	// sp.HandleFunc(pat.Get("/admin/user/edit/:uid"), h.UserEdit)

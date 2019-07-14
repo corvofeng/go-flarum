@@ -28,7 +28,13 @@ type Article struct {
 	EditTime     uint64 `json:"edittime"`
 	Comments     uint64 `json:"comments"`
 	CloseComment bool   `json:"closecomment"`
-	Hidden       bool   `json:"hidden"`
+	Hidden       bool   `json:"hidden"` // Depreacte, do not use it.
+
+	// 帖子被管理员修改后, 已经保存的旧的帖子ID
+	FatherTopicID uint64 `json:"fathertopicid"`
+
+	// 记录当前帖子是否可以被用户看到, 与上面的hidden类似
+	Active uint64 `json:"active"`
 }
 
 type ArticleMini struct {
@@ -100,7 +106,10 @@ type ArticleTag struct {
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 	obj := Article{}
-	rows, err := db.Query("SELECT id, node_id, user_id, title, content, updated_at FROM topic WHERE id = ?", aid)
+	rows, err := db.Query(
+		"SELECT id, node_id, user_id, title, content, updated_at, client_ip FROM topic WHERE id = ? and active !=0",
+		aid,
+	)
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
@@ -119,6 +128,7 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 			&obj.Title,
 			&obj.Content,
 			&obj.EditTime,
+			&obj.ClientIp,
 		)
 
 		if err != nil {
@@ -134,9 +144,9 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 	row, err := db.Exec(
 		("INSERT INTO `topic` " +
-			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip)" +
+			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
 			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?)"),
+			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		article.Cid,
 		article.Uid,
 		article.Title,
@@ -144,12 +154,57 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 		article.AddTime,
 		article.EditTime,
 		article.ClientIp,
+		article.FatherTopicID,
+		article.Active,
 	)
 	if util.CheckError(err, "创建主题") {
 		return false
 	}
 	aid, err := row.LastInsertId()
 	article.Id = uint64(aid)
+
+	return true
+}
+
+// SQLArticleUpdate 更新当前帖子
+func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
+	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
+	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
+	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.
+	// 通过father_topic_id组成了链表的关系
+
+	// 以当前帖子为模板创建一个新的帖子
+	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
+	oldArticle, err := SQLArticleGetByID(db, strconv.FormatUint(article.Id, 10))
+	oldArticle.Active = 0
+	if util.CheckError(err, "修改时拷贝") {
+		return false
+	}
+	oldArticle.SQLCreateTopic(db)
+
+	//" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
+	_, err = db.Exec(
+		"UPDATE `topic` "+
+			"set title=?,"+
+			"content = ?,"+
+			"node_id=?,"+
+			"user_id=?,"+
+			"updated_at=?,"+
+			"client_ip=?,"+
+			"father_topic_id = ?"+
+			" where id=?",
+		article.Title,
+		article.Content,
+		article.Cid,
+		article.Uid,
+		article.EditTime,
+		article.ClientIp,
+		oldArticle.Id,
+		article.Id,
+	)
+	if util.CheckError(err, "更新帖子") {
+		return false
+	}
 
 	return true
 }
@@ -227,15 +282,16 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 	var err error
 	logger := util.GetLogger()
 	valueList := "id, title, user_id, node_id, updated_at"
+	selectList := " active != 0 "
 	if nodeID == 0 {
 		if btnAct == "" || btnAct == "next" {
 			rows, err = db.Query(
-				"SELECT "+valueList+" FROM topic WHERE id > ? ORDER BY id limit ?",
+				"SELECT "+valueList+" FROM topic WHERE id > ? and "+selectList+" ORDER BY id limit ?",
 				start, limit,
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
+				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE id < ? and "+selectList+" ORDER BY id DESC limit ?) as t ORDER BY id",
 				start, limit,
 			)
 		} else {
@@ -244,12 +300,12 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 	} else {
 		if btnAct == "" || btnAct == "next" {
 			rows, err = db.Query(
-				"SELECT "+valueList+" FROM topic WHERE node_id = ? And id > ? ORDER BY id limit ?",
+				"SELECT "+valueList+" FROM topic WHERE node_id = ? And id > ? and "+selectList+" ORDER BY id limit ?",
 				nodeID, start, limit,
 			)
 		} else if btnAct == "prev" {
 			rows, err = db.Query(
-				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE node_id = ? And id < ? ORDER BY id DESC limit ?) as t ORDER BY id",
+				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE node_id = ? and id < ? and "+selectList+" ORDER BY id DESC limit ?) as t ORDER BY id",
 				nodeID, start, limit,
 			)
 		} else {
