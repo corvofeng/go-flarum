@@ -22,7 +22,7 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}"><img src="/static/avatar/2.jpg" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.Uid}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
             <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
