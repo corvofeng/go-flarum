@@ -333,6 +333,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 	// fix
 	if si.NodeNum == 0 {
+		// 我们已经有了自己的节点, 无需再添加这一项了
 		newCid, err2 := db.HnextSequence("category")
 		if err2 == nil {
 			cobj := model.Category{

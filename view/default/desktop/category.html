@@ -27,6 +27,7 @@
         <div class="item-content">
             <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
             <span class="item-date"><a href="/node/{{$item.Cid}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
+                {{$item.ClickCnt}}次点击
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}
                  • 最后回复 <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>

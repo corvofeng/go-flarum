@@ -188,16 +188,17 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	rows, err := db.Query(
 		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE name =  ?",
 		name)
-
 	defer func() {
 		if rows != nil {
 			rows.Close() //可以关闭掉未scan连接一直占用
 		}
 	}()
+
 	if err != nil {
 		fmt.Printf("Query failed,err:%v", err)
+		return obj, err
 	}
-	for rows.Next() {
+	if rows.Next() {
 		err = rows.Scan(
 			&obj.Id,
 			&obj.Name,
@@ -210,13 +211,9 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 			&obj.RegTime,
 		)
 
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			return obj, errors.New("No result")
-		}
+		return obj, nil
 	}
-
-	return obj, nil
+	return obj, errors.New("No result")
 }
 
 // SQLRegister 用户注册
