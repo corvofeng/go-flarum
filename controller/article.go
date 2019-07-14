@@ -646,7 +646,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	author, _ := model.SQLUserGetByID(sqlDB, aobj.Uid)
 	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.Id), 1)
 
-	if author.Id == 2 && aobj.Cid == 2 {
+	if author.Id == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
 		evn.Aobj = articleForDetail{
 			Article:     aobj,
