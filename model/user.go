@@ -220,14 +220,15 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 func (user *User) SQLRegister(db *sql.DB) bool {
 	row, err := db.Exec(
 		("INSERT INTO `user` " +
-			" (`name`, `email`, `urlname`, `password`, `reputation`)" +
+			" (`name`, `email`, `urlname`, `password`, `reputation`, `avatar`)" +
 			" VALUES " +
-			" (?, ?,?, ?, ?)"),
+			" (?, ?,?, ?, ?, ?)"),
 		user.Name,
 		user.Name,
 		user.Name,
 		user.Password,
 		20, // 初始声望值20
+		"/static/avatar/3.jpg",
 	)
 	if util.CheckError(err, "用户注册") {
 		return false
