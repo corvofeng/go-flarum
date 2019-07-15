@@ -1,6 +1,6 @@
 static/avatar
 config/
-config/config.yaml
+!config/config.yaml-tpl
 mydata.db
 
 
