@@ -1,5 +1,6 @@
 static/avatar
 config/
+config/config.yaml
 mydata.db
 
 
