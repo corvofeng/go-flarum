@@ -107,11 +107,11 @@ def query_docs(q_str):
                     highlight_str = rlt.highlights('content', topic['content'])
 
             q_array.append(
-                Record(
-                    id=rlt['id'],
-                    title=rlt['title'],
-                    content=highlight_str,
-                )
+                {
+                    'id': rlt['id'],
+                    'title': rlt['title'],
+                    'content': highlight_str,
+                }
             )
 
     return q_array
@@ -120,9 +120,9 @@ def query_docs(q_str):
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         q_str = self.get_argument('query', '')
-        rlt = []
+        rlt = {'items': []}
         if query:
-            rlt = query_docs(q_str)
+            rlt['items'] = query_docs(q_str)
 
         self.write(json.dumps(rlt, ensure_ascii=False))
 

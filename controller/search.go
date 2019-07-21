@@ -1,17 +1,20 @@
 package controller
 
 import (
-	"../model"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"../model"
 )
 
 func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+	// if currentUser.Id == 0 {
+	// 	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	// 	return
+	// }
 
 	q := r.FormValue("q")
 
@@ -23,15 +26,39 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	qLow := strings.ToLower(q)
 
 	db := h.App.Db
+	logger := h.App.Logger
 	scf := h.App.Cf.Site
+	sqlDB := h.App.MySQLdb
 
-	where := "title"
-	if strings.HasPrefix(qLow, "c:") {
-		where = "content"
-		qLow = qLow[2:]
+	// where := "title"
+	// if strings.HasPrefix(qLow, "c:") {
+	// 	where = "content"
+	// 	qLow = qLow[2:]
+	// }
+
+	resp, err := http.Get("http://127.0.0.1:9192?query=" + q)
+	if err != nil {
+		logger.Error("make get error" + q)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("parse body error")
+	}
+	data := struct {
+		Items []struct {
+			ID      int    `json:"id"`
+			Title   string `json:"title"`
+			Content string `json:"content"`
+		} `json:"items"`
+	}{}
+	json.Unmarshal(body, &data)
+	articleList := make([]int, len(data.Items))
+	for _, item := range data.Items {
+		articleList = append(articleList, item.ID)
 	}
 
-	pageInfo := model.ArticleSearchList(db, where, qLow, scf.PageShowNum, scf.TimeZone)
+	// pageInfo := model.ArticleSearchList(db, where, qLow, scf.PageShowNum, scf.TimeZone)
+	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
 
 	type pageData struct {
 		PageData
