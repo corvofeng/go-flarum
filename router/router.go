@@ -24,7 +24,7 @@ func NewRouter(app *system.Application) *goji.Mux {
 	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
 	// sp.HandleFunc(pat.Get("/member/:uid"), h.UserDetail)
 	// sp.HandleFunc(pat.Get("/tag/:tag"), h.TagDetail)
-	// sp.HandleFunc(pat.Get("/search"), h.SearchDetail)
+	sp.HandleFunc(pat.Get("/search"), h.SearchDetail)
 
 	sp.HandleFunc(pat.Get("/logout"), h.UserLogout)
 	// sp.HandleFunc(pat.Get("/notification"), h.UserNotification)
