@@ -10,7 +10,13 @@
 
 
 import os
+import json
+import logging
 from collections import namedtuple
+
+import click
+import tornado
+import tornado.web
 import pymysql
 
 from whoosh import index
@@ -21,9 +27,12 @@ from whoosh.fields import *
 
 from jieba.analyse import ChineseAnalyzer
 
-# analyzer = RegexAnalyzer(r"([\u4e00-\u9fa5])|(\w+(\.?\w +)*)")
 Record = namedtuple('Record', 'id title content')
-
+debug = print
+idx_dir = './index'
+with open('db.json', 'r') as f:
+    db_cfg = json.loads(f.read())
+    db = pymysql.connect(**db_cfg)
 chinaAnalyzer = ChineseAnalyzer()
 
 # 定义索引schema,确定索引字段
@@ -31,12 +40,6 @@ schema = Schema(id=NUMERIC(stored=True),
                 title=TEXT(stored=True, analyzer=chinaAnalyzer),
                 content=TEXT(analyzer=chinaAnalyzer),
                 )
-
-db = pymysql.connect("localhost", "root", "fengyuhao", "collipa")
-debug = print
-
-
-idx_dir = './index'
 
 
 def get_index():
@@ -97,7 +100,8 @@ def query_docs(q_str):
             if not highlight_str:
                 topic = None
                 with db.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute("select * from topic where id = %s", (rlt['id']))
+                    cursor.execute(
+                        "select * from topic where id = %s and active=1", (rlt['id']))
                     topic = cursor.fetchone()
                 if topic:
                     highlight_str = rlt.highlights('content', topic['content'])
@@ -113,10 +117,71 @@ def query_docs(q_str):
     return q_array
 
 
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        q_str = self.get_argument('query', '')
+        rlt = []
+        if query:
+            rlt = query_docs(q_str)
+
+        self.write(json.dumps(rlt, ensure_ascii=False))
+
+    def post(self):
+        start = self.get_argument('start', 1)
+        end = self.get_argument('end', 2)
+        try:
+            int(start)
+            int(end)
+        except ValueError as e:
+            self.write("error")
+            return
+        incremental_index(start, end)
+        self.write("make index from {} to {} success".format(start, end))
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+    ])
+
+
+@click.group()
+def idx(): pass
+
+
+@click.group()
+def searchd(): pass
+
+
+@idx.command()
+@click.option('--start', type=int, default=1, help='topic start id')
+@click.option('--end', type=int, default=2, help='topic end id')
+def make_index(start, end):
+    incremental_index(start, end)
+
+
+@searchd.command()
+@click.option('--query', type=str, help='The string for search')
+def query(query):
+    if query:
+        debug(query_docs(query))
+
+
+@searchd.command()
+@click.option('--port', type=int, default=8888, help='The tornado http server')
+def server(port):
+    tornado.log.enable_pretty_logging()
+    app = make_app()
+    app.listen(port)
+    logging.info("This time listen to %s", port)
+    tornado.ioloop.IOLoop.current().start()
+
+
 def main():
-    incremental_index(1, 2)
+    # incremental_index(1, 2)
     debug(query_docs('细节'))
 
 
 if __name__ == "__main__":
-    main()
+    cli = click.CommandCollection(sources=[idx, searchd])
+    cli()
