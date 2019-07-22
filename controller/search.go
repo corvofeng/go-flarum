@@ -74,9 +74,9 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 			Title   string `json:"title"`
 			Content string `json:"content"`
 		} `json:"items"`
-		IsLastPage bool `json:"is_last_page"`
-		PageNum    int  `json:"pagenum"`
-		PageLen    int  `json:"pagelen"`
+		IsLastPage bool   `json:"is_last_page"`
+		PageNum    uint64 `json:"pagenum"`
+		PageLen    int    `json:"pagelen"`
 	}{}
 	json.Unmarshal(body, &data)
 
@@ -97,6 +97,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	if !data.IsLastPage {
 		pageInfo.HasNext = true
 	}
+	pageInfo.PageNum = data.PageNum
 
 	tpl := h.CurrentTpl(r)
 
