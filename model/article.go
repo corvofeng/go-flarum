@@ -71,6 +71,7 @@ type ArticlePageInfo struct {
 	FirstKey   uint64            `json:"firstkey"`
 	FirstScore uint64            `json:"firstscore"`
 	LastKey    uint64            `json:"lastkey"`
+	PageNum    uint64            `json:"pagenum"`
 	LastScore  uint64            `json:"lastscore"`
 }
 

@@ -2,19 +2,43 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"../model"
 )
 
+// SearchDetail 按关键字查找
 func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
+	btn, pn := r.FormValue("btn"), r.FormValue("pagenum")
 	// if currentUser.Id == 0 {
 	// 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 	// 	return
 	// }
+	var pagenum uint64
+	var err error
+
+	if len(pn) > 0 {
+		pagenum, err = strconv.ParseUint(pn, 10, 64)
+		if err != nil {
+			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
+			return
+		}
+	}
+	if btn == "" || btn == "next" {
+		pagenum++
+	} else if btn == "prev" {
+		if pagenum > 0 {
+			pagenum--
+		}
+	} else {
+		w.Write([]byte(`{"retcode":400,"retmsg":"btn err"}`))
+		return
+	}
 
 	q := r.FormValue("q")
 
@@ -30,19 +54,19 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 
-	// where := "title"
-	// if strings.HasPrefix(qLow, "c:") {
-	// 	where = "content"
-	// 	qLow = qLow[2:]
-	// }
-
-	resp, err := http.Get("http://127.0.0.1:9192?query=" + q)
+	var body []byte
+	resp, err := http.Get(
+		fmt.Sprintf("http://127.0.0.1:9192?query=%s&pagenum=%d&pagelen=%d",
+			q, pagenum,
+			scf.HomeShowNum,
+		))
 	if err != nil {
-		logger.Error("make get error" + q)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error("parse body error")
+		logger.Error("make get error with query: " + q)
+	} else {
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error("parse body error")
+		}
 	}
 	data := struct {
 		Items []struct {
@@ -50,20 +74,28 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 			Title   string `json:"title"`
 			Content string `json:"content"`
 		} `json:"items"`
+		IsLastPage bool `json:"is_last_page"`
+		PageNum    int  `json:"pagenum"`
+		PageLen    int  `json:"pagelen"`
 	}{}
 	json.Unmarshal(body, &data)
+
 	articleList := make([]int, len(data.Items))
 	for _, item := range data.Items {
 		articleList = append(articleList, item.ID)
 	}
-
-	// pageInfo := model.ArticleSearchList(db, where, qLow, scf.PageShowNum, scf.TimeZone)
 	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
 
 	type pageData struct {
 		PageData
 		Q        string
 		PageInfo model.ArticlePageInfo
+	}
+	if data.PageNum > 1 {
+		pageInfo.HasPrev = true
+	}
+	if !data.IsLastPage {
+		pageInfo.HasNext = true
 	}
 
 	tpl := h.CurrentTpl(r)

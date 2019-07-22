@@ -21,6 +21,7 @@ import pymysql
 
 from whoosh import index
 from whoosh.qparser import QueryParser, MultifieldParser, FuzzyTermPlugin, MultifieldPlugin
+from whoosh.searching import Hit
 from whoosh.index import create_in
 from whoosh.analysis import RegexAnalyzer
 from whoosh.fields import *
@@ -43,7 +44,6 @@ schema = Schema(id=NUMERIC(stored=True),
 
 
 def get_index():
-
     if not os.path.exists(idx_dir):
         os.mkdir(idx_dir)
         # 创建索引对象
@@ -75,6 +75,54 @@ def incremental_index(start, end):
         writer.commit()
 
 
+def highlight_for_hit(rlt: Hit):
+    """将搜索结果进行规范化
+    """
+    highlight_str = ''
+    # 首先搜索标题, 而后搜索内容
+    if not highlight_str:
+        try:
+            highlight_str = rlt.highlights('title')
+        except KeyError as e:
+            print(e)
+
+    if not highlight_str:
+        topic = None
+        with db.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(
+                "select * from topic where id = %s and active=1", (rlt['id']))
+            topic = cursor.fetchone()
+        if topic:
+            highlight_str = rlt.highlights('content', topic['content'])
+    return {
+        'id': rlt['id'],
+        'title': rlt['title'],
+        'content': highlight_str,
+    }
+
+
+def inner_query_page(q_str, pagenum: int, pagelen: int):
+    ix = get_index()
+    q_rlt = {}
+    p = QueryParser(None, ix.schema)
+    p.add_plugin(MultifieldPlugin(['content', 'title']))
+    p.add_plugin(FuzzyTermPlugin())
+    q = p.parse(q_str)
+
+    with ix.searcher() as searcher:
+        q_array = []
+        results = searcher.search_page(q, pagenum, pagelen)
+        for rlt in results:
+            q_array.append(highlight_for_hit(rlt))
+
+        q_rlt['items'] = q_array
+        q_rlt['is_last_page'] = results.is_last_page()
+        q_rlt['pagenum'] = pagenum
+        q_rlt['pagelen'] = pagelen
+
+    return q_rlt
+
+
 def query_docs(q_str):
     ix = get_index()
 
@@ -89,42 +137,25 @@ def query_docs(q_str):
     with ix.searcher() as searcher:
         results = searcher.search(q)
         for rlt in results:
-            highlight_str = ''
-            # 首先搜索标题, 而后搜索内容
-            if not highlight_str:
-                try:
-                    highlight_str = rlt.highlights('title')
-                except KeyError as e:
-                    pass
-
-            if not highlight_str:
-                topic = None
-                with db.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
-                    cursor.execute(
-                        "select * from topic where id = %s and active=1", (rlt['id']))
-                    topic = cursor.fetchone()
-                if topic:
-                    highlight_str = rlt.highlights('content', topic['content'])
-
-            q_array.append(
-                {
-                    'id': rlt['id'],
-                    'title': rlt['title'],
-                    'content': highlight_str,
-                }
-            )
+            q_array.append(highlight_for_hit(rlt))
 
     return q_array
 
 
 class MainHandler(tornado.web.RequestHandler):
+    def prepare(self):
+        self.request.uri = self.request.uri.encode('latin-1').decode('utf-8')
+
     def get(self):
         q_str = self.get_argument('query', '')
-        rlt = {'items': []}
-        if query:
-            rlt['items'] = query_docs(q_str)
+        q_pagenum = self.get_argument('q_pagenum', 1)
+        q_pagelen = self.get_argument('q_pagelen', 10)
+        q_rlt = {}
+        logging.info("This time query to %s", q_str)
+        if q_str:
+            q_rlt = inner_query_page(q_str, q_pagenum, q_pagelen)
 
-        self.write(json.dumps(rlt, ensure_ascii=False))
+        self.write(json.dumps(q_rlt, ensure_ascii=False))
 
     def post(self):
         start = self.get_argument('start', 1)
@@ -133,7 +164,7 @@ class MainHandler(tornado.web.RequestHandler):
             int(start)
             int(end)
         except ValueError as e:
-            self.write("error")
+            self.write("error in: {}".format(e))
             return
         incremental_index(start, end)
         self.write("make index from {} to {} success".format(start, end))
@@ -165,6 +196,15 @@ def make_index(start, end):
 def query(query):
     if query:
         debug(query_docs(query))
+
+
+@searchd.command()
+@click.option('--query', type=str, help='The string for search')
+@click.option('--pagenum', type=int, default=1, help='The string for search')
+@click.option('--pagelen', type=int, default=10, help='The string for search')
+def query_page(query, pagenum, pagelen):
+    if query:
+        debug(inner_query_page(query, pagenum, pagelen))
 
 
 @searchd.command()
