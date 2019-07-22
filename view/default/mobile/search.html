@@ -28,8 +28,17 @@
         {{end}}
         <div class="c"></div>
     </div>
-
     {{end}}
+
+    <div class="pagination">
+        {{if .PageInfo.HasPrev}}
+        <a href="/search?q={{.Q}}&pagenum={{.PageInfo.PageNum}}&btn=prev" class="float-left">&laquo; 上一页</a>
+        {{end}}
+        {{if .PageInfo.HasNext}}
+        <a href="/search?q={{.Q}}&pagenum={{.PageInfo.PageNum}}&&btn=next" class="float-right">下一页 &raquo;</a>
+        {{end}}
+        <div class="c"></div>
+    </div>
 
 </div>
 
