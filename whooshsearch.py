@@ -150,6 +150,12 @@ class MainHandler(tornado.web.RequestHandler):
         q_str = self.get_argument('query', '')
         q_pagenum = self.get_argument('pagenum', 1)
         q_pagelen = self.get_argument('pagelen', 10)
+        try:
+            q_pagelen = int(q_pagelen)
+            q_pagenum = int(q_pagenum)
+        except ValueError as e:
+            self.write("error in: {}".format(e))
+            return
         q_rlt = {}
         logging.info("This time query to %s", q_str)
         if q_str:
