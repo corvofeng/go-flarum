@@ -61,23 +61,8 @@
 <div class="header-wrap">
     <div class="header">
         <div class="logo"><a href="/" name="top">{{.SiteCf.Name}}</a></div>
-        <div class="scbox">
-            <script type="text/javascript">
-                var dispatch = function() {
-                    q = document.getElementById("q");
-                    if (q.value != "" && q.value != "站内搜索") {
-                        window.location.href = '/search?q=' + q.value;
-                        return false;
-                    } else {
-                        return false;
-                    }
-                }
-            </script>
-
-            <form role="search" method="get" id="searchform" onsubmit="return dispatch()" target="_blank">
-                <input type="text" maxlength="30" onfocus="if(this.value=='站内搜索') this.value='';" onblur="if(this.value=='') this.value='站内搜索';" value="搜索已经可以用了, 不信你试试" name="q" id="q">
-            </form>
-        </div>
+        <!--
+        -->
 
         <div class="banner">
 
@@ -181,6 +166,27 @@
 
 
 {{ define "side" }}
+
+<div class="nav-title">站内搜索</div>
+<div class="main-box main-box-node">
+    <div class="scbox">
+        <script type="text/javascript">
+            var dispatch = function() {
+                q = document.getElementById("q");
+                if (q.value != "" && q.value != "站内搜索") {
+                    window.location.href = '/search?q=' + q.value;
+                    return false;
+                } else {
+                    return false;
+                }
+            }
+        </script>
+
+        <form role="search" method="get" id="searchform" onsubmit="return dispatch()" target="_blank">
+            <input type="text" maxlength="30" onfocus="if(this.value=='站内搜索') this.value='';" onblur="if(this.value=='') this.value='站内搜索';" placeholder="搜索已经可以用了, 不信你试试" name="q" id="q">
+        </form>
+    </div>
+</div>
 
 <div class="nav-title">站内链接</div>
 <div class="main-box main-box-node">
