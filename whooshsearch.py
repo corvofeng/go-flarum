@@ -148,8 +148,8 @@ class MainHandler(tornado.web.RequestHandler):
 
     def get(self):
         q_str = self.get_argument('query', '')
-        q_pagenum = self.get_argument('q_pagenum', 1)
-        q_pagelen = self.get_argument('q_pagelen', 10)
+        q_pagenum = self.get_argument('pagenum', 1)
+        q_pagelen = self.get_argument('pagelen', 10)
         q_rlt = {}
         logging.info("This time query to %s", q_str)
         if q_str:
