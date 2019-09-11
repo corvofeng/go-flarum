@@ -662,7 +662,6 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 			EditTimeFmt: util.TimeFmt(aobj.EditTime, "2006-01-02 15:04", scf.TimeZone),
 		}
 	} else {
-
 		evn.Aobj = articleForDetail{
 			Article:     aobj,
 			ContentFmt:  template.HTML(util.ContentFmt(db, aobj.Content)),
@@ -673,7 +672,6 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 			AddTimeFmt:  util.TimeFmt(aobj.AddTime, "2006-01-02 15:04", scf.TimeZone),
 			EditTimeFmt: util.TimeFmt(aobj.EditTime, "2006-01-02 15:04", scf.TimeZone),
 		}
-
 	}
 
 	if len(aobj.Tags) > 0 {
@@ -685,6 +683,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	evn.Cobj = cobj
+	evn.Author = author
 	evn.Relative = model.ArticleGetRelative(db, aobj.Id, aobj.Tags)
 	evn.PageInfo = pageInfo
 
@@ -695,9 +694,31 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.InAPI {
+		type TopicData struct {
+			model.RestfulAPIBase
+			Data model.RestfulTopic `json:"data"`
+		}
+		topicData := TopicData{
+			RestfulAPIBase: model.RestfulAPIBase{
+				State: true,
+			},
+			Data: model.RestfulTopic{
+				ID:      evn.Aobj.Id,
+				UID:     evn.Author.Id,
+				Content: evn.Aobj.ContentFmt,
+				Title:   evn.Aobj.Title,
+				Author: model.RestfulUser{
+					Name:   evn.Author.Name,
+					Avatar: evn.Author.Avatar,
+				},
+				CreateAt:   evn.Aobj.EditTimeFmt,
+				VisitCount: evn.Aobj.Views,
+				Replies:    []model.RestfulReply{},
+			},
+		}
 		logger.Debug("This is in api version")
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		json.NewEncoder(w).Encode(evn.Aobj)
+		json.NewEncoder(w).Encode(topicData)
 	} else {
 		h.Render(w, tpl, evn, "layout.html", "article.html")
 	}

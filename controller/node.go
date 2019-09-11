@@ -77,9 +77,35 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	evn.NewestNodes = categories
 	if h.InAPI {
+		type NodeData struct {
+			model.RestfulAPIBase
+			Data []model.RestfulTopic `json:"data"`
+		}
+		nodeData := NodeData{
+			RestfulAPIBase: model.RestfulAPIBase{
+				State: true,
+			},
+			Data: []model.RestfulTopic{},
+		}
+		// pageInfo
+		for _, a := range pageInfo.Items {
+			nodeData.Data = append(nodeData.Data,
+				model.RestfulTopic{
+					ID:    a.Id,
+					UID:   a.Uid,
+					Title: a.Title,
+					Author: model.RestfulUser{
+						Name:   a.Name,
+						Avatar: a.Avatar,
+					},
+					CreateAt:   a.EditTimeFmt,
+					VisitCount: a.ClickCnt,
+				},
+			)
+		}
 		logger.Debug("This is in api version")
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		json.NewEncoder(w).Encode(evn.PageInfo)
+		json.NewEncoder(w).Encode(nodeData)
 	} else {
 		h.Render(w, tpl, evn, "layout.html", "category.html")
 	}
