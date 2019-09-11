@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -49,6 +50,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	db := h.App.Db
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
+	logger := h.App.Logger
 
 	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
 	if err != nil {
@@ -74,8 +76,13 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	evn.PageName = "category_detail"
 	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	evn.NewestNodes = categories
-
-	h.Render(w, tpl, evn, "layout.html", "category.html")
+	if h.InAPI {
+		logger.Debug("This is in api version")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		json.NewEncoder(w).Encode(evn.PageInfo)
+	} else {
+		h.Render(w, tpl, evn, "layout.html", "category.html")
+	}
 }
 
 func (h *BaseHandler) CategoryDetail(w http.ResponseWriter, r *http.Request) {

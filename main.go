@@ -98,6 +98,7 @@ func main() {
 	root.Handle(pat.New("/static/*"),
 		http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 
+	root.Handle(pat.New("/api/v1/*"), router.NewAPIRouter(app))
 	root.Handle(pat.New("/*"), router.NewRouter(app))
 	root.Use(tracker)
 

@@ -17,7 +17,8 @@ var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|
 
 type (
 	BaseHandler struct {
-		App *system.Application
+		App   *system.Application
+		InAPI bool
 	}
 
 	PageData struct {
