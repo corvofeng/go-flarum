@@ -6,34 +6,52 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'ubuntu-latest'
+pool: Digital
 
 variables:
-  GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.11' # Go installation path
-  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
-  modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
+  WORKDIR: /home/collipa/goyobbs-build
 
 steps:
 - script: |
-    mkdir -p '$(GOBIN)'
-    mkdir -p '$(GOPATH)/pkg'
-    mkdir -p '$(modulePath)'
-    shopt -s extglob
-    shopt -s dotglob
-    mv !(gopath) '$(modulePath)'
-    echo '##vso[task.prependpath]$(GOBIN)'
-    echo '##vso[task.prependpath]$(GOROOT)/bin'
-  displayName: 'Set up the Go workspace'
+    pwd
+    echo "$(System.DefaultWorkingDirectory)"
+  displayName: 'pwd and echo dir'
+
+- task: GoTool@0
+  displayName: 'Use Go 1.13'
+  inputs:
+    version: 1.13
 
 - script: |
-    go version
-    go get -v -t -d ./...
-    if [ -f Gopkg.toml ]; then
-        curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        dep ensure
-    fi
-    go build -v .
-  workingDirectory: '$(modulePath)'
-  displayName: 'Get dependencies, then build'
+    rsync --delete -avz --exclude '.git' --exclude 'gopath' $(System.DefaultWorkingDirectory)/* $(WORKDIR)
+  displayName: 'Sync the blog'
+
+- task: Go@0
+  displayName: 'go build'
+  inputs:
+    command: build
+    # arguments: '-o /home/collipa/goyoubbs/goyoubbs'
+    arguments: '-o /tmp/goyoubbs'
+    workingDirectory: '$(WORKDIR)'
+
+# - script: |
+#     mkdir -p '$(GOBIN)'
+#     mkdir -p '$(GOPATH)/pkg'
+#     mkdir -p '$(modulePath)'
+#     shopt -s extglob
+#     shopt -s dotglob
+#     mv !(gopath) '$(modulePath)'
+#     echo '##vso[task.prependpath]$(GOBIN)'
+#     echo '##vso[task.prependpath]$(GOROOT)/bin'
+#   displayName: 'Set up the Go workspace'
+
+# - script: |
+#     go version
+#     go get -v -t -d ./...
+#     if [ -f Gopkg.toml ]; then
+#         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+#         dep ensure
+#     fi
+#     go build -v .
+#   workingDirectory: '$(modulePath)'
+#   displayName: 'Get dependencies, then build'
