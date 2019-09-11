@@ -236,6 +236,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 	scf := h.App.Cf.Site
 
 	uid := pat.Param(r, "uid")
@@ -255,7 +256,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 		cmd = "scan"
 	}
 
-	uobj, err := model.UserGetById(db, uidi)
+	uobj, err := model.SQLUserGetByID(sqlDB, uidi)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return

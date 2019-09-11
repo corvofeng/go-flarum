@@ -531,7 +531,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	var commentsCnt uint64
 	db := h.App.Db
 	scf := h.App.Cf.Site
-	// logger := h.App.Logger
+	logger := h.App.Logger
 
 	sqlDB := h.App.MySQLdb
 	// 获取帖子详情
@@ -694,7 +694,13 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		h.SetCookie(w, "token", token, 1)
 	}
 
-	h.Render(w, tpl, evn, "layout.html", "article.html")
+	if h.InAPI {
+		logger.Debug("This is in api version")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		json.NewEncoder(w).Encode(evn.Aobj)
+	} else {
+		h.Render(w, tpl, evn, "layout.html", "article.html")
+	}
 }
 
 // ArticleDetailPost 负责处理用户的评论

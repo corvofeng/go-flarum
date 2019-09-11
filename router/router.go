@@ -9,6 +9,7 @@ import (
 	"goji.io/pat"
 )
 
+// NewRouter create the router
 func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
 	h := controller.BaseHandler{App: app}
@@ -63,6 +64,17 @@ func NewRouter(app *system.Application) *goji.Mux {
 	// sp.HandleFunc(pat.Post("/admin/category/list"), h.AdminCategoryListPost)
 	// sp.HandleFunc(pat.Get("/admin/link/list"), h.AdminLinkList)
 	// sp.HandleFunc(pat.Post("/admin/link/list"), h.AdminLinkListPost)
+
+	return sp
+}
+
+// NewAPIRouter create api router
+func NewAPIRouter(app *system.Application) *goji.Mux {
+	sp := goji.SubMux()
+	h := controller.BaseHandler{App: app, InAPI: true}
+
+	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
+	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
 
 	return sp
 }
