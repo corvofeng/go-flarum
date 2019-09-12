@@ -68,11 +68,28 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 	return categories, nil
 }
 
-// SQLCategoryGetById 通过id获取节点
-func SQLCategoryGetById(db *sql.DB, cid string) (Category, error) {
-	obj := Category{}
+// SQLCategoryGetByID 通过id获取节点
+func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
+	return sqlCategoryGet(db, cid, "")
+}
 
-	rows, err := db.Query("SELECT id, name, summary, topic_count FROM node WHERE id =  ?", cid)
+// SQLCategoryGetByName 通过name获取节点
+func SQLCategoryGetByName(db *sql.DB, name string) (Category, error) {
+	return sqlCategoryGet(db, "", name)
+}
+
+func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
+	obj := Category{}
+	var rows *sql.Rows
+	var err error
+
+	if cid != "" {
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE id =  ?", cid)
+	} else if name != "" {
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE name =  ?", name)
+	} else {
+		return obj, errors.New("Did not give any category")
+	}
 
 	defer func() {
 		if rows != nil {

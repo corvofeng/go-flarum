@@ -14,6 +14,7 @@ import (
 
 	"goyoubbs/model"
 	"goyoubbs/util"
+
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"goji.io/pat"
@@ -47,7 +48,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	// db := h.App.Db
 
-	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
+	cobj, err := model.SQLCategoryGetByID(sqlDB, cid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -169,8 +170,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// cobj, err := model.CategoryGetById(db, strconv.FormatUint(rec.Cid, 10))
-	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(rec.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -573,7 +573,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取帖子所在的节点
-	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.Cid, 10))
 
 	err = nil
 	cobj.Hidden = false

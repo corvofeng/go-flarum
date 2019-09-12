@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"goyoubbs/model"
+
 	"github.com/ego008/youdb"
 	"goji.io/pat"
 )
@@ -15,6 +16,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 
 	var start uint64
 	var err error
+	var cobj model.Category
 
 	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
 	if len(key) > 0 {
@@ -31,11 +33,30 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	cid := pat.Param(r, "cid")
-	_, err = strconv.Atoi(cid)
-	if err != nil {
-		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
-		return
+	db := h.App.Db
+	scf := h.App.Cf.Site
+	sqlDB := h.App.MySQLdb
+	logger := h.App.Logger
+
+	if h.InAPI {
+		cname := r.FormValue("tab")
+		cobj, err = model.SQLCategoryGetByName(sqlDB, cname)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+	} else {
+		cid := pat.Param(r, "cid")
+		_, err = strconv.Atoi(cid)
+		if err != nil {
+			w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
+			return
+		}
+		cobj, err = model.SQLCategoryGetByID(sqlDB, cid)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 
 	tpl := h.CurrentTpl(r)
@@ -47,16 +68,6 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	}
 
 	evn := &pageData{}
-	db := h.App.Db
-	scf := h.App.Cf.Site
-	sqlDB := h.App.MySQLdb
-	logger := h.App.Logger
-
-	cobj, err := model.SQLCategoryGetById(sqlDB, cid)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
 
 	pageInfo := model.SQLCidArticleList(sqlDB, db, cobj.Id, start, btn, scf.HomeShowNum, scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
