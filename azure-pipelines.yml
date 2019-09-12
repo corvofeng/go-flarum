@@ -30,8 +30,7 @@ steps:
   displayName: 'go build'
   inputs:
     command: build
-    # arguments: '-o /home/collipa/goyoubbs/goyoubbs'
-    arguments: '-o /tmp/goyoubbs'
+    arguments: '-o /home/collipa/goyoubbs/goyoubbs'
     workingDirectory: '$(WORKDIR)'
 
 # - script: |
