@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"../model"
+	"goyoubbs/model"
 )
 
 // SearchDetail 按关键字查找

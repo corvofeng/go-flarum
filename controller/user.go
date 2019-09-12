@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"../model"
-	"../util"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"github.com/dchest/captcha"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"

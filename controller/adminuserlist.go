@@ -2,8 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"../model"
-	"../util"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"net/http"

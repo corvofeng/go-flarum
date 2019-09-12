@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"../model"
-	"../system"
+	"goyoubbs/model"
+	"goyoubbs/system"
 	"github.com/boltdb/bolt"
 	"github.com/ego008/youdb"
 	"github.com/weint/httpclient"

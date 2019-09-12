@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"../model"
-	"../util"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 )
