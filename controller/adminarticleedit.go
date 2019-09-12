@@ -12,6 +12,7 @@ import (
 
 	"goyoubbs/model"
 	"goyoubbs/util"
+
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"goji.io/pat"
@@ -48,7 +49,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	}
 	aidB := youdb.I2b(aobj.Id)
 
-	cobj, err := model.SQLCategoryGetById(sqlDB, strconv.FormatUint(aobj.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.Cid, 10))
 	// cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
@@ -215,7 +216,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取当前分类
-	_, err = model.SQLCategoryGetById(sqlDB, strconv.FormatUint(rec.Cid, 10))
+	_, err = model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.Cid, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return

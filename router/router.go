@@ -3,6 +3,7 @@ package router
 import (
 	"goyoubbs/controller"
 	"goyoubbs/system"
+
 	"github.com/dchest/captcha"
 
 	"goji.io"
@@ -75,6 +76,7 @@ func NewAPIRouter(app *system.Application) *goji.Mux {
 
 	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
 	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
+	sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
 
 	return sp
 }
