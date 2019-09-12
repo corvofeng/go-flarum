@@ -2,9 +2,9 @@ package controller
 
 import (
 	"encoding/json"
-	"../lib/qqOAuth"
-	"../model"
-	"../util"
+	"goyoubbs/lib/qqOAuth"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"net/http"

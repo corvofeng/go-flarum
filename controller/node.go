@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"../model"
+	"goyoubbs/model"
 	"github.com/ego008/youdb"
 	"goji.io/pat"
 )

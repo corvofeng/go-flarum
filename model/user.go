@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"../util"
+	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
 )

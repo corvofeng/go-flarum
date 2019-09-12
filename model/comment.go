@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"html/template"
 
-	"../util"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 )
 

@@ -11,7 +11,7 @@ import (
 
 	"database/sql"
 
-	"../util"
+	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"

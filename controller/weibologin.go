@@ -2,9 +2,9 @@ package controller
 
 import (
 	"encoding/json"
-	"../lib/weiboOAuth"
-	"../model"
-	"../util"
+	"goyoubbs/model"
+	"goyoubbs/util"
+	"goyoubbs/lib/weiboOAuth"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"net/http"

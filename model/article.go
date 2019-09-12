@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"../util"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 )
 

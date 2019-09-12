@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"../model"
-	"../system"
-	"../util"
+	"goyoubbs/model"
+	"goyoubbs/system"
+	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/weint/httpclient"
 )
