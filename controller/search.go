@@ -80,9 +80,9 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	}{}
 	json.Unmarshal(body, &data)
 
-	articleList := make([]int, len(data.Items))
+	articleList := make([]uint64, len(data.Items))
 	for _, item := range data.Items {
-		articleList = append(articleList, item.ID)
+		articleList = append(articleList, uint64(item.ID))
 	}
 	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
 

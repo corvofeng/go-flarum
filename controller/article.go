@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -367,7 +368,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	si.PostNum = count
 
 	// 获取贴子列表
-	pageInfo := model.SQLArticleList(sqlDB, db, start, btn, scf.HomeShowNum, scf.TimeZone)
+	pageInfo := model.SQLArticleList(sqlDB, db, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
@@ -453,25 +454,27 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 
 	si.PostNum = count
 
-	articleList := make([]int, scf.HomeShowNum)
+	articleList := make([]uint64, int(scf.HomeShowNum))
+	fmt.Println(articleList)
 
 	func() {
 		// 获得一些不重复的随机数
-		m := make(map[int]int)
+		m := make(map[uint64]uint64)
 		for len(m) < scf.HomeShowNum {
-			n := h.App.Rand.Intn(int(count))
+			n := uint64(h.App.Rand.Intn(int(count)))
 			if m[n] == n {
 				continue
 			} else {
 				m[n] = n
 			}
 		}
+		fmt.Println(m)
 		i := 0
 		for _, v := range m {
 			articleList[i] = v
 			i++
 		}
-		sort.Ints(articleList)
+		sort.Slice(articleList, func(i, j int) bool { return articleList[i] < articleList[j] })
 	}()
 
 	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
