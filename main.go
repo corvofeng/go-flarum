@@ -15,15 +15,17 @@ import (
 	"syscall"
 	"time"
 
+	"goyoubbs/cronjob"
+	"goyoubbs/getold"
+	"goyoubbs/model"
+	"goyoubbs/router"
+	"goyoubbs/system"
+	"goyoubbs/util"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/xi2/httpgzip"
 	goji "goji.io"
 	"goji.io/pat"
-	"goyoubbs/cronjob"
-	"goyoubbs/getold"
-	"goyoubbs/router"
-	"goyoubbs/system"
-	"goyoubbs/util"
 
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
@@ -63,6 +65,7 @@ func main() {
 		return
 	}
 
+	model.RankMapInit(10)
 	app.Init(c, os.Args[0], sqlDb)
 
 	if *getOldSite == "1" || *getOldSite == "2" {

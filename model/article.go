@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"goyoubbs/util"
+
 	"github.com/ego008/youdb"
 )
 
@@ -212,7 +213,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
 }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) ArticlePageInfo {
+func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -225,7 +226,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) Artic
 		if len(articleListStr) > 0 {
 			articleListStr += ", "
 		}
-		articleListStr += strconv.Itoa(v)
+		articleListStr += strconv.FormatInt(int64(v), 10)
 	}
 	sql := "select id, title, user_id from topic where id in (" + articleListStr + ")"
 
@@ -239,6 +240,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) Artic
 		logger.Errorf("Query failed,err:%v", err)
 		return ArticlePageInfo{}
 	}
+	m := make(map[uint64]ArticleListItem)
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
@@ -250,7 +252,13 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []int) Artic
 		}
 		rep := cacheDB.Hget("article_views", youdb.I2b(item.Id))
 		item.ClickCnt = rep.Uint64()
-		items = append(items, item)
+		m[item.Id] = item
+	}
+
+	for _, id := range articleList {
+		if item, ok := m[id]; ok {
+			items = append(items, item)
+		}
 	}
 
 	return ArticlePageInfo{
@@ -274,9 +282,30 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	return obj, errors.New(rs.State)
 }
 
+// SQLCidArticleListByPage 根据页码获取某个分类的列表
+func SQLCidArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit uint64, tz int) ArticlePageInfo {
+	articleList := GetTopicListByPageNum(nodeID, page, limit)
+	var pageInfo ArticlePageInfo
+	if len(articleList) == 0 {
+		pageInfo = SQLCidArticleList(db, cntDB, nodeID, GetCidArticleMax(nodeID), "next", limit, tz)
+		// 先前没有缓存, 需要加入到rank map中
+		var items []ArticleRankItem
+		for _, a := range pageInfo.Items {
+			items = append(items, ArticleRankItem{
+				AID:    a.Id,
+				Weight: a.ClickCnt,
+			})
+		}
+		AddNewArticleList(nodeID, items)
+	} else {
+		pageInfo = SQLArticleGetByList(db, cntDB, articleList)
+	}
+	return pageInfo
+}
+
 // SQLCidArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
-func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
+func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -352,7 +381,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 		}
 
 		// 查询出的数量比要求的数量要少, 说明没有下一页
-		if len(items) < limit {
+		if uint64(len(items)) < limit {
 			hasNext = false
 		}
 	}
@@ -369,7 +398,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 }
 
 // SQLArticleList 返回所有节点的主题
-func SQLArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, btnAct string, limit, tz int) ArticlePageInfo {
+func SQLArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	return SQLCidArticleList(
 		db, cntDB, 0, start, btnAct, limit, tz,
 	)
