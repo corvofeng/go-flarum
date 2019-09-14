@@ -33,6 +33,18 @@ steps:
     arguments: '-o /home/collipa/goyoubbs/goyoubbs'
     workingDirectory: '$(WORKDIR)'
 
+- task: CopyFiles@2
+  displayName: 'Copy Files to: /home/collipa/goyoubbs'
+  inputs:
+    SourceFolder: '$(WORKDIR)'
+    Contents: |
+     !.git/**/*
+     **/goyoubbs
+     **/view/**
+     **/static/**
+     whooshsearch.py
+    TargetFolder: /home/collipa/goyoubbs
+    OverWrite: true
 # - script: |
 #     mkdir -p '$(GOBIN)'
 #     mkdir -p '$(GOPATH)/pkg'
