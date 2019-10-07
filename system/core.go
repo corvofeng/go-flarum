@@ -1,7 +1,7 @@
 package system
 
 import (
-	"log"
+	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
@@ -25,6 +25,11 @@ type MainConf struct {
 	HttpsOn        bool
 	Domain         string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
 	HttpsPort      int
+	MySQL_HOST     string
+	MySQL_PORT     string
+	MySQL_USER     string
+	MySQL_PASS     string
+	MySQL_DB       string
 	PubDir         string
 	ViewDir        string
 	Youdb          string
@@ -103,10 +108,11 @@ func LoadConfig(filename string) *config.Engine {
 	return c
 }
 
-func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sql.DB) {
+func (app *Application) Init(c *config.Engine, currentFilePath string) {
 
 	mcf := &MainConf{}
 	c.GetStruct("Main", mcf)
+	logger := util.GetLogger()
 
 	app.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 
@@ -114,7 +120,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	if strings.HasPrefix(mcf.Domain, "http") {
 		dm, err := url.Parse(mcf.Domain)
 		if err != nil {
-			log.Fatal("domain fmt err", err)
+			logger.Fatal("domain fmt err", err)
 		}
 		mcf.Domain = dm.Host
 	} else {
@@ -127,7 +133,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	fMd5, _ := util.HashFileMD5(currentFilePath)
 	scf.MD5Sums = fMd5
 	scf.MainDomain = strings.Trim(scf.MainDomain, "/")
-	// log.Println("MainDomain:", scf.MainDomain)
 	if scf.TimeZone < -12 || scf.TimeZone > 12 {
 		scf.TimeZone = 0
 	}
@@ -139,7 +144,15 @@ func (app *Application) Init(c *config.Engine, currentFilePath string, sqlDb *sq
 	app.Cf = &AppConf{mcf, scf}
 	db, err := youdb.Open(mcf.Youdb)
 	if err != nil {
-		log.Fatalf("Connect Error: %v", err)
+		logger.Fatalf("Connect Error: %v", err)
+	}
+	dbStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
+	logger.Debug("Get db str: ", dbStr)
+
+	sqlDb, err := sql.Open("mysql", dbStr)
+	if err != nil {
+		logger.Errorf("Connect mysql error, %s", err)
+		return
 	}
 	app.Db = db
 	app.MySQLdb = sqlDb
