@@ -6,6 +6,7 @@ Main:
     MySQL_USER: "root"
     MySQL_PASS: ""
     MySQL_DB: "goyoubbs"
+    MySQL_PORT: "3306"
     HttpsPort: 443
     PubDir: "static"
     ViewDir: "view/default"
