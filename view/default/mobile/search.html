@@ -13,6 +13,9 @@
         </div>
         <div class="item-content">
             <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
+            <div>
+            关键字: {{ $item.HighlightContent }}
+            </div>
             <span class="item-date">
                 <a href="/node/{{$item.Cid}}">{{$item.Cname}}</a>
                 • {{$item.EditTimeFmt}}
