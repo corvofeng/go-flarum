@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"html/template"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -59,9 +60,10 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("http://127.0.0.1:9192?query=%s&pagenum=%d&pagelen=%d",
 			q, pagenum,
 			scf.HomeShowNum,
-		))
+		),
+	)
 	if err != nil {
-		logger.Error("make get error with query: " + q)
+		logger.Errorf("Search %s with error: %s ", q, err)
 	} else {
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -84,7 +86,17 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	for _, item := range data.Items {
 		articleList = append(articleList, uint64(item.ID))
 	}
+	// Although we get data from the search API, it is necessary to
+	// check the data in the database, also we need get article title.
 	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
+
+	for _, item := range data.Items {
+		for idx := range pageInfo.Items {
+			if uint64(item.ID) == pageInfo.Items[idx].Id {
+				pageInfo.Items[idx].HighlightContent = template.HTML(item.Content)
+			}
+		}
+	}
 
 	type pageData struct {
 		PageData

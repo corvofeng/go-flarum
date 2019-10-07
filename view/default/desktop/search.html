@@ -13,6 +13,11 @@
         </div>
         <div class="item-content">
             <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
+            <!-- <span> -->
+            <div>
+            关键字: {{ $item.HighlightContent }}
+            </div>
+            <!-- </span> -->
             <span class="item-date"><a href="/node/{{$item.Cid}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"goyoubbs/util"
+	"html/template"
 
 	"github.com/ego008/youdb"
 )
@@ -49,6 +50,7 @@ type ArticleMini struct {
 	Hidden   bool   `json:"hidden"`
 }
 
+// ArticleListItem data strucy only used in page.
 type ArticleListItem struct {
 	Id          uint64 `json:"id"`
 	Uid         uint64 `json:"uid"`
@@ -63,8 +65,15 @@ type ArticleListItem struct {
 	EditTimeFmt string `json:"edittimefmt"`
 	ClickCnt    uint64 `json:"clickcnt"`
 	Comments    uint64 `json:"comments"`
+
+	/**
+	 * When in search page, every article item have the highlight content,
+	 * we need tell users that we do not return a random list.
+	 */
+	HighlightContent template.HTML `json:"highlight_content"`
 }
 
+// ArticlePageInfo data in every list page
 type ArticlePageInfo struct {
 	Items      []ArticleListItem `json:"items"`
 	HasPrev    bool              `json:"hasprev"`
@@ -221,6 +230,13 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) Ar
 	var err error
 	logger := util.GetLogger()
 	articleListStr := ""
+
+	var articlePageInfo ArticlePageInfo
+
+	if len(articleList) == 0 {
+		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
+		return articlePageInfo
+	}
 
 	for _, v := range articleList {
 		if len(articleListStr) > 0 {
