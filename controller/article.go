@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -401,6 +400,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	var err error
 	db := h.App.Db
 	scf := h.App.Cf.Site
+	logger := h.App.Logger
 
 	type siteInfo struct {
 		Days     int
@@ -448,27 +448,29 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	// 获取全部的帖子数目
 	err = sqlDB.QueryRow("SELECT COUNT(*) FROM topic").Scan(&count)
 	if err != nil {
-		log.Printf("Error %s", err)
+		logger.Debugf("Error %s", err)
 		return
 	}
 
 	si.PostNum = count
+	luckNum := uint64(scf.HomeShowNum)
+	if luckNum > count {
+		luckNum = count
+	}
 
-	articleList := make([]uint64, int(scf.HomeShowNum))
-	fmt.Println(articleList)
+	articleList := make([]uint64, luckNum)
 
 	func() {
 		// 获得一些不重复的随机数
 		m := make(map[uint64]uint64)
-		for len(m) < scf.HomeShowNum {
-			n := uint64(h.App.Rand.Intn(int(count)))
+		for uint64(len(m)) < luckNum {
+			n := uint64(h.App.Rand.Intn(int(count + 1)))
 			if m[n] == n {
 				continue
 			} else {
 				m[n] = n
 			}
 		}
-		fmt.Println(m)
 		i := 0
 		for _, v := range m {
 			articleList[i] = v
@@ -476,6 +478,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 		}
 		sort.Slice(articleList, func(i, j int) bool { return articleList[i] < articleList[j] })
 	}()
+	logger.Debug("Get Article List", articleList)
 
 	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
 	categories, err := model.SQLGetAllCategory(sqlDB)
