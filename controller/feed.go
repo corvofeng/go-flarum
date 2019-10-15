@@ -24,8 +24,8 @@ func (h *BaseHandler) FeedHandler(w http.ResponseWriter, r *http.Request) {
 	{{range $_, $item := .Items}}
 	<entry>
 		<title>{{$item.Title}}</title>
-		<id>` + scf.MainDomain + `/t/{{$item.Id}}</id>
-		<link rel="alternate" type="text/html" href="` + scf.MainDomain + `/t/{{$item.Id}}" />
+		<id>t-{{$item.ID}}</id>
+		<link rel="alternate" type="text/html" href="` + scf.MainDomain + `/t/{{$item.ID}}" />
 		<published>{{$item.AddTimeFmt}}</published>
 		<updated>{{$item.EditTimeFmt}}</updated>
 		<content type="text/plain">

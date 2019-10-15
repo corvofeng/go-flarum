@@ -23,22 +23,22 @@ func (h *BaseHandler) QQOauthHandler(w http.ResponseWriter, r *http.Request) {
 	// qqOAuth.Logging = true
 
 	now := time.Now().UTC().Unix()
-	qqUrlState := strconv.FormatInt(now, 10)[6:]
+	qqURLState := strconv.FormatInt(now, 10)[6:]
 
-	urlStr, err := qq.GetAuthorizationURL(qqUrlState)
+	urlStr, err := qq.GetAuthorizationURL(qqURLState)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	h.SetCookie(w, "QQUrlState", qqUrlState, 1)
+	h.SetCookie(w, "QQURLState", qqURLState, 1)
 	http.Redirect(w, r, urlStr, http.StatusSeeOther)
 }
 
 func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
-	qqUrlState := h.GetCookie(r, "QQUrlState")
-	if len(qqUrlState) == 0 {
-		w.Write([]byte(`qqUrlState cookie missed`))
+	qqURLState := h.GetCookie(r, "QQURLState")
+	if len(qqURLState) == 0 {
+		w.Write([]byte(`qqURLState cookie missed`))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := r.FormValue("state")
-	if state != qqUrlState {
+	if state != qqURLState {
 		w.Write([]byte("Invalid state"))
 		return
 	}
@@ -82,7 +82,7 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 		// login
 		obj := model.QQ{}
 		json.Unmarshal(rs.Data[0], &obj)
-		uobj, err := model.UserGetById(db, obj.Uid)
+		uobj, err := model.UserGetByID(db, obj.UID)
 		if err != nil {
 			w.Write([]byte(err.Error()))
 			return
@@ -91,8 +91,8 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 		uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
 		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.Id), jb)
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.Id, 10)+":"+sessionid, 365)
+		db.Hset("user", youdb.I2b(uobj.ID), jb)
+		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -132,12 +132,12 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	userId, _ := db.HnextSequence("user")
+	userID, _ := db.HnextSequence("user")
 	flag := 5
 	if siteCf.RegReview {
 		flag = 1
 	}
-	if userId == 1 {
+	if userID == 1 {
 		flag = 99
 	}
 
@@ -147,7 +147,7 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uobj := model.User{
-		Id:            userId,
+		ID:            userID,
 		Name:          name,
 		Flag:          flag,
 		Gender:        gender,
@@ -156,7 +156,7 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 		Session:       xid.New().String(),
 	}
 
-	uidStr := strconv.FormatUint(userId, 10)
+	uidStr := strconv.FormatUint(userID, 10)
 	savePath := "static/avatar/" + uidStr + ".jpg"
 	err = util.FetchAvatar(profile.Avatar, savePath, r.UserAgent())
 	if err != nil {
@@ -169,18 +169,18 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jb, _ := json.Marshal(uobj)
-	db.Hset("user", youdb.I2b(uobj.Id), jb)
-	db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(userId))
-	db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.Id), []byte(""))
+	db.Hset("user", youdb.I2b(uobj.ID), jb)
+	db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(userID))
+	db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.ID), []byte(""))
 
 	obj := model.QQ{
-		Uid:    userId,
+		UID:    userID,
 		Name:   name,
 		Openid: openid.OpenID,
 	}
 	jb, _ = json.Marshal(obj)
 	db.Hset("oauth_qq", []byte(openid.OpenID), jb)
 
-	h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.Id, 10)+":"+uobj.Session, 365)
+	h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

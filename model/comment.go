@@ -12,18 +12,18 @@ import (
 )
 
 type Comment struct {
-	Id       uint64 `json:"id"`
+	ID       uint64 `json:"id"`
 	Aid      uint64 `json:"aid"`
-	Uid      uint64 `json:"uid"`
+	UID      uint64 `json:"uid"`
 	Content  string `json:"content"`
 	ClientIp string `json:"clientip"`
 	AddTime  uint64 `json:"addtime"`
 }
 
 type CommentListItem struct {
-	Id         uint64 `json:"id"`
+	ID         uint64 `json:"id"`
 	Aid        uint64 `json:"aid"`
-	Uid        uint64 `json:"uid"`
+	UID        uint64 `json:"uid"`
 	Name       string `json:"name"`
 	UserName   string `json:"username"`
 	Avatar     string `json:"avatar"`
@@ -48,7 +48,7 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 			"(`user_id`, `topic_id`, `client_ip`, `content`, `created_at`, `updated_at`)" +
 			"VALUES " +
 			"(?, ?, ?, ?, ?, ?)"),
-		comment.Uid,
+		comment.UID,
 		comment.Aid,
 		comment.ClientIp,
 		comment.Content,
@@ -59,7 +59,7 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 		return
 	}
 	cid, err := rows.LastInsertId()
-	comment.Id = uint64(cid)
+	comment.ID = uint64(cid)
 }
 
 // SQLCommentList 获取在数据库中存储的评论
@@ -98,9 +98,9 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct
 	}()
 	for rows.Next() {
 		item := CommentListItem{}
-		err = rows.Scan(&item.Id, &item.Uid, &item.Aid, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(db, cacheDB, item.Uid)
-		item.UserName = GetUserNameByID(db, cacheDB, item.Uid)
+		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
+		item.Avatar = GetAvatarByID(db, cacheDB, item.UID)
+		item.UserName = GetUserNameByID(db, cacheDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -117,8 +117,8 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct
 	}
 
 	if len(items) > 0 {
-		firstKey = items[0].Id
-		lastKey = items[len(items)-1].Id
+		firstKey = items[0].ID
+		lastKey = items[len(items)-1].ID
 		hasNext = true
 		hasPrev = true
 	}
@@ -174,8 +174,8 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 				item := Comment{}
 				json.Unmarshal(rs.Data[i+1], &item)
 				citems = append(citems, item)
-				userMap[item.Uid] = UserMini{}
-				userKeys = append(userKeys, youdb.I2b(item.Uid))
+				userMap[item.UID] = UserMini{}
+				userKeys = append(userKeys, youdb.I2b(item.UID))
 			}
 		}
 	} else if cmd == "hscan" {
@@ -185,8 +185,8 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 				item := Comment{}
 				json.Unmarshal(rs.Data[i+1], &item)
 				citems = append(citems, item)
-				userMap[item.Uid] = UserMini{}
-				userKeys = append(userKeys, youdb.I2b(item.Uid))
+				userMap[item.UID] = UserMini{}
+				userKeys = append(userKeys, youdb.I2b(item.UID))
 			}
 		}
 	}
@@ -197,16 +197,16 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := UserMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.Id] = item
+				userMap[item.ID] = item
 			}
 		}
 
 		for _, citem := range citems {
-			user := userMap[citem.Uid]
+			user := userMap[citem.UID]
 			item := CommentListItem{
-				Id:         citem.Id,
+				ID:         citem.ID,
 				Aid:        citem.Aid,
-				Uid:        citem.Uid,
+				UID:        citem.UID,
 				Name:       user.Name,
 				Avatar:     user.Avatar,
 				AddTime:    citem.AddTime,
@@ -215,9 +215,9 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 			}
 			items = append(items, item)
 			if firstKey == 0 {
-				firstKey = item.Id
+				firstKey = item.ID
 			}
-			lastKey = item.Id
+			lastKey = item.ID
 		}
 
 		rs = db.Hrscan(tb, youdb.I2b(firstKey), 1)

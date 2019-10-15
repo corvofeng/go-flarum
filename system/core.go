@@ -51,7 +51,7 @@ type SiteConf struct {
 	Desc              string
 	AdminEmail        string
 	MainDomain        string // 上传图片后添加网址前缀, eg: http://domian.com 、http://234.21.35.89:8082
-	MainNodeIds       string
+	MainNodeIDs       string
 	TimeZone          int
 	HomeShowNum       int
 	PageShowNum       int
@@ -159,7 +159,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	app.Logger = util.GetLogger()
 
 	// set main node
-	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIds))
+	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))
 
 	app.Sc = securecookie.New(
 		[]byte(app.Cf.Main.SCHashKey),

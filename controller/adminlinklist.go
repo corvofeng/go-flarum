@@ -22,8 +22,8 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		lobj = model.LinkGetById(db, lid)
-		if lobj.Id == 0 {
+		lobj = model.LinkGetByID(db, lid)
+		if lobj.ID == 0 {
 			w.Write([]byte(`{"retcode":404,"retmsg":"id not found"}`))
 			return
 		}
@@ -32,7 +32,7 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -77,7 +77,7 @@ func (h *BaseHandler) AdminLinkListPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -100,9 +100,9 @@ func (h *BaseHandler) AdminLinkListPost(w http.ResponseWriter, r *http.Request) 
 	defer r.Body.Close()
 
 	rec.Name = strings.TrimSpace(rec.Name)
-	rec.Url = strings.TrimSpace(rec.Url)
+	rec.URL = strings.TrimSpace(rec.URL)
 
-	if len(rec.Name) == 0 || len(rec.Url) == 0 {
+	if len(rec.Name) == 0 || len(rec.URL) == 0 {
 		w.Write([]byte(`{"retcode":400,"retmsg":"missed arg"}`))
 		return
 	}

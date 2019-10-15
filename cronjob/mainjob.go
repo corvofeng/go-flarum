@@ -76,7 +76,7 @@ func dataBackup(db *youdb.DB) {
 	}
 }
 
-func getTagFromTitle(db *youdb.DB, apiUrl string) {
+func getTagFromTitle(db *youdb.DB, apiURL string) {
 	rs := db.Hscan("task_to_get_tag", []byte(""), 1)
 	if rs.State == "ok" {
 		aidB := rs.Data[0][:]
@@ -93,7 +93,7 @@ func getTagFromTitle(db *youdb.DB, apiUrl string) {
 			return
 		}
 
-		hc := httpclient.NewHttpClientRequest("POST", apiUrl)
+		hc := httpclient.NewHttpClientRequest("POST", apiURL)
 		hc.Param("state", "ok")
 		hc.Param("ms", string(rs.Data[1]))
 
@@ -113,22 +113,22 @@ func getTagFromTitle(db *youdb.DB, apiUrl string) {
 				}
 
 				// get once more
-				rs2 := db.Hget("article", youdb.I2b(aobj.Id))
+				rs2 := db.Hget("article", youdb.I2b(aobj.ID))
 				if rs2.State == "ok" {
 					aobj := model.Article{}
 					json.Unmarshal(rs2.Data[0], &aobj)
 					aobj.Tags = strings.Join(tags, ",")
 					jb, _ := json.Marshal(aobj)
-					db.Hset("article", youdb.I2b(aobj.Id), jb)
+					db.Hset("article", youdb.I2b(aobj.ID), jb)
 
 					// tag send task work，自动处理tag与文章id
 					at := model.ArticleTag{
-						Id:      aobj.Id,
+						ID:      aobj.ID,
 						OldTags: "",
 						NewTags: aobj.Tags,
 					}
 					jb, _ = json.Marshal(at)
-					db.Hset("task_to_set_tag", youdb.I2b(at.Id), jb)
+					db.Hset("task_to_set_tag", youdb.I2b(at.ID), jb)
 				}
 			}
 			db.Hdel("task_to_get_tag", aidB)
@@ -144,7 +144,7 @@ func setArticleTag(db *youdb.DB) {
 		if err != nil {
 			return
 		}
-		//log.Println("aid", info.Id)
+		//log.Println("aid", info.ID)
 
 		// set tag
 		oldTag := strings.Split(info.OldTags, ",")
@@ -161,7 +161,7 @@ func setArticleTag(db *youdb.DB) {
 			}
 			if !contains {
 				tagLower := strings.ToLower(tag1)
-				db.Hdel("tag:"+tagLower, youdb.I2b(info.Id))
+				db.Hdel("tag:"+tagLower, youdb.I2b(info.ID))
 				db.Zincr("tag_article_num", []byte(tagLower), -1)
 			}
 		}
@@ -183,13 +183,13 @@ func setArticleTag(db *youdb.DB) {
 					db.HnextSequence("tag") // 添加这一行
 				}
 				// check if not exist !important
-				if db.Hget("tag:"+tagLower, youdb.I2b(info.Id)).State != "ok" {
-					db.Hset("tag:"+tagLower, youdb.I2b(info.Id), []byte(""))
+				if db.Hget("tag:"+tagLower, youdb.I2b(info.ID)).State != "ok" {
+					db.Hset("tag:"+tagLower, youdb.I2b(info.ID), []byte(""))
 					db.Zincr("tag_article_num", []byte(tagLower), 1)
 				}
 			}
 		}
 
-		db.Hdel("task_to_set_tag", youdb.I2b(info.Id))
+		db.Hdel("task_to_set_tag", youdb.I2b(info.ID))
 	}
 }

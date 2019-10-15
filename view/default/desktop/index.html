@@ -15,28 +15,28 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
 
-        {{ if $item.Uid }}
+        {{ if $item.UID }}
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}">
+            <a href="/member/{{$item.UID}}">
             <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ else }}
          <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}">
+            <a href="/member/{{$item.UID}}">
                 <img src="{{$item.Avatar}}" alt="{{$item.Name}}" />
             </a>
         </div>
         {{ end }}
 
         <div class="item-content">
-            <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
+            <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
             <span class="item-date">
 
                  • 点击数 {{$item.ClickCnt}}
                  {{ if $item.Cname }}
-                <a href="/node/{{$item.Cid}}">
-                    {{$item.Cname}}</a>  •  <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
+                <a href="/node/{{$item.CID}}">
+                    {{$item.Cname}}</a>  •  <a href="/member/{{$item.UID}}">{{$item.Name}}</a>
                 {{ end }}
 
                 {{ if $item.EditTimeFmt }}
@@ -49,7 +49,7 @@
             </span>
         </div>
         {{if $item.Comments}}
-        <div class="item-count"><a href="/topic/{{$item.Id}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
+        <div class="item-count"><a href="/topic/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
         {{end}}
         <div class="c"></div>
     </div>

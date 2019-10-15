@@ -24,7 +24,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -35,7 +35,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 
-	aobj, _ := model.ArticleGetById(db, aid)
+	aobj, _ := model.ArticleGetByID(db, aid)
 
 	// comment
 	cobj, err := model.CommentGetByKey(db, aid, cidI)
@@ -91,7 +91,7 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}

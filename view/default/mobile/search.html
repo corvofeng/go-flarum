@@ -9,25 +9,25 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.UID}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
-            <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
+            <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
             <div>
             关键字: {{ $item.HighlightContent }}
             </div>
             <span class="item-date">
-                <a href="/node/{{$item.Cid}}">{{$item.Cname}}</a>
+                <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}
                 • <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>
                 {{else}}
-                • <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
+                • <a href="/member/{{$item.UID}}">{{$item.Name}}</a>
                 {{end}}
             </span>
         </div>
         {{if $item.Comments}}
-        <div class="item-count"><a href="/topic/{{$item.Id}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
+        <div class="item-count"><a href="/topic/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
         {{end}}
         <div class="c"></div>
     </div>

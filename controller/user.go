@@ -20,7 +20,7 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		PageData
 		Act       string
 		Token     string
-		CaptchaId string
+		CaptchaID string
 	}
 	act := strings.TrimLeft(r.RequestURI, "/")
 	title := "登录"
@@ -40,7 +40,7 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "user_login_register"
 
 	evn.Act = act
-	evn.CaptchaId = captcha.New()
+	evn.CaptchaID = captcha.New()
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
@@ -67,7 +67,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	type recForm struct {
 		Name            string `json:"name"`
 		Password        string `json:"password"`
-		CaptchaId       string `json:"captchaId"`
+		CaptchaID       string `json:"captchaID"`
 		CaptchaSolution string `json:"captchaSolution"`
 	}
 
@@ -94,8 +94,8 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !captcha.VerifyString(rec.CaptchaId, rec.CaptchaSolution) {
-		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaId":"` + captcha.New() + `"}`))
+	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
+		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaID":"` + captcha.New() + `"}`))
 		return
 	}
 
@@ -115,20 +115,20 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
 
 		if err != nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaId":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaID":"` + captcha.New() + `"}`))
 			return
 		}
 		if uobj.Password != rec.Password {
 			db.Zset(bn, key, uint64(time.Now().UTC().Unix()))
-			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaId":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaID":"` + captcha.New() + `"}`))
 			return
 		}
 		sessionid := xid.New().String()
 		uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
 		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.Id), jb)
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.Id, 10)+":"+sessionid, 365)
+		db.Hset("user", youdb.I2b(uobj.ID), jb)
+		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 	} else {
 		// register
 		siteCf := h.App.Cf.Site
@@ -141,7 +141,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err == nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaId":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaID":"` + captcha.New() + `"}`))
 			return
 		}
 
@@ -154,7 +154,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		}
 		uobj.SQLRegister(sqlDB)
 
-		// uidStr := strconv.FormatUint(uobj.Id, 10)
+		// uidStr := strconv.FormatUint(uobj.ID, 10)
 		// err = util.GenerateAvatar("male", rec.Name, 73, 73, "static/avatar/"+uidStr+".jpg")
 		// if err != nil {
 		// 	uobj.Avatar = "0"
@@ -163,11 +163,11 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		// }
 
 		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.Id), jb)
-		// db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.Id))
-		// db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.Id), []byte(""))
+		db.Hset("user", youdb.I2b(uobj.ID), jb)
+		// db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.ID))
+		// db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.ID), []byte(""))
 
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.Id, 10)+":"+uobj.Session, 365)
+		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
 	}
 
 	h.DelCookie(w, "token")
@@ -179,7 +179,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 
 func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -211,7 +211,7 @@ func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
-	cks := []string{"SessionID", "QQUrlState", "WeiboUrlState", "token"}
+	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
 	for _, k := range cks {
 		h.DelCookie(w, k)
 	}
@@ -242,7 +242,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	uid := pat.Param(r, "uid")
 	uidi, err := strconv.ParseUint(uid, 10, 64)
 	if err != nil {
-		uid = model.UserGetIdByName(db, strings.ToLower(uid))
+		uid = model.UserGetIDByName(db, strings.ToLower(uid))
 		if uid == "" {
 			w.Write([]byte(`{"retcode":400,"retmsg":"uid type err"}`))
 			return

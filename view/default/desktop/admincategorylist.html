@@ -9,9 +9,9 @@
     <ul style="margin-left: 30px;padding: 0;">
     {{range $_, $item := .PageInfo.Items}}
     <li style="margin-bottom: 8px;">
-        id:{{$item.Id}} - {{$item.Name}} - Articles: {{$item.Articles}} - Hidden: {{$item.Hidden}}
-        <a href="/n/{{$item.Id}}">查看</a>
-        <a href="/admin/category/list?cid={{$item.Id}}">编辑</a>
+        id:{{$item.ID}} - {{$item.Name}} - Articles: {{$item.Articles}} - Hidden: {{$item.Hidden}}
+        <a href="/n/{{$item.ID}}">查看</a>
+        <a href="/admin/category/list?cid={{$item.ID}}">编辑</a>
     </li>
     {{end}}
     </ul>
@@ -29,7 +29,7 @@
 </div>
 
 <div class="nav-title">
-    <a href="/">{{.SiteCf.Name}}</a> &raquo; {{if .Cobj.Id}}修改{{else}}添加{{end}}分类
+    <a href="/">{{.SiteCf.Name}}</a> &raquo; {{if .Cobj.ID}}修改{{else}}添加{{end}}分类
 </div>
 
 <div class="main-box">
@@ -53,7 +53,7 @@
         var hidden = $("#id-hidden:checked").val();
         var name = $('#name').val();
         var about = $('#about').val();
-        var cid = '{{.Cobj.Id}}';
+        var cid = '{{.Cobj.ID}}';
         if(name){
             $.ajax({
                 type: "POST",

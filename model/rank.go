@@ -111,9 +111,9 @@ func GetTopicListByPageNum(cid uint64, page uint64, limit uint64) []uint64 {
 		defer crd.mtx.Unlock()
 		start := (page - 1) * limit
 		end := (page) * limit
-		maxIdx := uint64(len(crd.topicData))
-		start = min(start, maxIdx)
-		end = min(end, maxIdx)
+		maxIDx := uint64(len(crd.topicData))
+		start = min(start, maxIDx)
+		end = min(end, maxIDx)
 		tmpData = append(tmpData, crd.topicData[start:end]...)
 		// fmt.Printf("%p %p", tmpData, crd.topicData[start:end])
 	}()
@@ -147,8 +147,8 @@ func AddNewArticleList(cid uint64, rankItems []ArticleRankItem) {
 	}()
 }
 
-// GetCidArticleMax 获取当前分类的偏移值
-func GetCidArticleMax(cid uint64) uint64 {
+// GetCIDArticleMax 获取当前分类的偏移值
+func GetCIDArticleMax(cid uint64) uint64 {
 	m := GetRankMap()
 	if _, ok := m.m[cid]; ok {
 		return m.m[cid].maxID

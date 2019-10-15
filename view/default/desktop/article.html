@@ -1,9 +1,9 @@
 {{ define "content" }}
 
 <div class="nav-title">
-    <div class="float-left fs14"><a href="/">{{.SiteCf.Name}}</a> &raquo; <a href="/node/{{.Cobj.Id}}">{{.Cobj.Name}}</a> ({{.Cobj.Articles}})</div>
+    <div class="float-left fs14"><a href="/">{{.SiteCf.Name}}</a> &raquo; <a href="/node/{{.Cobj.ID}}">{{.Cobj.Name}}</a> ({{.Cobj.Articles}})</div>
     {{if .CurrentUser.CanCreateTopic }}
-    <div class="float-right"><a href="/newpost/{{.Cobj.Id}}" rel="nofollow" class="newpostbtn">+发新帖</a></div>
+    <div class="float-right"><a href="/newpost/{{.Cobj.ID}}" rel="nofollow" class="newpostbtn">+发新帖</a></div>
     {{end}}
     <div class="c"></div>
 </div>
@@ -13,7 +13,7 @@
         <div class="topic-title-main float-left">
             <h1>{{.Aobj.Title}}</h1>
             <div class="topic-title-date">
-                By <a href="/member/{{.Aobj.Uid}}">{{.Aobj.Name}}</a>
+                By <a href="/member/{{.Aobj.UID}}">{{.Aobj.Name}}</a>
                 at {{.Aobj.AddTimeFmt}} • {{.Aobj.Views}}次点击
 
                 {{if ne .Aobj.AddTimeFmt .Aobj.EditTimeFmt }}
@@ -27,18 +27,18 @@
                 {{end}}
 
                 {{if .CurrentUser.CanEdit }}
-                 • <a href="/admin/post/edit/{{.Aobj.Id}}">编辑</a>
+                 • <a href="/admin/post/edit/{{.Aobj.ID}}">编辑</a>
                 {{end}}
 
             </div>
         </div>
-        {{ if .Aobj.Uid }}
+        {{ if .Aobj.UID }}
         <div class="detail-avatar">
-            <a href="/member/{{.Aobj.Uid}}"><img src="{{.Aobj.Avatar}}" alt="{{.Aobj.Name}}" /></a></div>
+            <a href="/member/{{.Aobj.UID}}"><img src="{{.Aobj.Avatar}}" alt="{{.Aobj.Name}}" /></a></div>
         <div class="c"></div>
         {{else}}
         <div class="detail-avatar">
-            <a href="/member/{{.Aobj.Uid}}">
+            <a href="/member/{{.Aobj.UID}}">
                 <img src="{{.Aobj.Avatar}}" alt="{{.Aobj.Name}}" />
             </a></div>
         <div class="c"></div>
@@ -62,7 +62,7 @@
             <h3>相关帖子：</h3>
             <ul class="rel_list">
                 {{range $_, $item := .Relative.Articles}}
-                <li><a href="/topic/{{$item.Id}}" title="{{$item.Title}}">{{$item.Title}}</a></li>
+                <li><a href="/topic/{{$item.ID}}" title="{{$item.Title}}">{{$item.Title}}</a></li>
                 {{end}}
 
                 <div class="c"></div>
@@ -83,10 +83,10 @@
 <div class="main-box home-box-list">
 
     {{range $_, $item := .PageInfo.Items}}
-    <a name="{{$item.Id}}"></a>
+    <a name="{{$item.ID}}"></a>
     <div class="commont-item">
         <div class="commont-avatar">
-            <a href="/member/{{$item.Uid}}">
+            <a href="/member/{{$item.UID}}">
                 <img src="{{$item.Avatar}}" alt="{{$item.UserName}}" />
             </a>
         </div>
@@ -97,25 +97,25 @@
 
             <div class="commont-data-date">
                 {{/*
-                By <a href="/member/{{$item.Uid}}">{{$item.UserName}}</a>
+                By <a href="/member/{{$item.UID}}">{{$item.UserName}}</a>
                 at {{$item.AddTimeFmt}} • {{$item.Views}}次点击
                 */}}
 
                 <div class="float-left">
-                    By <a href="/member/{{$item.Uid}}">{{$item.UserName}}</a> at {{$item.AddTimeFmt}}
+                    By <a href="/member/{{$item.UID}}">{{$item.UserName}}</a> at {{$item.AddTimeFmt}}
                     {{if $.CurrentUser.IsAdmin }}
-                    &nbsp;&nbsp;&nbsp; • <a href="/admin/comment/edit/{{$item.Aid}}/{{$item.Id}}">编辑</a>
+                    &nbsp;&nbsp;&nbsp; • <a href="/admin/comment/edit/{{$item.Aid}}/{{$item.ID}}">编辑</a>
                     {{end}}
                 </div>
                 <div class="float-right">
                     {{if $.CurrentUser.CanReply }}
                     {{if not $.Aobj.CloseComment}}
-                    {{if ne $.CurrentUser.Id $item.Uid}}
+                    {{if ne $.CurrentUser.ID $item.UID}}
                     &laquo; <a href="#new-comment" onclick="replyto('{{$item.UserName}}');">回复</a>
                     {{end}}
                     {{end}}
                     {{end}}
-                    <span class="commonet-count">{{$item.Id}}</span>
+                    <span class="commonet-count">{{$item.ID}}</span>
                 </div>
                 <div class="c"></div>
             </div>
@@ -128,10 +128,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/topic/{{.Aobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}" class="float-left">&laquo; 上一页</a>
+        <a href="/topic/{{.Aobj.ID}}?btn=prev&key={{.PageInfo.FirstKey}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/topic/{{.Aobj.Id}}?btn=next&key={{.PageInfo.LastKey}}" class="float-right">下一页 &raquo;</a>
+        <a href="/topic/{{.Aobj.ID}}?btn=next&key={{.PageInfo.LastKey}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>
@@ -141,9 +141,9 @@
 
 <script type="text/javascript">
     function replyto(somebd){
-        var con = document.getElementById("id-content").value;
+        var con = document.getElementByID("id-content").value;
         document.getElementsByTagName('textarea')[0].focus();
-        document.getElementById("id-content").value = " @"+somebd+" " + con;
+        document.getElementByID("id-content").value = " @"+somebd+" " + con;
     }
 </script>
 
@@ -227,7 +227,7 @@
                 $(this).attr("disabled", true);
                 $.ajax({
                     type: "POST",
-                    url: "/topic/{{.Aobj.Id}}",
+                    url: "/topic/{{.Aobj.ID}}",
                     data: JSON.stringify({"act": "comment_submit", "content": content}),
                     dataType: "json",
                     contentType: "application/json",
@@ -266,9 +266,9 @@
                 console.log(file);
                 var rsp = jQuery.parseJSON(data);
                 if(rsp.retcode == 200) {
-                    var con = document.getElementById("id-content").value;
+                    var con = document.getElementByID("id-content").value;
                     document.getElementsByTagName("textarea")[0].focus();
-                    document.getElementById("id-content").value = con + "\n"+rsp.url+"\n";
+                    document.getElementByID("id-content").value = con + "\n"+rsp.url+"\n";
                 }else{
                     $.toast(rsp.retmsg);
                 }
@@ -295,7 +295,7 @@
         if(link.indexOf("/member/") !== 0) {
             $.ajax({
                 type: "POST",
-                url: "/topic/{{.Aobj.Id}}",
+                url: "/topic/{{.Aobj.ID}}",
                 data: JSON.stringify({"act": "link_click", "link": link}),
                 dataType: "json",
                 success: function(data){

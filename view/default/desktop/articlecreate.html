@@ -5,7 +5,7 @@
     <a href="/">{{.SiteCf.Name}}</a> &raquo;
     <select id="select-cid" name="select-cid">
         {{range $_, $item := .MainNodes}}
-    <option value="{{$item.Id}}" {{if eq $item.Id $.Cobj.Id}}selected="selected"{{end}}>{{$item.Name}}</option>
+    <option value="{{$item.ID}}" {{if eq $item.ID $.Cobj.ID}}selected="selected"{{end}}>{{$item.Name}}</option>
         {{end}}
     </select>
     - 发新帖
@@ -74,7 +74,7 @@
             console.log(selectid);
             $.ajax({
                 type: "POST",
-                url: "/newpost/{{.Cobj.Id}}",
+                url: "/newpost/{{.Cobj.ID}}",
                 data: JSON.stringify({"act": "submit", "cid": parseInt(selectid, 10), "title": title, "content": content}),
                 dataType: "json",
                 contentType: "application/json",
@@ -120,9 +120,9 @@
                 console.log(file);
                 var rsp = jQuery.parseJSON(data);
                 if(rsp.retcode == 200) {
-                    var con = document.getElementById("id-content").value;
+                    var con = document.getElementByID("id-content").value;
                     document.getElementsByTagName("textarea")[0].focus();
-                    document.getElementById("id-content").value = con + "\n"+rsp.url+"\n";
+                    document.getElementByID("id-content").value = con + "\n"+rsp.url+"\n";
                 }else{
                     $.toast(rsp.retmsg);
                 }

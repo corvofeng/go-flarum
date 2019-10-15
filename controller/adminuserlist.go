@@ -23,7 +23,7 @@ func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -81,7 +81,7 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -121,11 +121,11 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	userId, _ := db.HnextSequence("user")
+	userID, _ := db.HnextSequence("user")
 	flag := 5
 
 	uobj := model.User{
-		Id:            userId,
+		ID:            userID,
 		Name:          rec.Name,
 		Password:      rec.Password,
 		Flag:          flag,
@@ -133,7 +133,7 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 		LastLoginTime: timeStamp,
 	}
 
-	uidStr := strconv.FormatUint(userId, 10)
+	uidStr := strconv.FormatUint(userID, 10)
 	err = util.GenerateAvatar("male", rec.Name, 73, 73, "static/avatar/"+uidStr+".jpg")
 	if err != nil {
 		uobj.Avatar = "0"
@@ -142,9 +142,9 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 	}
 
 	jb, _ := json.Marshal(uobj)
-	db.Hset("user", youdb.I2b(uobj.Id), jb)
-	db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(userId))
-	db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.Id), []byte(""))
+	db.Hset("user", youdb.I2b(uobj.ID), jb)
+	db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(userID))
+	db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.ID), []byte(""))
 
 	rsp := response{}
 	rsp.Retcode = 200

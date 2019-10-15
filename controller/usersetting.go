@@ -17,7 +17,7 @@ import (
 
 func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -57,7 +57,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
@@ -99,7 +99,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		uid := strconv.FormatUint(currentUser.Id, 10)
+		uid := strconv.FormatUint(currentUser.ID, 10)
 		avatarPath := fmt.Sprintf("static/avatar/%s.jpg", uid)
 		logger.Debug("Save avatar", avatarPath)
 
@@ -119,7 +119,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 	type recForm struct {
 		Act       string `json:"act"`
 		Email     string `json:"email"`
-		Url       string `json:"url"`
+		URL       string `json:"url"`
 		About     string `json:"about"`
 		Password0 string `json:"password0"`
 		Password  string `json:"password"`
@@ -143,7 +143,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 	isChanged := false
 	if recAct == "info" {
 		currentUser.Email = rec.Email
-		currentUser.Url = rec.Url
+		currentUser.URL = rec.URL
 		currentUser.About = rec.About
 		isChanged = true
 	} else if recAct == "change_pw" {
@@ -168,7 +168,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 
 	if isChanged {
 		jb, _ := json.Marshal(currentUser)
-		h.App.Db.Hset("user", youdb.I2b(currentUser.Id), jb)
+		h.App.Db.Hset("user", youdb.I2b(currentUser.ID), jb)
 	}
 
 	type response struct {

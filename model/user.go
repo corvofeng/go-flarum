@@ -12,14 +12,14 @@ import (
 )
 
 type User struct {
-	Id            uint64 `json:"id"`
+	ID            uint64 `json:"id"`
 	Name          string `json:"name"`
 	Gender        string `json:"gender"`
 	Flag          int    `json:"flag"`
 	Avatar        string `json:"avatar"`
 	Password      string `json:"password"`
 	Email         string `json:"email"`
-	Url           string `json:"url"`
+	URL           string `json:"url"`
 	Articles      uint64 `json:"articles"`
 	Replies       uint64 `json:"replies"`
 	RegTime       uint64 `json:"regtime"`
@@ -36,7 +36,7 @@ type User struct {
 }
 
 type UserMini struct {
-	Id     uint64 `json:"id"`
+	ID     uint64 `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 }
@@ -49,7 +49,7 @@ type UserPageInfo struct {
 	LastKey  uint64 `json:"lastkey"`
 }
 
-func UserGetById(db *youdb.DB, uid uint64) (User, error) {
+func UserGetByID(db *youdb.DB, uid uint64) (User, error) {
 	obj := User{}
 	rs := db.Hget("user", youdb.I2b(uid))
 	if rs.State == "ok" {
@@ -61,7 +61,7 @@ func UserGetById(db *youdb.DB, uid uint64) (User, error) {
 
 func UserUpdate(db *youdb.DB, obj User) error {
 	jb, _ := json.Marshal(obj)
-	return db.Hset("user", youdb.I2b(obj.Id), jb)
+	return db.Hset("user", youdb.I2b(obj.ID), jb)
 }
 
 func UserGetByName(db *youdb.DB, name string) (User, error) {
@@ -78,7 +78,7 @@ func UserGetByName(db *youdb.DB, name string) (User, error) {
 	return obj, errors.New(rs.State)
 }
 
-func UserGetIdByName(db *youdb.DB, name string) string {
+func UserGetIDByName(db *youdb.DB, name string) string {
 	rs := db.Hget("user_name2uid", []byte(name))
 	if rs.State == "ok" {
 		return youdb.B2ds(rs.Data[0])
@@ -117,9 +117,9 @@ func UserListByFlag(db *youdb.DB, cmd, tb, key string, limit int) UserPageInfo {
 				json.Unmarshal(rs.Data[i+1], &item)
 				items = append(items, item)
 				if firstKey == 0 {
-					firstKey = item.Id
+					firstKey = item.ID
 				}
-				lastKey = item.Id
+				lastKey = item.ID
 			}
 
 			rs = db.Hscan(tb, youdb.I2b(firstKey), 1)
@@ -161,13 +161,13 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 	}
 	for rows.Next() {
 		err = rows.Scan(
-			&obj.Id,
+			&obj.ID,
 			&obj.Name,
 			&obj.Password,
 			&obj.Reputation,
 			&obj.Email,
 			&obj.Avatar,
-			&obj.Url,
+			&obj.URL,
 			&obj.Token,
 			&obj.RegTime,
 		)
@@ -200,13 +200,13 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	}
 	if rows.Next() {
 		err = rows.Scan(
-			&obj.Id,
+			&obj.ID,
 			&obj.Name,
 			&obj.Password,
 			&obj.Reputation,
 			&obj.Email,
 			&obj.Avatar,
-			&obj.Url,
+			&obj.URL,
 			&obj.Token,
 			&obj.RegTime,
 		)
@@ -234,7 +234,7 @@ func (user *User) SQLRegister(db *sql.DB) bool {
 		return false
 	}
 	uid, err := row.LastInsertId()
-	user.Id = uint64(uid)
+	user.ID = uint64(uid)
 
 	return true
 }
@@ -284,13 +284,13 @@ func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, avatar string) {
 	if user == nil {
 		return
 	}
-	_, err := db.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.Id)
+	_, err := db.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.ID)
 	if err != nil {
 		logger.Error("Set ", user, " avatar ", avatar, " failed!!")
 		return
 	}
 
-	cntDB.Hdel("avatar", youdb.I2b(user.Id))
+	cntDB.Hdel("avatar", youdb.I2b(user.ID))
 	logger.Notice("Refresh user avatar", user)
 	return
 }
@@ -312,7 +312,7 @@ func GetAvatarByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
 	avatar = user.Avatar
 
 	cntDB.Hset("avatar", youdb.I2b(uid), []byte(avatar))
-	logger.Debug("key not found for ", user.Id, user.Name, "but we refresh!")
+	logger.Debug("key not found for ", user.ID, user.Name, "but we refresh!")
 	return avatar
 }
 
@@ -333,6 +333,6 @@ func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
 	username = user.Name
 
 	cntDB.Hset("username", youdb.I2b(uid), []byte(username))
-	logger.Debug("key not found for ", user.Id, user.Name, "but we refresh!")
+	logger.Debug("key not found for ", user.ID, user.Name, "but we refresh!")
 	return username
 }

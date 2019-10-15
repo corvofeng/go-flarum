@@ -2,10 +2,10 @@ package getold
 
 type OldArticle struct {
 	Code         int    `json:"code"`
-	Id           string `json:"id"`
-	Uid          string `json:"uid"`
-	Cid          string `json:"cid"`
-	RUid         string `json:"ruid"`
+	ID           string `json:"id"`
+	UID          string `json:"uid"`
+	CID          string `json:"cid"`
+	RUID         string `json:"ruid"`
 	Title        string `json:"title"`
 	Content      string `json:"content"`
 	Tags         string `json:"tags"`
@@ -18,13 +18,13 @@ type OldArticle struct {
 }
 type OldUser struct {
 	Code          int    `json:"code"`
-	Id            string `json:"id"`
+	ID            string `json:"id"`
 	Name          string `json:"name"`
 	Flag          string `json:"flag"`
 	Avatar        string `json:"avatar"`
 	Password      string `json:"password"`
 	Email         string `json:"email"`
-	Url           string `json:"url"`
+	URL           string `json:"url"`
 	Articles      string `json:"articles"`
 	Replies       string `json:"replies"`
 	RegTime       string `json:"regtime"`
@@ -36,7 +36,7 @@ type OldUser struct {
 }
 type OldCategory struct {
 	Code     int    `json:"code"`
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Articles string `json:"articles"`
 	About    string `json:"about"`
@@ -45,30 +45,30 @@ type OldCategory struct {
 }
 type OldComment struct {
 	Code    int    `json:"code"`
-	Id      string `json:"id"`
+	ID      string `json:"id"`
 	Aid     string `json:"articleid"`
-	Uid     string `json:"uid"`
+	UID     string `json:"uid"`
 	Content string `json:"content"`
 	AddTime string `json:"addtime"`
 }
 type OldQQ struct {
 	Code   int    `json:"code"`
-	Id     string `json:"id"`
-	Uid    string `json:"uid"`
+	ID     string `json:"id"`
+	UID    string `json:"uid"`
 	Name   string `json:"name"`
 	Openid string `json:"openid"`
 }
 type OldWeibo struct {
 	Code   int    `json:"code"`
-	Id     string `json:"id"`
-	Uid    string `json:"uid"`
+	ID     string `json:"id"`
+	UID    string `json:"uid"`
 	Name   string `json:"name"`
 	Openid string `json:"openid"`
 }
 type OldTag struct {
 	Code     int    `json:"code"`
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Articles string `json:"articles"`
-	Ids      string `json:"ids"`
+	IDs      string `json:"ids"`
 }
