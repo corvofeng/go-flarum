@@ -24,7 +24,7 @@ func (h *BaseHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -35,7 +35,7 @@ func (h *BaseHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 
-	uobj, err := model.UserGetById(db, uidI)
+	uobj, err := model.UserGetByID(db, uidI)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -74,7 +74,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -85,7 +85,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 
-	uobj, err := model.UserGetById(db, uidI)
+	uobj, err := model.UserGetByID(db, uidI)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -144,7 +144,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 		Flag     int    `json:"flag"`
 		Name     string `json:"name"`
 		Email    string `json:"email"`
-		Url      string `json:"url"`
+		URL      string `json:"url"`
 		About    string `json:"about"`
 		Password string `json:"password"`
 		Hidden   string `json:"hidden"`
@@ -180,7 +180,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		uobj.Email = rec.Email
-		uobj.Url = rec.Url
+		uobj.URL = rec.URL
 		uobj.About = rec.About
 		uobj.Hidden = hidden
 		isChanged = true
@@ -191,7 +191,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			db.Hdel("user_name2uid", []byte(strings.ToLower(oldName)))
-			db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.Id))
+			db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.ID))
 			uobj.Name = rec.Name
 		}
 	} else if recAct == "change_pw" {
@@ -207,8 +207,8 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 			isChanged = true
 			uobj.Flag = rec.Flag
 
-			db.Hset("user_flag:"+strconv.Itoa(rec.Flag), youdb.I2b(uobj.Id), []byte(""))
-			db.Hdel("user_flag:"+oldFlag, youdb.I2b(uobj.Id))
+			db.Hset("user_flag:"+strconv.Itoa(rec.Flag), youdb.I2b(uobj.ID), []byte(""))
+			db.Hdel("user_flag:"+oldFlag, youdb.I2b(uobj.ID))
 		}
 	}
 

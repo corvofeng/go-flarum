@@ -10,13 +10,13 @@ import (
 )
 
 type Link struct {
-	Id    uint64 `json:"id"`
+	ID    uint64 `json:"id"`
 	Name  string `json:"name"`
-	Url   string `json:"url"`
+	URL   string `json:"url"`
 	Score int    `json:"score"`
 }
 
-func LinkGetById(db *youdb.DB, lid string) Link {
+func LinkGetByID(db *youdb.DB, lid string) Link {
 	var item Link
 	rs := db.Hget("link", youdb.DS2b(lid))
 	if rs.State == "ok" {
@@ -26,13 +26,13 @@ func LinkGetById(db *youdb.DB, lid string) Link {
 }
 
 func LinkSet(db *youdb.DB, obj Link) {
-	if obj.Id == 0 {
+	if obj.ID == 0 {
 		// add
-		newId, _ := db.HnextSequence("link")
-		obj.Id = newId
+		newID, _ := db.HnextSequence("link")
+		obj.ID = newID
 	}
 	jb, _ := json.Marshal(obj)
-	db.Hset("link", youdb.I2b(obj.Id), jb)
+	db.Hset("link", youdb.I2b(obj.ID), jb)
 }
 
 func SqlLinkList(db *sql.DB, getAll bool) []Link {
@@ -50,7 +50,7 @@ func SqlLinkList(db *sql.DB, getAll bool) []Link {
 	for rows.Next() {
 		item := Link{}
 
-		err = rows.Scan(&item.Id, &item.Name) //不scan会导致连接不释放
+		err = rows.Scan(&item.ID, &item.Name) //不scan会导致连接不释放
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			return items

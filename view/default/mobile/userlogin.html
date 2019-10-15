@@ -14,7 +14,7 @@
         <p><label>重　复： <input type="password" id="password2" class="sl w200" value="" /></label></p>
         {{end}}
 
-        <p><img id="image" onclick="reload()" style="margin-left: 30px;" src="/captcha/{{.CaptchaId}}.png" alt="Captcha image"></p>
+        <p><img id="image" onclick="reload()" style="margin-left: 30px;" src="/captcha/{{.CaptchaID}}.png" alt="Captcha image"></p>
         <p><label>验证码： <input type="text" id="captchaSolution" class="sl w200" value="" /></label></p>
 
         <p><input type="submit" value=" {{.Title}} " id="submit" class="textbtn newpostbtn" style="margin-left:60px;" /> </p>
@@ -32,7 +32,7 @@
 </div>
 
 <script>
-    var captchaId = '{{.CaptchaId}}';
+    var captchaID = '{{.CaptchaID}}';
     function setSrcQuery(e, q) {
         var src  = e.src;
         var p = src.indexOf('?');
@@ -43,8 +43,8 @@
     }
 
     function reload() {
-        setSrcQuery(document.getElementById('image'), "reload=" + (new Date()).getTime());
-        document.getElementById('captchaSolution').value = "";
+        setSrcQuery(document.getElementByID('image'), "reload=" + (new Date()).getTime());
+        document.getElementByID('captchaSolution').value = "";
         return false;
     }
 
@@ -66,15 +66,15 @@
             $.ajax({
                 type: "POST",
                 url: "/{{.Act}}",
-                data: JSON.stringify({'act': '{{.Act}}', 'name': name, 'password': md5(password), 'captchaSolution': captchaSolution, 'captchaId': captchaId}),
+                data: JSON.stringify({'act': '{{.Act}}', 'name': name, 'password': md5(password), 'captchaSolution': captchaSolution, 'captchaID': captchaID}),
                 dataType: "json",
                 success: function(data){
                     if(data.retcode==200){
                         window.location.href = "/";
                     }else{
                         if(data.retcode==405){
-                            document.getElementById('image').src = "/captcha/"+data.newCaptchaId+".png";
-                            captchaId = data.newCaptchaId;
+                            document.getElementByID('image').src = "/captcha/"+data.newCaptchaID+".png";
+                            captchaID = data.newCaptchaID;
                             $('#captchaSolution').val('');
                         }else{
                             reload();

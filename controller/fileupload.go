@@ -25,7 +25,7 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -119,7 +119,7 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 
 	type response struct {
 		normalRsp
-		Url string `json:"url"`
+		URL string `json:"url"`
 	}
 
 	rsp := response{}
@@ -131,7 +131,7 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 
 		if db.Hget("qiniu_upload_md5_key", []byte(fileMd5)).State == "ok" {
 			rsp.Retcode = 200
-			rsp.Url = scf.QiniuDomain + "/" + savePath
+			rsp.URL = scf.QiniuDomain + "/" + savePath
 			rsp.Retmsg = "上传成功"
 			json.NewEncoder(w).Encode(rsp)
 			return
@@ -177,15 +177,15 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		db.Hset("qiniu_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.Id))
+		db.Hset("qiniu_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.ID))
 
-		rsp.Url = scf.QiniuDomain + "/" + savePath
+		rsp.URL = scf.QiniuDomain + "/" + savePath
 	} else if len(scf.UpyunUser) > 0 && len(scf.UpyunPw) > 0 {
 		// upyun
 
 		if db.Hget("upyun_upload_md5_key", []byte(fileMd5)).State == "ok" {
 			rsp.Retcode = 200
-			rsp.Url = scf.UpyunDomain + "/" + savePath
+			rsp.URL = scf.UpyunDomain + "/" + savePath
 			rsp.Retmsg = "上传成功"
 			json.NewEncoder(w).Encode(rsp)
 			return
@@ -209,15 +209,15 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"retcode":400,"retmsg":"` + err.Error() + `"}`))
 			return
 		}
-		db.Hset("upyun_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.Id))
+		db.Hset("upyun_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.ID))
 
-		rsp.Url = scf.UpyunDomain + "/" + savePath
+		rsp.URL = scf.UpyunDomain + "/" + savePath
 	} else {
 		// local
 
 		if db.Hget("local_upload_md5_key", []byte(fileMd5)).State == "ok" {
 			rsp.Retcode = 200
-			rsp.Url = scf.MainDomain + "/" + savePath
+			rsp.URL = scf.MainDomain + "/" + savePath
 			rsp.Retmsg = "上传成功"
 			json.NewEncoder(w).Encode(rsp)
 			return
@@ -240,9 +240,9 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		db.Hset("local_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.Id))
+		db.Hset("local_upload_md5_key", []byte(fileMd5), youdb.I2b(currentUser.ID))
 
-		rsp.Url = scf.MainDomain + "/" + savePath
+		rsp.URL = scf.MainDomain + "/" + savePath
 	}
 
 	rsp.Retcode = 200

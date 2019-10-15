@@ -66,8 +66,8 @@
 
         <div class="banner">
 
-            {{if .CurrentUser.Id}}
-            <a href="/member/{{.CurrentUser.Id}}"><img class="avatar avatar24" src="{{.CurrentUser.Avatar}}" alt="{{.CurrentUser.Name}}"/></a>&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;<a href="/logout">退出</a>
+            {{if .CurrentUser.ID}}
+            <a href="/member/{{.CurrentUser.ID}}"><img class="avatar avatar24" src="{{.CurrentUser.Avatar}}" alt="{{.CurrentUser.Name}}"/></a>&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;<a href="/logout">退出</a>
             {{else}}
             {{if .SiteCf.WeiboClientID}}
             <a href="/wblogin" rel="nofollow"><img src="/static/img/weibo_login_55_24.png" alt="微博登录"/></a>
@@ -95,7 +95,7 @@
     <div class="main">
         <div class="main-content">
 
-            {{if .CurrentUser.Id}}
+            {{if .CurrentUser.ID}}
 
             {{if .CurrentUser.IsForbid }}
             <div class="tiptitle">站内提醒 &raquo; <span style="color:yellow;">帐户已被管理员禁用</span></div>
@@ -172,7 +172,7 @@
     <div class="scbox">
         <script type="text/javascript">
             var dispatch = function() {
-                q = document.getElementById("q");
+                q = document.getElementByID("q");
                 if (q.value != "" && q.value != "站内搜索") {
                     window.location.href = '/search?q=' + q.value;
                     return false;
@@ -214,7 +214,7 @@
 <div class="main-box main-box-node">
     <div class="btn">
         {{range $_, $v := .NewestNodes}}
-        <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
+        <a href="/node/{{$v.ID}}">{{$v.Name}}</a>
         {{end}}
         <div class="c"></div>
     </div>
@@ -227,7 +227,7 @@
 <div class="main-box main-box-node">
     <div class="btn">
         {{range $_, $v := .HotNodes}}
-        <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
+        <a href="/node/{{$v.ID}}">{{$v.Name}}</a>
         {{end}}
         <div class="c"></div>
     </div>
@@ -242,7 +242,7 @@
 <div class="main-box main-box-node">
     <div class="btn">
         {{range $_, $v := .Links}}
-        <a href="{{$v.Url}}" target="_blank">{{$v.Name}}</a>
+        <a href="{{$v.URL}}" target="_blank">{{$v.Name}}</a>
         {{end}}
     </div>
     <div class="c"></div>

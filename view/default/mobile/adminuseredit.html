@@ -53,7 +53,7 @@
         </tr>
         <tr>
             <td width="120" align="right">个人网站</td>
-            <td width="auto" align="left"><input type="text" class="sl wb80" id="url" value="{{.Uobj.Url}}" /></td>
+            <td width="auto" align="left"><input type="text" class="sl wb80" id="url" value="{{.Uobj.URL}}" /></td>
         </tr>
         <tr>
             <td width="120" align="right">个人简介</td>
@@ -124,7 +124,7 @@
 
         $.ajax({
             type: "POST",
-            url: "/admin/user/edit/{{.Uobj.Id}}",
+            url: "/admin/user/edit/{{.Uobj.ID}}",
             data: JSON.stringify({'act': 'flag', 'flag': parseInt(flag, 10)}),
             dataType: "json",
             contentType: "application/json",
@@ -147,7 +147,7 @@
 
         $.ajax({
             type: "POST",
-            url: "/admin/user/edit/{{.Uobj.Id}}",
+            url: "/admin/user/edit/{{.Uobj.ID}}",
             data: JSON.stringify({'act': 'info', 'hidden': hidden, 'name': name, 'email': email, 'url': url, 'about': about}),
             dataType: "json",
             contentType: "application/json",
@@ -173,9 +173,9 @@
                     var FR= new FileReader();
                     FR.addEventListener("load", function(e) {
                         var buffer = e.target.result;
-                        document.getElementById("av24").src = buffer;
-                        document.getElementById("av48").src = buffer;
-                        document.getElementById("av73").src = buffer;
+                        document.getElementByID("av24").src = buffer;
+                        document.getElementByID("av48").src = buffer;
+                        document.getElementByID("av73").src = buffer;
                     });
                     FR.readAsDataURL(file);
                     $("#avatar_submit").attr("disabled", false);
@@ -190,7 +190,7 @@
         }
     }
 
-    document.getElementById("avatar").addEventListener("change", readFile);
+    document.getElementByID("avatar").addEventListener("change", readFile);
 
     function form_pw_post(){
         var password = $('#password').val();
@@ -205,7 +205,7 @@
 
             $.ajax({
                 type: "POST",
-                url: "/admin/user/edit/{{.Uobj.Id}}",
+                url: "/admin/user/edit/{{.Uobj.ID}}",
                 data: JSON.stringify({'act': 'change_pw', 'password': md5(password)}),
                 dataType: "json",
                 contentType: "application/json",

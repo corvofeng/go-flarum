@@ -28,7 +28,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -41,16 +41,16 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
 
-	// aobj, err := model.ArticleGetById(db, aid)
+	// aobj, err := model.ArticleGetByID(db, aid)
 	aobj, err := model.SQLArticleGetByID(sqlDB, aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
 	}
-	aidB := youdb.I2b(aobj.Id)
+	aidB := youdb.I2b(aobj.ID)
 
-	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.Cid, 10))
-	// cobj, err := model.CategoryGetById(db, strconv.FormatUint(aobj.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
+	// cobj, err := model.CategoryGetByID(db, strconv.FormatUint(aobj.CID, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -63,11 +63,11 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		// 总文章列表
 		db.Zdel("article_timeline", aidB)
 		// 分类文章列表
-		db.Zdel("category_article_timeline:"+strconv.FormatUint(aobj.Cid, 10), aidB)
+		db.Zdel("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), aidB)
 		// 用户文章列表
-		db.Hdel("user_article_timeline:"+strconv.FormatUint(aobj.Uid, 10), aidB)
+		db.Hdel("user_article_timeline:"+strconv.FormatUint(aobj.UID, 10), aidB)
 		// 分类下文章数
-		db.Zincr("category_article_num", youdb.I2b(aobj.Cid), -1)
+		db.Zincr("category_article_num", youdb.I2b(aobj.CID), -1)
 		// 删除标题记录
 		hash := md5.Sum([]byte(aobj.Title))
 		titleMd5 := hex.EncodeToString(hash[:])
@@ -78,21 +78,21 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		aobj.Hidden = true
 		jb, _ := json.Marshal(aobj)
 		db.Hset("article", aidB, jb)
-		uobj, _ := model.UserGetById(db, aobj.Uid)
+		uobj, _ := model.UserGetByID(db, aobj.UID)
 		if uobj.Articles > 0 {
 			uobj.Articles--
 		}
 		jb, _ = json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.Id), jb)
+		db.Hset("user", youdb.I2b(uobj.ID), jb)
 
 		// tag send task work，自动处理tag与文章id
 		at := model.ArticleTag{
-			Id:      aobj.Id,
+			ID:      aobj.ID,
 			OldTags: aobj.Tags,
 			NewTags: "",
 		}
 		jb, _ = json.Marshal(at)
-		db.Hset("task_to_set_tag", youdb.I2b(at.Id), jb)
+		db.Hset("task_to_set_tag", youdb.I2b(at.ID), jb)
 
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -140,7 +140,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
@@ -152,7 +152,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	type recForm struct {
 		Aid          uint64 `json:"aid"`
 		Act          string `json:"act"`
-		Cid          uint64 `json:"cid"`
+		CID          uint64 `json:"cid"`
 		Title        string `json:"title"`
 		Content      string `json:"content"`
 		Tags         string `json:"tags"`
@@ -202,7 +202,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 
 	scf := h.App.Cf.Site
 
-	if rec.Cid == 0 || len(rec.Title) == 0 {
+	if rec.CID == 0 || len(rec.Title) == 0 {
 		w.Write([]byte(`{"retcode":400,"retmsg":"missed args"}`))
 		return
 	}
@@ -216,7 +216,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取当前分类
-	_, err = model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.Cid, 10))
+	_, err = model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.CID, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -234,33 +234,33 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 		closeComment = true
 	}
 
-	if aobj.Cid == rec.Cid && aobj.Title == rec.Title && aobj.Content == rec.Content && aobj.Tags == rec.Tags && aobj.CloseComment == closeComment {
+	if aobj.CID == rec.CID && aobj.Title == rec.Title && aobj.Content == rec.Content && aobj.Tags == rec.Tags && aobj.CloseComment == closeComment {
 		w.Write([]byte(`{"retcode":201,"retmsg":"nothing changed"}`))
 		return
 	}
 
-	oldCid := aobj.Cid
+	oldCID := aobj.CID
 	oldTitle := aobj.Title
 	oldTags := aobj.Tags
 
-	aobj.Cid = rec.Cid
+	aobj.CID = rec.CID
 	aobj.Title = rec.Title
 	aobj.Content = rec.Content
 	aobj.Tags = rec.Tags
 	aobj.CloseComment = closeComment
-	aobj.ClientIp = r.Header.Get("X-REAL-IP")
+	aobj.ClientIP = r.Header.Get("X-REAL-IP")
 	aobj.EditTime = uint64(time.Now().UTC().Unix())
 	aobj.SQLArticleUpdate(sqlDB)
 
 	jb, _ := json.Marshal(aobj)
 	db.Hset("article", aidB, jb)
 
-	if oldCid != rec.Cid {
-		db.Zincr("category_article_num", youdb.I2b(rec.Cid), 1)
-		db.Zincr("category_article_num", youdb.I2b(oldCid), -1)
+	if oldCID != rec.CID {
+		db.Zincr("category_article_num", youdb.I2b(rec.CID), 1)
+		db.Zincr("category_article_num", youdb.I2b(oldCID), -1)
 
-		db.Zset("category_article_timeline:"+strconv.FormatUint(rec.Cid, 10), aidB, aobj.EditTime)
-		db.Zdel("category_article_timeline:"+strconv.FormatUint(oldCid, 10), aidB)
+		db.Zset("category_article_timeline:"+strconv.FormatUint(rec.CID, 10), aidB, aobj.EditTime)
+		db.Zdel("category_article_timeline:"+strconv.FormatUint(oldCID, 10), aidB)
 	}
 
 	if oldTitle != rec.Title {
@@ -273,12 +273,12 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	if oldTags != rec.Tags {
 		// tag send task work ，自动处理tag与文章id
 		at := model.ArticleTag{
-			Id:      aobj.Id,
+			ID:      aobj.ID,
 			OldTags: oldTags,
 			NewTags: aobj.Tags,
 		}
 		jb, _ = json.Marshal(at)
-		db.Hset("task_to_set_tag", youdb.I2b(at.Id), jb)
+		db.Hset("task_to_set_tag", youdb.I2b(at.ID), jb)
 	}
 
 	h.DelCookie(w, "token")
@@ -288,7 +288,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 		Aid uint64 `json:"aid"`
 	}{
 		normalRsp{200, "ok"},
-		aobj.Id,
+		aobj.ID,
 	}
 	json.NewEncoder(w).Encode(tmp)
 }

@@ -30,7 +30,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -96,7 +96,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
@@ -107,7 +107,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 
 	type recForm struct {
 		Act     string `json:"act"`
-		Cid     uint64 `json:"cid"`
+		CID     uint64 `json:"cid"`
 		Title   string `json:"title"`
 		Content string `json:"content"`
 	}
@@ -157,7 +157,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if rec.Cid == 0 || len(rec.Title) == 0 {
+	if rec.CID == 0 || len(rec.Title) == 0 {
 		w.Write([]byte(`{"retcode":400,"retmsg":"missed args"}`))
 		return
 	}
@@ -170,7 +170,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.CID, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -183,14 +183,14 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 
 	newAid, _ := db.HnextSequence("article")
 	aobj := model.Article{
-		Id:       newAid,
-		Uid:      currentUser.Id,
-		Cid:      rec.Cid,
+		ID:       newAid,
+		UID:      currentUser.ID,
+		CID:      rec.CID,
 		Title:    rec.Title,
 		Content:  rec.Content,
 		AddTime:  now,
 		EditTime: now,
-		ClientIp: r.Header.Get("X-REAL-IP"),
+		ClientIP: r.Header.Get("X-REAL-IP"),
 
 		Active:        1, // 帖子为激活状态
 		FatherTopicID: 0, // 没有原始主题
@@ -203,17 +203,17 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	// 总文章列表
 	db.Zset("article_timeline", aidB, aobj.EditTime)
 	// 分类文章列表
-	db.Zset("category_article_timeline:"+strconv.FormatUint(aobj.Cid, 10), aidB, aobj.EditTime)
+	db.Zset("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), aidB, aobj.EditTime)
 	// 用户文章列表
-	db.Hset("user_article_timeline:"+strconv.FormatUint(aobj.Uid, 10), youdb.I2b(aobj.Id), []byte(""))
+	db.Hset("user_article_timeline:"+strconv.FormatUint(aobj.UID, 10), youdb.I2b(aobj.ID), []byte(""))
 	// 分类下文章数
-	db.Zincr("category_article_num", youdb.I2b(aobj.Cid), 1)
+	db.Zincr("category_article_num", youdb.I2b(aobj.CID), 1)
 
 	currentUser.LastPostTime = now
 	currentUser.Articles++
 
 	jb, _ = json.Marshal(currentUser)
-	db.Hset("user", youdb.I2b(aobj.Uid), jb)
+	db.Hset("user", youdb.I2b(aobj.UID), jb)
 
 	// title md5
 	db.Hset("title_md5", []byte(titleMd5), aidB)
@@ -226,7 +226,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 
 	// @ somebody in content
 	sbs := util.GetMention(rec.Content,
-		[]string{currentUser.Name, strconv.FormatUint(currentUser.Id, 10)})
+		[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
 
 	aid := strconv.FormatUint(newAid, 10)
 	for _, sb := range sbs {
@@ -237,7 +237,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 			sbObj, err = model.UserGetByName(db, strings.ToLower(sb))
 		} else {
 			// @ user id
-			sbObj, err = model.UserGetById(db, sbu)
+			sbObj, err = model.UserGetByID(db, sbu)
 		}
 
 		if err == nil {
@@ -253,7 +253,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 				sbObj.NoticeNum = 1
 			}
 			jb, _ := json.Marshal(sbObj)
-			db.Hset("user", youdb.I2b(sbObj.Id), jb)
+			db.Hset("user", youdb.I2b(sbObj.ID), jb)
 		}
 	}
 
@@ -264,7 +264,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 		Aid uint64 `json:"aid"`
 	}{
 		normalRsp{200, "ok"},
-		aobj.Id,
+		aobj.ID,
 	}
 	json.NewEncoder(w).Encode(tmp)
 }
@@ -337,21 +337,21 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	// fix
 	if si.NodeNum == 0 {
 		// 我们已经有了自己的节点, 无需再添加这一项了
-		newCid, err2 := db.HnextSequence("category")
+		newCID, err2 := db.HnextSequence("category")
 		if err2 == nil {
 			cobj := model.Category{
-				Id:    newCid,
+				ID:    newCID,
 				Name:  "默认分类",
 				About: "默认第一个分类",
 			}
 			jb, _ := json.Marshal(cobj)
-			db.Hset("category", youdb.I2b(cobj.Id), jb)
+			db.Hset("category", youdb.I2b(cobj.ID), jb)
 			si.NodeNum = 1
 		}
 		// link
 		model.LinkSet(db, model.Link{
 			Name:  "youBBS",
-			Url:   "https://www.youbbs.org",
+			URL:   "https://www.youbbs.org",
 			Score: 100,
 		})
 	}
@@ -559,7 +559,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 			currentUser.Notice = ""
 			currentUser.NoticeNum = 0
 			jb, _ := json.Marshal(currentUser)
-			db.Hset("user", youdb.I2b(currentUser.Id), jb)
+			db.Hset("user", youdb.I2b(currentUser.ID), jb)
 		} else {
 			subStr := "," + aid + ","
 			newNotice := "," + currentUser.Notice + ","
@@ -567,7 +567,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 				currentUser.Notice = strings.Trim(strings.Replace(newNotice, subStr, "", 1), ",")
 				currentUser.NoticeNum--
 				jb, _ := json.Marshal(currentUser)
-				db.Hset("user", youdb.I2b(currentUser.Id), jb)
+				db.Hset("user", youdb.I2b(currentUser.ID), jb)
 			}
 		}
 	}
@@ -579,7 +579,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取帖子所在的节点
-	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.Cid, 10))
+	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
 
 	err = nil
 	cobj.Hidden = false
@@ -605,11 +605,11 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// 	start = start - uint64(scf.HomeShowNum) - 1
 	// }
 
-	cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.Id)).Uint64()
+	cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.ID)).Uint64()
 	pageInfo := model.SQLCommentList(
 		sqlDB,
 		db,
-		aobj.Id,
+		aobj.ID,
 		start,
 		btn,
 		scf.CommentListNum,
@@ -652,10 +652,10 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	author, _ := model.SQLUserGetByID(sqlDB, aobj.Uid)
-	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.Id), 1)
+	author, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
+	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.ID), 1)
 
-	if author.Id == 2 {
+	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
 		evn.Aobj = articleForDetail{
 			Article:     aobj,
@@ -690,7 +690,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	evn.Cobj = cobj
 	evn.Author = author
-	evn.Relative = model.ArticleGetRelative(db, aobj.Id, aobj.Tags)
+	evn.Relative = model.ArticleGetRelative(db, aobj.ID, aobj.Tags)
 	evn.PageInfo = pageInfo
 
 	token := h.GetCookie(r, "token")
@@ -709,8 +709,8 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 				State: true,
 			},
 			Data: model.RestfulTopic{
-				ID:      evn.Aobj.Id,
-				UID:     evn.Author.Id,
+				ID:      evn.Aobj.ID,
+				UID:     evn.Author.ID,
 				Content: evn.Aobj.ContentFmt,
 				Title:   evn.Aobj.Title,
 				Author: model.RestfulUser{
@@ -814,11 +814,11 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"comment forbidden"}`))
 			return
 		}
-		commentId, _ := db.HnextSequence("article_comment:" + aid)
+		commentID, _ := db.HnextSequence("article_comment:" + aid)
 		obj := model.Comment{
-			Id:       commentId,
-			Aid:      aobj.Id,
-			Uid:      currentUser.Id,
+			ID:       commentID,
+			Aid:      aobj.ID,
+			UID:      currentUser.ID,
 			Content:  rec.Content,
 			AddTime:  timeStamp,
 			ClientIp: r.Header.Get("X-REAL-IP"),
@@ -827,32 +827,32 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		obj.SQLSaveComment(sqlDB)
 		jb, _ := json.Marshal(obj)
 
-		db.Hset("article_comment:"+aid, youdb.I2b(obj.Id), jb) // 文章评论bucket
+		db.Hset("article_comment:"+aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
 		db.Hincr("count", []byte("comment_num"), 1)            // 评论总数
 		// 用户回复文章列表
-		db.Zset("user_article_reply:"+strconv.FormatUint(obj.Uid, 10), youdb.I2b(obj.Aid), obj.AddTime)
+		db.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
 
 		// 更新文章列表时间
 
-		aobj.Comments = commentId
-		aobj.RUid = currentUser.Id
+		aobj.Comments = commentID
+		aobj.RUID = currentUser.ID
 		aobj.EditTime = timeStamp
 		jb2, _ := json.Marshal(aobj)
-		db.Hset("article", youdb.I2b(aobj.Id), jb2)
+		db.Hset("article", youdb.I2b(aobj.ID), jb2)
 
 		currentUser.LastReplyTime = timeStamp
 		currentUser.Replies += 1
 		jb3, _ := json.Marshal(currentUser)
-		db.Hset("user", youdb.I2b(currentUser.Id), jb3)
+		db.Hset("user", youdb.I2b(currentUser.ID), jb3)
 
 		// 总文章列表
-		db.Zset("article_timeline", youdb.I2b(aobj.Id), timeStamp)
+		db.Zset("article_timeline", youdb.I2b(aobj.ID), timeStamp)
 		// 分类文章列表
-		db.Zset("category_article_timeline:"+strconv.FormatUint(aobj.Cid, 10), youdb.I2b(aobj.Id), timeStamp)
+		db.Zset("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), youdb.I2b(aobj.ID), timeStamp)
 
 		// @ somebody in comment & topic author
-		sbs := util.GetMention("@"+strconv.FormatUint(aobj.Uid, 10)+" "+rec.Content,
-			[]string{currentUser.Name, strconv.FormatUint(currentUser.Id, 10)})
+		sbs := util.GetMention("@"+strconv.FormatUint(aobj.UID, 10)+" "+rec.Content,
+			[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
 		for _, sb := range sbs {
 			var sbObj model.User
 			sbu, err := strconv.ParseUint(sb, 10, 64)
@@ -861,7 +861,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 				sbObj, err = model.UserGetByName(db, strings.ToLower(sb))
 			} else {
 				// @ user id
-				sbObj, err = model.UserGetById(db, sbu)
+				sbObj, err = model.UserGetByID(db, sbu)
 			}
 
 			if err == nil {
@@ -877,7 +877,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 					sbObj.NoticeNum = 1
 				}
 				jb, _ := json.Marshal(sbObj)
-				db.Hset("user", youdb.I2b(sbObj.Id), jb)
+				db.Hset("user", youdb.I2b(sbObj.ID), jb)
 			}
 		}
 

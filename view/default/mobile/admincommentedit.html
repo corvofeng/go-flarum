@@ -67,7 +67,7 @@
             $("#btn-submit").attr("disabled", true);
             $.ajax({
                 type: "POST",
-                url: "/admin/comment/edit/{{.Aobj.Id}}/{{.Cobj.Id}}",
+                url: "/admin/comment/edit/{{.Aobj.ID}}/{{.Cobj.ID}}",
                 data: JSON.stringify({"act": "submit", "content": content}),
                 dataType: "json",
                 contentType: "application/json",
@@ -116,9 +116,9 @@
             console.log(file);
             var rsp = jQuery.parseJSON(data);
             if(rsp.retcode == 200) {
-                var con = document.getElementById("id-content").value;
+                var con = document.getElementByID("id-content").value;
                 document.getElementsByTagName("textarea")[0].focus();
-                document.getElementById("id-content").value = con + "\n"+rsp.url+"\n";
+                document.getElementByID("id-content").value = con + "\n"+rsp.url+"\n";
             }else{
                 $.toast(rsp.retmsg);
             }

@@ -66,7 +66,7 @@
 
             <script type="text/javascript">
                 var dispatch = function() {
-                    q = document.getElementById("q");
+                    q = document.getElementByID("q");
                     if (q.value != "" && q.value != "站内搜索") {
                         window.location.href = '/search?q=' + q.value;
                         return false;
@@ -83,7 +83,7 @@
 
         <div class="banner">
 
-            {{if .CurrentUser.Id}}
+            {{if .CurrentUser.ID}}
             <img class="avatar avatar24" src="{{.CurrentUser.Avatar}}" alt="{{.CurrentUser.Name}}"/>&nbsp;&nbsp;&nbsp;
 
             {{if not .CurrentUser.Password }}
@@ -100,7 +100,7 @@
                 <span style="color:yellow;">在等待审核</span>&nbsp;&nbsp;&nbsp;
             {{ end }}
 
-            <a href="/member/{{.CurrentUser.Id}}">{{.CurrentUser.Name}}</a>&nbsp;&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;&nbsp;<a href="/logout">退出</a>
+            <a href="/member/{{.CurrentUser.ID}}">{{.CurrentUser.Name}}</a>&nbsp;&nbsp;&nbsp;<a href="/setting">设置</a>&nbsp;&nbsp;&nbsp;<a href="/logout">退出</a>
 
             {{else}}
 
@@ -204,7 +204,7 @@
     <div class="sider-box-content">
         <div class="btn">
             {{range $_, $v := .HotNodes}}
-            <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
+            <a href="/node/{{$v.ID}}">{{$v.Name}}</a>
             {{end}}
         </div>
         <div class="c"></div>
@@ -231,7 +231,7 @@
     <div class="sider-box-content">
         <div class="btn">
             {{range $_, $v := .NewestNodes}}
-            <a href="/node/{{$v.Id}}">{{$v.Name}}</a>
+            <a href="/node/{{$v.ID}}">{{$v.Name}}</a>
             {{end}}
         </div>
         <div class="c"></div>
@@ -247,7 +247,7 @@
     <div class="sider-box-content">
         <div class="btn">
             {{range $_, $v := .Links}}
-            <a href="{{$v.Url}}" target="_blank">{{$v.Name}}</a>
+            <a href="{{$v.URL}}" target="_blank">{{$v.Name}}</a>
             {{end}}
         </div>
         <div class="c"></div>

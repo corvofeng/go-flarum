@@ -31,14 +31,14 @@ func (h *BaseHandler) GetRemote() error {
 		fmt.Println("------tb", tb)
 		for {
 			rs := db.Hget("getold_last_tb_id", []byte(tb))
-			curId := uint64(1)
+			curID := uint64(1)
 			if rs.State == "ok" {
-				curId = rs.Uint64()
+				curID = rs.Uint64()
 			}
 
 			timer := time.NewTimer(100 * time.Millisecond)
 			<-timer.C
-			url := oldDomain + "/get/" + tb + "/" + strconv.FormatUint(curId, 10)
+			url := oldDomain + "/get/" + tb + "/" + strconv.FormatUint(curID, 10)
 			fmt.Println(url)
 			hc := httpclient.Get(url)
 			resp, err := hc.Response()
@@ -58,7 +58,7 @@ func (h *BaseHandler) GetRemote() error {
 				resp.Body.Close()
 
 				// save to db for local - for tmp data
-				db.Hset("old_data:"+tb, youdb.I2b(curId), data)
+				db.Hset("old_data:"+tb, youdb.I2b(curID), data)
 				db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 			} else {
 				fmt.Println("reply state", resp.StatusCode)
@@ -80,13 +80,13 @@ func (h *BaseHandler) GetLocal() error {
 			timer := time.NewTimer(5 * time.Millisecond)
 			<-timer.C
 			rs := db.Hget("getold_last_tb_id", []byte(tb))
-			curId := uint64(1)
+			curID := uint64(1)
 			if rs.State == "ok" {
-				curId = rs.Uint64()
+				curID = rs.Uint64()
 			}
-			fmt.Println(tb, curId)
+			fmt.Println(tb, curID)
 
-			rs3 := db.Hget("old_data:"+tb, youdb.I2b(curId))
+			rs3 := db.Hget("old_data:"+tb, youdb.I2b(curID))
 
 			if rs3.State == "ok" {
 				data := rs3.Data[0]
@@ -101,13 +101,13 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 						obj := model.User{
-							Id:            youdb.DS2i(t.Id),
+							ID:            youdb.DS2i(t.ID),
 							Name:          t.Name,
 							Flag:          int(youdb.DS2i(t.Flag)),
 							Avatar:        t.Avatar,
 							Password:      t.Password,
 							Email:         t.Email,
-							Url:           t.Url,
+							URL:           t.URL,
 							Articles:      youdb.DS2i(t.Articles),
 							Replies:       youdb.DS2i(t.Replies),
 							RegTime:       youdb.DS2i(t.RegTime),
@@ -122,10 +122,10 @@ func (h *BaseHandler) GetLocal() error {
 							obj.NoticeNum = len(util.SliceUniqStr(strings.Split(obj.Notice, ",")))
 						}
 						jb, _ := json.Marshal(obj)
-						db.Hset("user", youdb.I2b(obj.Id), jb)
-						db.HsetSequence("user", obj.Id)
-						db.Hset("user_name2uid", []byte(strings.ToLower(t.Name)), youdb.I2b(obj.Id))
-						db.Hset("user_flag:"+t.Flag, youdb.I2b(obj.Id), []byte(""))
+						db.Hset("user", youdb.I2b(obj.ID), jb)
+						db.HsetSequence("user", obj.ID)
+						db.Hset("user_name2uid", []byte(strings.ToLower(t.Name)), youdb.I2b(obj.ID))
+						db.Hset("user_flag:"+t.Flag, youdb.I2b(obj.ID), []byte(""))
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
 				case tb == "articles":
@@ -138,10 +138,10 @@ func (h *BaseHandler) GetLocal() error {
 						}
 
 						obj := model.Article{
-							Id:           youdb.DS2i(t.Id),
-							Uid:          youdb.DS2i(t.Uid),
-							Cid:          youdb.DS2i(t.Cid),
-							RUid:         youdb.DS2i(t.RUid),
+							ID:           youdb.DS2i(t.ID),
+							UID:          youdb.DS2i(t.UID),
+							CID:          youdb.DS2i(t.CID),
+							RUID:         youdb.DS2i(t.RUID),
 							Title:        t.Title,
 							Content:      t.Content,
 							Tags:         t.Tags,
@@ -153,22 +153,22 @@ func (h *BaseHandler) GetLocal() error {
 						}
 						jb, _ := json.Marshal(obj)
 
-						db.Hset("article", youdb.I2b(obj.Id), jb)
-						db.HsetSequence("article", obj.Id)
+						db.Hset("article", youdb.I2b(obj.ID), jb)
+						db.HsetSequence("article", obj.ID)
 						// 浏览数
-						db.Hset("article_views", youdb.I2b(obj.Id), youdb.I2b(youdb.DS2i(t.Views)))
+						db.Hset("article_views", youdb.I2b(obj.ID), youdb.I2b(youdb.DS2i(t.Views)))
 						// 总文章列表
-						db.Zset("article_timeline", youdb.I2b(obj.Id), obj.EditTime)
+						db.Zset("article_timeline", youdb.I2b(obj.ID), obj.EditTime)
 						// 分类文章列表
-						db.Zset("category_article_timeline:"+strconv.FormatUint(obj.Cid, 10), youdb.I2b(obj.Id), obj.EditTime)
+						db.Zset("category_article_timeline:"+strconv.FormatUint(obj.CID, 10), youdb.I2b(obj.ID), obj.EditTime)
 						// 用户文章列表
-						db.Hset("user_article_timeline:"+strconv.FormatUint(obj.Uid, 10), youdb.I2b(obj.Id), []byte(""))
+						db.Hset("user_article_timeline:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.ID), []byte(""))
 						// 分类下文章数
-						db.Zincr("category_article_num", youdb.I2b(obj.Cid), 1)
+						db.Zincr("category_article_num", youdb.I2b(obj.CID), 1)
 						// title md5
 						hash := md5.Sum([]byte(obj.Title))
 						titleMd5 := hex.EncodeToString(hash[:])
-						db.Hset("title_md5", []byte(titleMd5), youdb.I2b(obj.Id))
+						db.Hset("title_md5", []byte(titleMd5), youdb.I2b(obj.ID))
 
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
@@ -181,7 +181,7 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 						obj := model.Category{
-							Id:       youdb.DS2i(t.Id),
+							ID:       youdb.DS2i(t.ID),
 							Name:     t.Name,
 							Articles: youdb.DS2i(t.Articles),
 							About:    t.About,
@@ -189,8 +189,8 @@ func (h *BaseHandler) GetLocal() error {
 						}
 						jb, _ := json.Marshal(obj)
 
-						db.Hset("category", youdb.I2b(obj.Id), jb)
-						db.HsetSequence("category", obj.Id)          // 分类数
+						db.Hset("category", youdb.I2b(obj.ID), jb)
+						db.HsetSequence("category", obj.ID)          // 分类数
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
 				case tb == "comments":
@@ -204,21 +204,21 @@ func (h *BaseHandler) GetLocal() error {
 
 						rs := db.Hget("article", youdb.DS2b(t.Aid))
 						if rs.State == "ok" {
-							commentId, _ := db.HnextSequence("article_comment:" + t.Aid)
+							commentID, _ := db.HnextSequence("article_comment:" + t.Aid)
 
 							obj := model.Comment{
-								Id:      commentId,
+								ID:      commentID,
 								Aid:     youdb.DS2i(t.Aid),
-								Uid:     youdb.DS2i(t.Uid),
+								UID:     youdb.DS2i(t.UID),
 								Content: t.Content,
 								AddTime: youdb.DS2i(t.AddTime),
 							}
 							jb, _ := json.Marshal(obj)
 
-							db.Hset("article_comment:"+t.Aid, youdb.I2b(obj.Id), jb) // 文章评论bucket
-							db.Hset("count", []byte("comment_num"), youdb.DS2b(t.Id))
+							db.Hset("article_comment:"+t.Aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
+							db.Hset("count", []byte("comment_num"), youdb.DS2b(t.ID))
 							// 用户回复文章列表
-							db.Zset("user_article_reply:"+strconv.FormatUint(obj.Uid, 10), youdb.I2b(obj.Aid), obj.AddTime)
+							db.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
 						}
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
@@ -230,11 +230,11 @@ func (h *BaseHandler) GetLocal() error {
 							db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 							continue
 						}
-						if len(t.Ids) > 0 {
+						if len(t.IDs) > 0 {
 							tagLow := strings.ToLower(t.Name)
 							db.Hset("tag", []byte(tagLow), []byte(""))
-							db.HsetSequence("tag", youdb.DS2i(t.Id)) // 标签个数
-							aids := strings.Split(t.Ids, ",")
+							db.HsetSequence("tag", youdb.DS2i(t.ID)) // 标签个数
+							aids := strings.Split(t.IDs, ",")
 							for _, aid := range aids {
 								db.Hset("tag:"+tagLow, youdb.I2b(youdb.DS2i(aid)), []byte(""))
 							}
@@ -251,7 +251,7 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 						obj := model.QQ{
-							Uid:    youdb.DS2i(t.Uid),
+							UID:    youdb.DS2i(t.UID),
 							Name:   t.Name,
 							Openid: t.Openid,
 						}
@@ -259,7 +259,7 @@ func (h *BaseHandler) GetLocal() error {
 
 						db.Hset("oauth_qq", []byte(t.Openid), jb)
 						db.HnextSequence("oauth_qq")
-						db.Hset("qq_uid2openid", youdb.I2b(obj.Uid), []byte(t.Openid))
+						db.Hset("qq_uid2openid", youdb.I2b(obj.UID), []byte(t.Openid))
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
 				case tb == "weibo":
@@ -271,7 +271,7 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 						obj := model.WeiBo{
-							Uid:    youdb.DS2i(t.Uid),
+							UID:    youdb.DS2i(t.UID),
 							Name:   t.Name,
 							Openid: t.Openid,
 						}
@@ -279,7 +279,7 @@ func (h *BaseHandler) GetLocal() error {
 
 						db.Hset("oauth_weibo", []byte(t.Openid), jb)
 						db.HnextSequence("oauth_weibo")
-						db.Hset("weibo_uid2openid", youdb.I2b(obj.Uid), []byte(t.Openid))
+						db.Hset("weibo_uid2openid", youdb.I2b(obj.UID), []byte(t.Openid))
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
 				}

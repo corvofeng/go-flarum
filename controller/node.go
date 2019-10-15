@@ -79,9 +79,9 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	evn := &pageData{}
 
 	if h.InAPI {
-		pageInfo = model.SQLCidArticleListByPage(sqlDB, db, cobj.Id, page, uint64(scf.HomeShowNum), scf.TimeZone)
+		pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	} else {
-		pageInfo = model.SQLCidArticleList(sqlDB, db, cobj.Id, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
+		pageInfo = model.SQLCIDArticleList(sqlDB, db, cobj.ID, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
 	}
 	categories, err := model.SQLGetAllCategory(sqlDB)
 	evn.Cobj = cobj
@@ -115,8 +115,8 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 		for _, a := range pageInfo.Items {
 			nodeData.Data = append(nodeData.Data,
 				model.RestfulTopic{
-					ID:    a.Id,
-					UID:   a.Uid,
+					ID:    a.ID,
+					UID:   a.UID,
 					Title: a.Title,
 					Author: model.RestfulUser{
 						Name:   a.Name,

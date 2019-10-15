@@ -16,7 +16,7 @@ import (
 func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
 	btn, pn := r.FormValue("btn"), r.FormValue("pagenum")
-	// if currentUser.Id == 0 {
+	// if currentUser.ID == 0 {
 	// 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 	// 	return
 	// }
@@ -92,7 +92,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 
 	for _, item := range data.Items {
 		for idx := range pageInfo.Items {
-			if uint64(item.ID) == pageInfo.Items[idx].Id {
+			if uint64(item.ID) == pageInfo.Items[idx].ID {
 				pageInfo.Items[idx].HighlightContent = template.HTML(item.Content)
 			}
 		}

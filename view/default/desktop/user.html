@@ -7,13 +7,13 @@
 <div class="main-box">
     <div class="member-avatar"><img src="{{.Uobj.Avatar}}" alt="{{.Uobj.Name}}" /></div>
     <div class="member-detail">
-        <p>会员：<strong>{{.Uobj.Name}}</strong> (第{{.Uobj.Id}}号会员，{{.Uobj.RegTimeFmt}}加入)
+        <p>会员：<strong>{{.Uobj.Name}}</strong> (第{{.Uobj.ID}}号会员，{{.Uobj.RegTimeFmt}}加入)
             {{if .CurrentUser.IsAdmin }}
-            &nbsp;&nbsp;&nbsp; • ({{.Uobj.Flag}}) <a href="/admin/user/edit/{{.Uobj.Id}}">编辑</a>
+            &nbsp;&nbsp;&nbsp; • ({{.Uobj.Flag}}) <a href="/admin/user/edit/{{.Uobj.ID}}">编辑</a>
             {{end}}
         </p>
         <p>主贴： {{.Uobj.Articles}}  &nbsp;&nbsp;&nbsp; 回贴： {{.Uobj.Replies}}</p>
-        <p>网站： <a href="{{.Uobj.Url}}" target="_blank" rel="nofollow">{{.Uobj.Url}}</a></p>
+        <p>网站： <a href="{{.Uobj.URL}}" target="_blank" rel="nofollow">{{.Uobj.URL}}</a></p>
         <p>关于： <br/> {{.Uobj.About}}</p>
     </div>
     <div class="c"></div>
@@ -29,11 +29,11 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.UID}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
-            <h1><a href="/t/{{$item.Id}}">{{$item.Title}}</a></h1>
-            <span class="item-date"><a href="/n/{{$item.Cid}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
+            <h1><a href="/t/{{$item.ID}}">{{$item.Title}}</a></h1>
+            <span class="item-date"><a href="/n/{{$item.CID}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.UID}}">{{$item.Name}}</a>
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}
                  • 最后回复 <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>
@@ -41,7 +41,7 @@
             </span>
         </div>
         {{if $item.Comments}}
-        <div class="item-count"><a href="/t/{{$item.Id}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
+        <div class="item-count"><a href="/t/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
         {{end}}
         <div class="c"></div>
     </div>
@@ -50,10 +50,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/member/{{.Uobj.Id}}?act={{.Act}}&btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
+        <a href="/member/{{.Uobj.ID}}?act={{.Act}}&btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/member/{{.Uobj.Id}}?act={{.Act}}&btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
+        <a href="/member/{{.Uobj.ID}}?act={{.Act}}&btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>

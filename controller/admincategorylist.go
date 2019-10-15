@@ -20,7 +20,7 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -39,7 +39,7 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 	var err error
 	var cobj model.Category
 	if len(cid) > 0 {
-		cobj, err = model.CategoryGetById(db, cid)
+		cobj, err = model.CategoryGetByID(db, cid)
 		if err != nil {
 			cobj = model.Category{}
 		}
@@ -83,7 +83,7 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 	}
 
 	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.Id == 0 {
+	if currentUser.ID == 0 {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
@@ -93,7 +93,7 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 	}
 
 	type recForm struct {
-		Cid    uint64 `json:"cid"`
+		CID    uint64 `json:"cid"`
 		Name   string `json:"name"`
 		About  string `json:"about"`
 		Hidden string `json:"hidden"`
@@ -125,17 +125,17 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 	}
 
 	var cobj model.Category
-	if rec.Cid > 0 {
+	if rec.CID > 0 {
 		// edit
-		cobj, err = model.CategoryGetById(db, strconv.FormatUint(rec.Cid, 10))
+		cobj, err = model.CategoryGetByID(db, strconv.FormatUint(rec.CID, 10))
 		if err != nil {
 			w.Write([]byte(`{"retcode":404,"retmsg":"cid not found"}`))
 			return
 		}
 	} else {
 		// add
-		newCid, _ := db.HnextSequence("category")
-		cobj.Id = newCid
+		newCID, _ := db.HnextSequence("category")
+		cobj.ID = newCID
 	}
 
 	cobj.Name = rec.Name
@@ -143,7 +143,7 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 	cobj.Hidden = hidden
 
 	jb, _ := json.Marshal(cobj)
-	db.Hset("category", youdb.I2b(cobj.Id), jb)
+	db.Hset("category", youdb.I2b(cobj.ID), jb)
 
 	rsp := response{}
 	rsp.Retcode = 200

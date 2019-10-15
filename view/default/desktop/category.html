@@ -4,11 +4,11 @@
     <div class="float-left fs14">
         <a href="/">{{.SiteCf.Name}}</a> &raquo; {{.Cobj.Name}} ({{.Cobj.Articles}})
         {{if ge .CurrentUser.Flag 99}}
-        &nbsp;&nbsp;&nbsp; Hidden is {{.Cobj.Hidden}}• <a href="/admin/category/list?cid={{.Cobj.Id}}">编辑</a>
+        &nbsp;&nbsp;&nbsp; Hidden is {{.Cobj.Hidden}}• <a href="/admin/category/list?cid={{.Cobj.ID}}">编辑</a>
         {{end}}
     </div>
     {{if .CurrentUser.CanCreateTopic }}
-    <div class="float-right"><a href="/newpost/{{.Cobj.Id}}" class="newpostbtn">+发新帖</a></div>
+    <div class="float-right"><a href="/newpost/{{.Cobj.ID}}" class="newpostbtn">+发新帖</a></div>
     {{end}}
     <div class="c"></div>
 </div>
@@ -22,11 +22,11 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.Uid}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.UID}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
-            <h1><a href="/topic/{{$item.Id}}">{{$item.Title}}</a></h1>
-            <span class="item-date"><a href="/node/{{$item.Cid}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.Uid}}">{{$item.Name}}</a>
+            <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
+            <span class="item-date"><a href="/node/{{$item.CID}}">{{$item.Cname}}</a>  •  <a href="/member/{{$item.UID}}">{{$item.Name}}</a>
                 {{$item.ClickCnt}}次点击
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}
@@ -35,7 +35,7 @@
             </span>
         </div>
         {{if $item.Comments}}
-        <div class="item-count"><a href="/topic/{{$item.Id}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
+        <div class="item-count"><a href="/topic/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
         {{end}}
         <div class="c"></div>
     </div>
@@ -45,10 +45,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/node/{{.Cobj.Id}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
+        <a href="/node/{{.Cobj.ID}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/node/{{.Cobj.Id}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
+        <a href="/node/{{.Cobj.ID}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>

@@ -18,19 +18,21 @@ import (
 )
 
 type Article struct {
-	Id           uint64 `json:"id"`
-	Uid          uint64 `json:"uid"`
-	Cid          uint64 `json:"cid"`
-	RUid         uint64 `json:"ruid"`
-	Title        string `json:"title"`
-	Content      string `json:"content"`
-	ClientIp     string `json:"clientip"`
-	Tags         string `json:"tags"`
-	AddTime      uint64 `json:"addtime"`
-	EditTime     uint64 `json:"edittime"`
-	Comments     uint64 `json:"comments"`
-	CloseComment bool   `json:"closecomment"`
-	Hidden       bool   `json:"hidden"` // Depreacte, do not use it.
+	ID                uint64 `json:"id"`
+	UID               uint64 `json:"uid"`
+	CID               uint64 `json:"cid"`
+	RUID              uint64 `json:"ruid"`
+	Title             string `json:"title"`
+	Content           string `json:"content"`
+	ClientIP          string `json:"clientip"`
+	Tags              string `json:"tags"`
+	AddTime           uint64 `json:"addtime"`
+	EditTime          uint64 `json:"edittime"`
+	Comments          uint64 `json:"comments"`
+	AnonymousComments bool   `json:"annoymouscomments"` // 是否允许匿名评论
+	CloseComment      bool   `json:"closecomment"`
+	Hidden            bool   `json:"hidden"`   // Depreacte, do not use it.
+	StickTop          bool   `json:"sticktop"` // 是否置顶
 
 	// 帖子被管理员修改后, 已经保存的旧的帖子ID
 	FatherTopicID uint64 `json:"fathertopicid"`
@@ -40,9 +42,9 @@ type Article struct {
 }
 
 type ArticleMini struct {
-	Id       uint64 `json:"id"`
-	Uid      uint64 `json:"uid"`
-	Cid      uint64 `json:"cid"`
+	ID       uint64 `json:"id"`
+	UID      uint64 `json:"uid"`
+	CID      uint64 `json:"cid"`
 	Ruid     uint64 `json:"ruid"`
 	Title    string `json:"title"`
 	EditTime uint64 `json:"edittime"`
@@ -52,11 +54,11 @@ type ArticleMini struct {
 
 // ArticleListItem data strucy only used in page.
 type ArticleListItem struct {
-	Id          uint64 `json:"id"`
-	Uid         uint64 `json:"uid"`
+	ID          uint64 `json:"id"`
+	UID         uint64 `json:"uid"`
 	Name        string `json:"name"`
 	Avatar      string `json:"avatar"`
-	Cid         uint64 `json:"cid"`
+	CID         uint64 `json:"cid"`
 	Cname       string `json:"cname"`
 	Ruid        uint64 `json:"ruid"`
 	Rname       string `json:"rname"`
@@ -86,7 +88,7 @@ type ArticlePageInfo struct {
 }
 
 type ArticleLi struct {
-	Id    uint64 `json:"id"`
+	ID    uint64 `json:"id"`
 	Title string `json:"title"`
 	Tags  string `json:"tags"`
 }
@@ -97,8 +99,8 @@ type ArticleRelative struct {
 }
 
 type ArticleFeedListItem struct {
-	Id          uint64
-	Uid         uint64
+	ID          uint64
+	UID         uint64
 	Name        string
 	Cname       string
 	Title       string
@@ -109,7 +111,7 @@ type ArticleFeedListItem struct {
 
 // 文章添加、编辑后传给后台任务的信息
 type ArticleTag struct {
-	Id      uint64
+	ID      uint64
 	OldTags string
 	NewTags string
 }
@@ -133,14 +135,14 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 
 	for rows.Next() {
 		err = rows.Scan(
-			&obj.Id,
-			&obj.Cid,
-			&obj.Uid,
+			&obj.ID,
+			&obj.CID,
+			&obj.UID,
 			&obj.Title,
 			&obj.Content,
 			&obj.AddTime,
 			&obj.EditTime,
-			&obj.ClientIp,
+			&obj.ClientIP,
 		)
 
 		if err != nil {
@@ -159,13 +161,13 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
 			" VALUES " +
 			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		article.Cid,
-		article.Uid,
+		article.CID,
+		article.UID,
 		article.Title,
 		article.Content,
 		article.AddTime,
 		article.EditTime,
-		article.ClientIp,
+		article.ClientIP,
 		article.FatherTopicID,
 		article.Active,
 	)
@@ -173,7 +175,7 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 		return false
 	}
 	aid, err := row.LastInsertId()
-	article.Id = uint64(aid)
+	article.ID = uint64(aid)
 
 	return true
 }
@@ -187,7 +189,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(db, strconv.FormatUint(article.Id, 10))
+	oldArticle, err := SQLArticleGetByID(db, strconv.FormatUint(article.ID, 10))
 	oldArticle.Active = 0
 	if util.CheckError(err, "修改时拷贝") {
 		return false
@@ -207,12 +209,12 @@ func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
 			" where id=?",
 		article.Title,
 		article.Content,
-		article.Cid,
-		article.Uid,
+		article.CID,
+		article.UID,
 		article.EditTime,
-		article.ClientIp,
-		oldArticle.Id,
-		article.Id,
+		article.ClientIP,
+		oldArticle.ID,
+		article.ID,
 	)
 	if util.CheckError(err, "更新帖子") {
 		return false
@@ -259,16 +261,16 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) Ar
 	m := make(map[uint64]ArticleListItem)
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title, &item.Uid) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cacheDB, item.Uid)
+		err = rows.Scan(&item.ID, &item.Title, &item.UID) //不scan会导致连接不释放
+		item.Avatar = GetAvatarByID(db, cacheDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		rep := cacheDB.Hget("article_views", youdb.I2b(item.Id))
+		rep := cacheDB.Hget("article_views", youdb.I2b(item.ID))
 		item.ClickCnt = rep.Uint64()
-		m[item.Id] = item
+		m[item.ID] = item
 	}
 
 	for _, id := range articleList {
@@ -288,7 +290,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) Ar
 	}
 }
 
-func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
+func ArticleGetByID(db *youdb.DB, aid string) (Article, error) {
 	obj := Article{}
 	rs := db.Hget("article", youdb.DS2b(aid))
 	if rs.State == "ok" {
@@ -298,17 +300,17 @@ func ArticleGetById(db *youdb.DB, aid string) (Article, error) {
 	return obj, errors.New(rs.State)
 }
 
-// SQLCidArticleListByPage 根据页码获取某个分类的列表
-func SQLCidArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit uint64, tz int) ArticlePageInfo {
+// SQLCIDArticleListByPage 根据页码获取某个分类的列表
+func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	if len(articleList) == 0 {
-		pageInfo = SQLCidArticleList(db, cntDB, nodeID, GetCidArticleMax(nodeID), "next", limit, tz)
+		pageInfo = SQLCIDArticleList(db, cntDB, nodeID, GetCIDArticleMax(nodeID), "next", limit, tz)
 		// 先前没有缓存, 需要加入到rank map中
 		var items []ArticleRankItem
 		for _, a := range pageInfo.Items {
 			items = append(items, ArticleRankItem{
-				AID:    a.Id,
+				AID:    a.ID,
 				Weight: a.ClickCnt,
 			})
 		}
@@ -319,9 +321,9 @@ func SQLCidArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit ui
 	return pageInfo
 }
 
-// SQLCidArticleList 返回某个节点的主题
+// SQLCIDArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
-func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -371,20 +373,20 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 	}
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.Id, &item.Title, &item.Uid, &item.Cid, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cntDB, item.Uid)
+		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.CID, &item.EditTime) //不scan会导致连接不释放
+		item.Avatar = GetAvatarByID(db, cntDB, item.UID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		rep := cntDB.Hget("article_views", youdb.I2b(item.Id))
+		rep := cntDB.Hget("article_views", youdb.I2b(item.ID))
 		item.ClickCnt = rep.Uint64()
 		items = append(items, item)
 	}
 	if len(items) > 0 {
-		firstKey = items[0].Id
-		lastKey = items[len(items)-1].Id
+		firstKey = items[0].ID
+		lastKey = items[len(items)-1].ID
 		hasNext = true
 		hasPrev = true
 
@@ -392,7 +394,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 		// 因为帖子较多时, 这算是一种近似
 
 		// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
-		if items[0].Id == 1 || start < uint64(limit) {
+		if items[0].ID == 1 || start < uint64(limit) {
 			hasPrev = false
 		}
 
@@ -415,7 +417,7 @@ func SQLCidArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 
 // SQLArticleList 返回所有节点的主题
 func SQLArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
-	return SQLCidArticleList(
+	return SQLCIDArticleList(
 		db, cntDB, 0, start, btnAct, limit, tz,
 	)
 }
@@ -456,11 +458,11 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 				json.Unmarshal(rs.Data[i+1], &item)
 				if !item.Hidden {
 					aitems = append(aitems, item)
-					userMap[item.Uid] = UserMini{}
+					userMap[item.UID] = UserMini{}
 					if item.Ruid > 0 {
 						userMap[item.Ruid] = UserMini{}
 					}
-					categoryMap[item.Cid] = CategoryMini{}
+					categoryMap[item.CID] = CategoryMini{}
 				}
 			}
 		}
@@ -474,7 +476,7 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := UserMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.Id] = item
+				userMap[item.ID] = item
 			}
 		}
 
@@ -487,19 +489,19 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := CategoryMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.Id] = item
+				categoryMap[item.ID] = item
 			}
 		}
 
 		for _, article := range aitems {
-			user := userMap[article.Uid]
-			category := categoryMap[article.Cid]
+			user := userMap[article.UID]
+			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				Id:          article.Id,
-				Uid:         article.Uid,
+				ID:          article.ID,
+				UID:         article.UID,
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				Cid:         article.Cid,
+				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -512,10 +514,10 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 			}
 			items = append(items, item)
 			if firstKey == 0 {
-				firstKey = item.Id
+				firstKey = item.ID
 				firstScore = item.EditTime
 			}
-			lastKey = item.Id
+			lastKey = item.ID
 			lastScore = item.EditTime
 		}
 
@@ -662,11 +664,11 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 				item := ArticleMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
 				aitems = append(aitems, item)
-				userMap[item.Uid] = UserMini{}
+				userMap[item.UID] = UserMini{}
 				if item.Ruid > 0 {
 					userMap[item.Ruid] = UserMini{}
 				}
-				categoryMap[item.Cid] = CategoryMini{}
+				categoryMap[item.CID] = CategoryMini{}
 			}
 		}
 
@@ -679,7 +681,7 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := UserMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.Id] = item
+				userMap[item.ID] = item
 			}
 		}
 
@@ -692,19 +694,19 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := CategoryMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.Id] = item
+				categoryMap[item.ID] = item
 			}
 		}
 
 		for _, article := range aitems {
-			user := userMap[article.Uid]
-			category := categoryMap[article.Cid]
+			user := userMap[article.UID]
+			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				Id:          article.Id,
-				Uid:         article.Uid,
+				ID:          article.ID,
+				UID:         article.UID,
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				Cid:         article.Cid,
+				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -717,9 +719,9 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 			}
 			items = append(items, item)
 			if firstKey == 0 {
-				firstKey = item.Id
+				firstKey = item.ID
 			}
-			lastKey = item.Id
+			lastKey = item.ID
 		}
 
 		rs = db.Hscan(tb, youdb.I2b(firstKey), 1)
@@ -760,11 +762,11 @@ func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
 				item := ArticleMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
 				aitems = append(aitems, item)
-				userMap[item.Uid] = UserMini{}
+				userMap[item.UID] = UserMini{}
 				if item.Ruid > 0 {
 					userMap[item.Ruid] = UserMini{}
 				}
-				categoryMap[item.Cid] = CategoryMini{}
+				categoryMap[item.CID] = CategoryMini{}
 			}
 		}
 
@@ -777,7 +779,7 @@ func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := UserMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.Id] = item
+				userMap[item.ID] = item
 			}
 		}
 
@@ -790,19 +792,19 @@ func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := CategoryMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.Id] = item
+				categoryMap[item.ID] = item
 			}
 		}
 
 		for _, article := range aitems {
-			user := userMap[article.Uid]
-			category := categoryMap[article.Cid]
+			user := userMap[article.UID]
+			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				Id:          article.Id,
-				Uid:         article.Uid,
+				ID:          article.ID,
+				UID:         article.UID,
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				Cid:         article.Cid,
+				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -848,11 +850,11 @@ func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePag
 					}
 					if getIt {
 						aitems = append(aitems, aitem)
-						userMap[aitem.Uid] = UserMini{}
-						if aitem.RUid > 0 {
-							userMap[aitem.RUid] = UserMini{}
+						userMap[aitem.UID] = UserMini{}
+						if aitem.RUID > 0 {
+							userMap[aitem.RUID] = UserMini{}
 						}
-						categoryMap[aitem.Cid] = CategoryMini{}
+						categoryMap[aitem.CID] = CategoryMini{}
 						if len(aitems) == limit {
 							break
 						}
@@ -877,7 +879,7 @@ func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePag
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := UserMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.Id] = item
+				userMap[item.ID] = item
 			}
 		}
 
@@ -890,28 +892,28 @@ func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePag
 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
 				item := CategoryMini{}
 				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.Id] = item
+				categoryMap[item.ID] = item
 			}
 		}
 
 		for _, article := range aitems {
-			user := userMap[article.Uid]
-			category := categoryMap[article.Cid]
+			user := userMap[article.UID]
+			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				Id:          article.Id,
-				Uid:         article.Uid,
+				ID:          article.ID,
+				UID:         article.UID,
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				Cid:         article.Cid,
+				CID:         article.CID,
 				Cname:       category.Name,
-				Ruid:        article.RUid,
+				Ruid:        article.RUID,
 				Title:       article.Title,
 				EditTime:    article.EditTime,
 				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
 				Comments:    article.Comments,
 			}
-			if article.RUid > 0 {
-				item.Rname = userMap[article.RUid].Name
+			if article.RUID > 0 {
+				item.Rname = userMap[article.RUID].Name
 			}
 			items = append(items, item)
 		}
@@ -947,8 +949,8 @@ func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
 					json.Unmarshal(rs.Data[i+1], &item)
 					if !item.Hidden {
 						aitems = append(aitems, item)
-						userMap[item.Uid] = UserMini{}
-						categoryMap[item.Cid] = CategoryMini{}
+						userMap[item.UID] = UserMini{}
+						categoryMap[item.CID] = CategoryMini{}
 					}
 				}
 			}
@@ -962,7 +964,7 @@ func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
 				for i := 0; i < (len(rs.Data) - 1); i += 2 {
 					item := UserMini{}
 					json.Unmarshal(rs.Data[i+1], &item)
-					userMap[item.Id] = item
+					userMap[item.ID] = item
 				}
 			}
 
@@ -975,16 +977,16 @@ func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
 				for i := 0; i < (len(rs.Data) - 1); i += 2 {
 					item := CategoryMini{}
 					json.Unmarshal(rs.Data[i+1], &item)
-					categoryMap[item.Id] = item
+					categoryMap[item.ID] = item
 				}
 			}
 
 			for _, article := range aitems {
-				user := userMap[article.Uid]
-				category := categoryMap[article.Cid]
+				user := userMap[article.UID]
+				category := categoryMap[article.CID]
 				item := ArticleFeedListItem{
-					Id:          article.Id,
-					Uid:         article.Uid,
+					ID:          article.ID,
+					UID:         article.UID,
 					Name:        user.Name,
 					Cname:       html.EscapeString(category.Name),
 					Title:       html.EscapeString(article.Title),

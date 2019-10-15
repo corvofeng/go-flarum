@@ -12,7 +12,7 @@ import (
 )
 
 type Category struct {
-	Id       uint64 `json:"id"`
+	ID       uint64 `json:"id"`
 	Name     string `json:"name"`
 	Articles uint64 `json:"articles"`
 	About    string `json:"about"`
@@ -20,7 +20,7 @@ type Category struct {
 }
 
 type CategoryMini struct {
-	Id   uint64 `json:"id"`
+	ID   uint64 `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -32,7 +32,7 @@ type CategoryPageInfo struct {
 	LastKey  uint64     `json:"lastkey"`
 }
 
-func CategoryGetById(db *youdb.DB, cid string) (Category, error) {
+func CategoryGetByID(db *youdb.DB, cid string) (Category, error) {
 	obj := Category{}
 	rs := db.Hget("category", youdb.DS2b(cid))
 	if rs.State == "ok" {
@@ -56,7 +56,7 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 	}
 	for rows.Next() {
 		obj := CategoryMini{}
-		err = rows.Scan(&obj.Id, &obj.Name) //不scan会导致连接不释放
+		err = rows.Scan(&obj.ID, &obj.Name) //不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -100,7 +100,7 @@ func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
 		fmt.Printf("Query failed,err:%v", err)
 	}
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Name, &obj.About, &obj.Articles) //不scan会导致连接不释放
+		err = rows.Scan(&obj.ID, &obj.Name, &obj.About, &obj.Articles) //不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -149,7 +149,7 @@ func CategoryNewest(db *youdb.DB, limit int) []CategoryMini {
 func CategoryGetMain(db *youdb.DB, currentCobj Category) []CategoryMini {
 	var items []CategoryMini
 	item := CategoryMini{
-		Id:   currentCobj.Id,
+		ID:   currentCobj.ID,
 		Name: currentCobj.Name,
 	}
 	items = append(items, item)
@@ -157,10 +157,10 @@ func CategoryGetMain(db *youdb.DB, currentCobj Category) []CategoryMini {
 	rs := db.Hget("keyValue", []byte("main_category"))
 	if rs.State == "ok" {
 		var keys [][]byte
-		currentCidStr := strconv.FormatUint(currentCobj.Id, 10)
+		currentCIDStr := strconv.FormatUint(currentCobj.ID, 10)
 		cids := strings.Split(rs.String(), ",")
 		for _, v := range cids {
-			if v != currentCidStr {
+			if v != currentCIDStr {
 				keys = append(keys, youdb.DS2b(v))
 			}
 		}
@@ -211,9 +211,9 @@ func CategoryList(db *youdb.DB, cmd, key string, limit int) CategoryPageInfo {
 				json.Unmarshal(rs.Data[i+1], &item)
 				items = append(items, item)
 				if firstKey == 0 {
-					firstKey = item.Id
+					firstKey = item.ID
 				}
-				lastKey = item.Id
+				lastKey = item.ID
 			}
 
 			rs = db.Hscan(tb, youdb.I2b(firstKey), 1)
