@@ -168,6 +168,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 
 	if isChanged {
 		jb, _ := json.Marshal(currentUser)
+		currentUser.SQLUserUpdate(sqlDB)
 		h.App.Db.Hset("user", youdb.I2b(currentUser.ID), jb)
 	}
 

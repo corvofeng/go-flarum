@@ -17,6 +17,7 @@ import (
 	"github.com/ego008/youdb"
 )
 
+// Article store in database
 type Article struct {
 	ID                uint64 `json:"id"`
 	UID               uint64 `json:"uid"`
@@ -29,10 +30,10 @@ type Article struct {
 	AddTime           uint64 `json:"addtime"`
 	EditTime          uint64 `json:"edittime"`
 	Comments          uint64 `json:"comments"`
-	AnonymousComments bool   `json:"annoymouscomments"` // 是否允许匿名评论
+	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
 	CloseComment      bool   `json:"closecomment"`
 	Hidden            bool   `json:"hidden"`   // Depreacte, do not use it.
-	StickTop          bool   `json:"sticktop"` // 是否置顶
+	StickTop          bool   `json:"stick_top"` // 是否置顶
 
 	// 帖子被管理员修改后, 已经保存的旧的帖子ID
 	FatherTopicID uint64 `json:"fathertopicid"`
