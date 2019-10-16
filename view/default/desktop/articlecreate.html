@@ -120,9 +120,9 @@
                 console.log(file);
                 var rsp = jQuery.parseJSON(data);
                 if(rsp.retcode == 200) {
-                    var con = document.getElementByID("id-content").value;
+                    var con = document.getElementById("id-content").value;
                     document.getElementsByTagName("textarea")[0].focus();
-                    document.getElementByID("id-content").value = con + "\n"+rsp.url+"\n";
+                    document.getElementById("id-content").value = con + "\n"+rsp.url+"\n";
                 }else{
                     $.toast(rsp.retmsg);
                 }

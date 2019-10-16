@@ -98,9 +98,9 @@
                     var FR= new FileReader();
                     FR.addEventListener("load", function(e) {
                         var buffer = e.target.result;
-                        document.getElementByID("av24").src = buffer;
-                        document.getElementByID("av48").src = buffer;
-                        document.getElementByID("av73").src = buffer;
+                        document.getElementById("av24").src = buffer;
+                        document.getElementById("av48").src = buffer;
+                        document.getElementById("av73").src = buffer;
                     });
                     FR.readAsDataURL(file);
                     $("#avatar_submit").attr("disabled", false);
@@ -115,7 +115,7 @@
         }
     }
 
-    document.getElementByID("avatar").addEventListener("change", readFile);
+    document.getElementById("avatar").addEventListener("change", readFile);
 </script>
 
 

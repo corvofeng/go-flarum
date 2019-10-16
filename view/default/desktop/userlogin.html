@@ -43,8 +43,8 @@
     }
 
     function reload() {
-        setSrcQuery(document.getElementByID('image'), "reload=" + (new Date()).getTime());
-        document.getElementByID('captchaSolution').value = "";
+        setSrcQuery(document.getElementById('image'), "reload=" + (new Date()).getTime());
+        document.getElementById('captchaSolution').value = "";
         return false;
     }
 
@@ -73,7 +73,7 @@
                         window.location.href = "/";
                     }else{
                         if(data.retcode==405){
-                            document.getElementByID('image').src = "/captcha/"+data.newCaptchaID+".png";
+                            document.getElementById('image').src = "/captcha/"+data.newCaptchaID+".png";
                             captchaID = data.newCaptchaID;
                             $('#captchaSolution').val('');
                         }else{

@@ -172,7 +172,7 @@
     <div class="scbox">
         <script type="text/javascript">
             var dispatch = function() {
-                q = document.getElementByID("q");
+                q = document.getElementById("q");
                 if (q.value != "" && q.value != "站内搜索") {
                     window.location.href = '/search?q=' + q.value;
                     return false;
