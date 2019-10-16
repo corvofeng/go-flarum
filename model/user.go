@@ -11,6 +11,7 @@ import (
 	"github.com/ego008/youdb"
 )
 
+// User store in database
 type User struct {
 	ID            uint64 `json:"id"`
 	Name          string `json:"name"`
@@ -147,7 +148,7 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 	obj := User{}
 
 	rows, err := db.Query(
-		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE id =  ?",
+		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id =  ?",
 		uid)
 
 	defer func() {
@@ -168,6 +169,7 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 			&obj.Email,
 			&obj.Avatar,
 			&obj.URL,
+			&obj.About,
 			&obj.Token,
 			&obj.RegTime,
 		)
@@ -214,6 +216,26 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 		return obj, nil
 	}
 	return obj, errors.New("No result")
+}
+
+
+// SQLUserUpdate 更新用户信息
+func  (user *User) SQLUserUpdate(db* sql.DB)  bool{
+	_, err := db.Exec(
+		"UPDATE `user` "+
+			"set email=?,"+
+			"description=?,"+
+			"website=?"+
+			" where id=?",
+			user.Email,
+			user.About,
+			user.URL,
+			user.ID,
+	)
+	if util.CheckError(err, "更新用户信息") {
+		return false
+	}
+	return true
 }
 
 // SQLRegister 用户注册
