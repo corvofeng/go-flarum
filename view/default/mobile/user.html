@@ -5,7 +5,7 @@
 </div>
 
 <div class="main-box">
-    <div class="member-avatar"><img src="/static/avatar/{{.Uobj.Avatar}}.jpg" alt="{{.Uobj.Name}}" /></div>
+    <div class="member-avatar"><img src="{{.Uobj.Avatar}}" alt="{{.Uobj.Name}}" /></div>
     <div class="member-detail">
         <p>会员：<strong>{{.Uobj.Name}}</strong> (第{{.Uobj.ID}}号会员，{{.Uobj.RegTimeFmt}}加入)
             {{if ge .CurrentUser.Flag 99}}
@@ -29,12 +29,12 @@
     {{range $_, $item := .PageInfo.Items}}
     <div class="post-list">
         <div class="item-avatar">
-            <a href="/member/{{$item.UID}}"><img src="/static/avatar/{{$item.Avatar}}.jpg" alt="{{$item.Name}}" /></a>
+            <a href="/member/{{$item.UID}}"><img src="{{$item.Avatar}}" alt="{{$item.Name}}" /></a>
         </div>
         <div class="item-content">
-            <h1><a href="/t/{{$item.ID}}">{{$item.Title}}</a></h1>
+            <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
             <span class="item-date">
-                <a href="/n/{{$item.CID}}">{{$item.Cname}}</a>
+                <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
                 • {{$item.EditTimeFmt}}
                 {{if $item.Comments}}
                 • <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>
@@ -44,7 +44,7 @@
             </span>
         </div>
         {{if $item.Comments}}
-        <div class="item-count"><a href="/t/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
+        <div class="item-count"><a href="/topic/{{$item.ID}}#reply{{$item.Comments}}">{{$item.Comments}}</a></div>
         {{end}}
         <div class="c"></div>
     </div>
