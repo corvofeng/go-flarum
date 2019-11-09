@@ -8,6 +8,7 @@ require (
 	github.com/disintegration/imaging v1.6.1
 	github.com/ego008/youdb v0.0.0-20190704122013-a2b05b09e20d
 	github.com/elazarl/goproxy v0.0.0-20190911111923-ecfe977594f1 // indirect
+	github.com/go-redis/redis/v7 v7.0.0-beta.4
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/h2non/filetype v1.0.10
