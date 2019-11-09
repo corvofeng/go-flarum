@@ -9,6 +9,7 @@ import (
 	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
 )
 
 // User store in database
@@ -300,7 +301,7 @@ func (user *User) CanEdit() bool {
 }
 
 // SaveAvatar 更新用户头像
-func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, avatar string) {
+func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, avatar string) {
 	logger := util.GetLogger()
 
 	if user == nil {
@@ -312,6 +313,7 @@ func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, avatar string) {
 		return
 	}
 
+	redisDB.HSet("avatar", string(user.ID), avatar)
 	cntDB.Hdel("avatar", youdb.I2b(user.ID))
 	logger.Notice("Refresh user avatar", user)
 	return

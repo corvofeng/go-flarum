@@ -109,13 +109,17 @@ type Application struct {
 	Rand    *rand.Rand // 负责处理随机数
 }
 
+// LoadConfig 从文件中初始化程序配置
 func LoadConfig(filename string) *config.Engine {
 	c := &config.Engine{}
 	c.Load(filename)
 	return c
 }
 
+// Init ， 连接数据库
 func (app *Application) Init(c *config.Engine, currentFilePath string) {
+	// .. version_changed: 2019-11-09 
+	// 添加 redis, 目前redis只用于缓存数据，理论上不能包含数据结构
 
 	mcf := &MainConf{}
 	c.GetStruct("Main", mcf)
@@ -192,8 +196,10 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	app.Logger.Debug("youdb Connect to", mcf.Youdb)
 }
 
+// Close 清理程序连接
 func (app *Application) Close() {
 	app.Db.Close()
 	app.MySQLdb.Close()
+	app.RedisDB.Close()
 	app.Logger.Debug("db cloded")
 }
