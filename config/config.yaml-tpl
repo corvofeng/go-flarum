@@ -8,6 +8,10 @@ Main:
     MySQL_DB: "goyoubbs"
     MySQL_PORT: "3306"
     HttpsPort: 443
+    RedisHost: "127.0.0.1"
+    RedisPort: "6379"
+    RedisPass: ""
+    RedisDB: 0
     PubDir: "static"
     ViewDir: "view/default"
     Youdb: "mydata.db"

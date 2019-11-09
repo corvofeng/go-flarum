@@ -1,3 +1,7 @@
+db.json
+index/
+venv/
+
 static/avatar
 config/
 !config/config.yaml-tpl

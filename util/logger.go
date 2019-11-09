@@ -55,7 +55,7 @@ func CheckError(err error, info string) (res bool) {
 		// 	"[error] in %s[%s:%d] %v",
 		// 	runtime.FuncForPC(pc).Name(), fn, line, err)
 
-		logger.Errorf("[%s:%d] %v", fn, line, err)
+		logger.Errorf("[%s:%d] %s %v", fn, line, info, err)
 		return true
 	}
 	return false

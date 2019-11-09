@@ -18,6 +18,8 @@ import (
 	logging "github.com/op/go-logging"
 	"github.com/qiniu/api.v7/storage"
 	"github.com/weint/config"
+
+	"github.com/go-redis/redis/v7"
 )
 
 type MainConf struct {
@@ -30,6 +32,10 @@ type MainConf struct {
 	MySQL_USER     string
 	MySQL_PASS     string
 	MySQL_DB       string
+	RedisHost      string
+	RedisPort      string
+	RedisPass      string
+	RedisDB        int
 	PubDir         string
 	ViewDir        string
 	Youdb          string
@@ -95,6 +101,7 @@ type AppConf struct {
 type Application struct {
 	Cf      *AppConf
 	Db      *youdb.DB
+	RedisDB *redis.Client
 	MySQLdb *sql.DB
 	Sc      *securecookie.SecureCookie
 	QnZone  *storage.Zone
@@ -149,6 +156,18 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	dbStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
 	logger.Debug("Get db str: ", dbStr)
 
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", mcf.RedisHost, mcf.RedisPort),
+		Password: mcf.RedisPass,
+		DB:       mcf.RedisDB,
+	})
+	pong, err := client.Ping().Result()
+	if err != nil {
+		logger.Errorf("Connect redis error, %s", err)
+		return
+	}
+	logger.Debug(pong, err)
+
 	sqlDb, err := sql.Open("mysql", dbStr)
 	if err != nil {
 		logger.Errorf("Connect mysql error, %s", err)
@@ -156,6 +175,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	}
 	app.Db = db
 	app.MySQLdb = sqlDb
+	app.RedisDB = client
 	app.Logger = util.GetLogger()
 
 	// set main node

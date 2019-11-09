@@ -29,6 +29,7 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/net/http2"
+	// "github.com/go-redis/redis/v7"
 )
 
 func tracker(next http.Handler) http.Handler {
@@ -49,21 +50,17 @@ func main() {
 	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
 
 	httpPort := flag.String("HTTP_PORT", "8082", "http port")
-	// mysqlHost := flag.String("MySQL_HOST", "127.0.0.1", "MySql host")
-	// mysqlUser := flag.String("MySQL_USER", "root", "MySql user")
-	// mysqlPass := flag.String("MySQL_PASS", "", "MySQL pass")
-	// mysqlPort := flag.String("MySQL_PORT", "3306", "MySql port")
-	// mysqlDB := flag.String("MySQL_DB", "youbbs", "MySql db")
-
 	flag.Parse()
+
+	// client := redis.NewClient(&redis.Options{
+	// 	Addr:     "localhost:6379",
+	// 	Password: "", // no password set
+	// 	DB:       0,  // use default DB
+	// })
+	// logger.Debug(client)
 
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
-	// sqlDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", *mysqlUser, *mysqlPass, *mysqlHost, *mysqlPort, *mysqlDB))
-	// if err != nil {
-	// 	logger.Debug("Connect mysql error, %s", err)
-	// 	return
-	// }
 
 	model.RankMapInit(10)
 	// app.Init(c, os.Args[0], sqlDb)
