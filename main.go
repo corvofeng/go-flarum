@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+
 	// "database/sql"
 	"flag"
 	// "fmt"
@@ -52,18 +53,10 @@ func main() {
 	httpPort := flag.String("HTTP_PORT", "8082", "http port")
 	flag.Parse()
 
-	// client := redis.NewClient(&redis.Options{
-	// 	Addr:     "localhost:6379",
-	// 	Password: "", // no password set
-	// 	DB:       0,  // use default DB
-	// })
-	// logger.Debug(client)
-
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
 
 	model.RankMapInit(10)
-	// app.Init(c, os.Args[0], sqlDb)
 	app.Init(c, os.Args[0])
 
 	if *getOldSite == "1" || *getOldSite == "2" {

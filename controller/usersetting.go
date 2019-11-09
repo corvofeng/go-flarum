@@ -11,10 +11,11 @@ import (
 
 	"goyoubbs/model"
 	"goyoubbs/util"
-	"github.com/ego008/youdb"
+
 	"github.com/rs/xid"
 )
 
+// UserSetting 用户配置修改
 func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
 	if currentUser.ID == 0 {
@@ -110,7 +111,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 存储到数据库时, 需要带上前面的'/', 保证为绝对路径
-		currentUser.SaveAvatar(sqlDB, h.App.Db, "/"+avatarPath)
+		currentUser.SaveAvatar(sqlDB, h.App.Db, h.App.RedisDB, "/"+avatarPath)
 
 		http.Redirect(w, r, "/setting#2", http.StatusSeeOther)
 		return
@@ -166,10 +167,9 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 		isChanged = true
 	}
 
+	rlt := true
 	if isChanged {
-		jb, _ := json.Marshal(currentUser)
-		currentUser.SQLUserUpdate(sqlDB)
-		h.App.Db.Hset("user", youdb.I2b(currentUser.ID), jb)
+		rlt = currentUser.SQLUserUpdate(sqlDB)
 	}
 
 	type response struct {
@@ -177,7 +177,12 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rsp := response{}
-	rsp.Retcode = 200
-	rsp.Retmsg = "修改成功"
+	if rlt {
+		rsp.Retcode = 200
+		rsp.Retmsg = "修改成功"
+	} else {
+		rsp.Retcode = 400
+		rsp.Retmsg = "修改失败"
+	}
 	json.NewEncoder(w).Encode(rsp)
 }
