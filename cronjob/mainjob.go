@@ -75,7 +75,7 @@ func (h *BaseHandler) MainCronJob() {
 }
 
 func saveToRedisSorted(logger *logging.Logger, db* youdb.DB, redisDB *redis.Client) {
-	logger.Info("Start conn", db, redisDB)
+    // logger.Info("Start conn", db, redisDB)
 	// rep := db.Hget("article_views", youdb.I2b(item.ID))
 }
 

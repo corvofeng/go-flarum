@@ -121,7 +121,7 @@ func RankMapInit(sleeps uint64, sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.C
 	rankMap.RedisDB = redisDB
 
 	rankRedisDB = redisDB
-	go timelyResort(3)
+	go timelyResort(sleeps)
 }
 
 // GetRankMap you can get ttlmap by this.
