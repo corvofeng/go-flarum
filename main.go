@@ -56,8 +56,8 @@ func main() {
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
 
-	model.RankMapInit(10)
 	app.Init(c, os.Args[0])
+	model.RankMapInit(10, app.MySQLdb, app.Db, app.RedisDB)
 
 	if *getOldSite == "1" || *getOldSite == "2" {
 		bh := &getold.BaseHandler{

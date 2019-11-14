@@ -40,9 +40,9 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 
-	// aobj, err := model.ArticleGetByID(db, aid)
-	aobj, err := model.SQLArticleGetByID(sqlDB, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -179,6 +179,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 	if rec.Act == "preview" {
 		tmp := struct {
 			normalRsp
@@ -223,7 +224,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取原始的帖子
-	aobj, err := model.SQLArticleGetByID(sqlDB, aidS)
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aidS)
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -250,7 +251,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	aobj.CloseComment = closeComment
 	aobj.ClientIP = r.Header.Get("X-REAL-IP")
 	aobj.EditTime = uint64(time.Now().UTC().Unix())
-	aobj.SQLArticleUpdate(sqlDB)
+	aobj.SQLArticleUpdate(sqlDB, db, redisDB)
 
 	jb, _ := json.Marshal(aobj)
 	db.Hset("article", aidB, jb)

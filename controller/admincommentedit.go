@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"goyoubbs/model"
 	"goyoubbs/util"
-	"github.com/rs/xid"
-	"goji.io/pat"
 	"net/http"
 	"strconv"
+
+	"github.com/rs/xid"
+	"goji.io/pat"
 )
 
 func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
@@ -35,9 +36,10 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 
 	// aobj, _ := model.ArticleGetByID(db, aid)
-	aobj, _ := model.SQLArticleGetByID(sqlDB, aid)
+	aobj, _ := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
 
 	// comment
 	cobj, err := model.CommentGetByKey(db, aid, cidI)
