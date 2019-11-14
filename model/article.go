@@ -32,7 +32,7 @@ type Article struct {
 	Comments          uint64 `json:"comments"`
 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
 	CloseComment      bool   `json:"closecomment"`
-	Hidden            bool   `json:"hidden"`   // Depreacte, do not use it.
+	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
 	StickTop          bool   `json:"stick_top"` // 是否置顶
 
 	// 帖子被管理员修改后, 已经保存的旧的帖子ID
@@ -85,6 +85,8 @@ type ArticlePageInfo struct {
 	FirstScore uint64            `json:"firstscore"`
 	LastKey    uint64            `json:"lastkey"`
 	PageNum    uint64            `json:"pagenum"`
+	PagePrev   uint64            `json:"pageprev"`
+	PageNext   uint64            `json:"pagenext"`
 	LastScore  uint64            `json:"lastscore"`
 }
 
@@ -306,19 +308,25 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit ui
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	if len(articleList) == 0 {
-		pageInfo = SQLCIDArticleList(db, cntDB, nodeID, GetCIDArticleMax(nodeID), "next", limit, tz)
+		articleIteratorStart := GetCIDArticleMax(nodeID)
+		fmt.Println("Current iterator is in ", articleIteratorStart)
+		pageInfo = SQLCIDArticleList(db, cntDB, nodeID, articleIteratorStart, "next", limit, tz)
 		// 先前没有缓存, 需要加入到rank map中
 		var items []ArticleRankItem
 		for _, a := range pageInfo.Items {
 			items = append(items, ArticleRankItem{
-				AID:    a.ID,
-				Weight: a.ClickCnt,
+				AID:     a.ID,
+				CacheDB: cntDB,
+				Weight:  a.ClickCnt,
 			})
 		}
 		AddNewArticleList(nodeID, items)
 	} else {
 		pageInfo = SQLArticleGetByList(db, cntDB, articleList)
 	}
+	pageInfo.PageNum = page
+	pageInfo.PageNext = page + 1
+	pageInfo.PagePrev = page - 1
 	return pageInfo
 }
 

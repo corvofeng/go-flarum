@@ -1,22 +1,40 @@
 package model
 
 import (
+	"github.com/ego008/youdb"
 	"sort"
 	"sync"
 	"time"
 )
 
+// WeightAble 可以获取权值的一种结构
+type WeightAble interface {
+	GetWeight() uint64
+}
+
 // ArticleRankItem 记录每个话题的权重
 type ArticleRankItem struct {
-	AID    uint64 `json:"a_id"`
-	Weight uint64
+	AID     uint64 `json:"a_id"`
+	Weight  uint64
+	CacheDB *youdb.DB
+}
+
+// GetWeight 获取权重
+func (articleItem *ArticleRankItem) GetWeight() uint64 {
+
+	if articleItem.CacheDB != nil {
+		rep := articleItem.CacheDB.Hget("article_views", youdb.I2b(articleItem.AID))
+		articleItem.Weight = rep.Uint64()
+	}
+
+	return articleItem.Weight
 }
 
 // CategoryRankData 一个分类下的排序数据
 type CategoryRankData struct {
 	CID       uint64     `json:"c_id"`
 	mtx       sync.Mutex // 同一时刻, 只允许一个协程操纵该分类的记录
-	maxID     uint64     // 数据库游标, 记录当前已读取数据的最大值
+	maxID     uint64     // 数据库游标, 记录当前已读取数据的最大值, 从数据库中读取新的数据时使用
 	topicData []ArticleRankItem
 }
 
@@ -35,27 +53,17 @@ func (data *CategoryRankData) resort() {
 		defer data.mtx.Unlock()
 		// Sort by age, keeping original order or equal elements.
 		sort.SliceStable(data.topicData, func(i, j int) bool {
-			return data.topicData[i].Weight >= data.topicData[j].Weight
+			return data.topicData[i].GetWeight() >= data.topicData[j].GetWeight()
 		})
 	}()
 	// fmt.Println("After sort ", data.CID, data.topicData)
 
-	var maxID uint64
-	for _, d := range data.topicData {
-		if d.AID > maxID {
-			maxID = d.AID
-		}
-	}
-	func() {
-		data.mtx.Lock()
-		defer data.mtx.Unlock()
-		data.maxID = maxID
-	}()
+
 }
 
 func timelyResort(sleeps uint64) {
 	m := GetRankMap()
-	for _ = range time.Tick(time.Second * time.Duration(sleeps)) { // 每10s刷新一次
+	for range time.Tick(time.Second * time.Duration(sleeps)) { // 每10s刷新一次
 		expireItems := []*CategoryRankData{}
 		func() {
 			m.mtx.Lock()
@@ -137,13 +145,20 @@ func AddNewArticleList(cid uint64, rankItems []ArticleRankItem) {
 			}
 		}()
 	}
-	// fmt.Print("Get data ", cid, rankItems)
+
+	var maxID uint64
+	for _, d := range rankItems{
+		if d.AID > maxID {
+			maxID = d.AID
+		}
+	}
 
 	crd := m.m[cid] // categoryRankData
 	func() {
 		crd.mtx.Lock()
 		defer crd.mtx.Unlock()
 		crd.topicData = append(crd.topicData, rankItems...) // 直接加入, 不做任何处理
+		crd.maxID = maxID
 	}()
 }
 

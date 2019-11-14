@@ -48,10 +48,10 @@
 
     <div class="pagination">
         {{if .PageInfo.HasPrev}}
-        <a href="/node/{{.Cobj.ID}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}" class="float-left">&laquo; 上一页</a>
+        <a href="/node/{{.Cobj.ID}}?btn=prev&key={{.PageInfo.FirstKey}}&score={{.PageInfo.FirstScore}}&page={{.PageInfo.PagePrev}}" class="float-left">&laquo; 上一页</a>
         {{end}}
         {{if .PageInfo.HasNext}}
-        <a href="/node/{{.Cobj.ID}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}" class="float-right">下一页 &raquo;</a>
+        <a href="/node/{{.Cobj.ID}}?btn=next&key={{.PageInfo.LastKey}}&score={{.PageInfo.LastScore}}&page={{.PageInfo.PageNext}}" class="float-right">下一页 &raquo;</a>
         {{end}}
         <div class="c"></div>
     </div>

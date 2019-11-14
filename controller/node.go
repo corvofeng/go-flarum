@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"goyoubbs/model"
+	// "goyoubbs/util"
 
 	"goji.io/pat"
 )
@@ -13,60 +14,37 @@ import (
 // CategoryDetailNew 新版的使用sql的页面
 func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) {
 
-	var start uint64
+	// var start uint64
 	var err error
 	var cobj model.Category
 	var page uint64
 	var pageInfo model.ArticlePageInfo
 
-	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
-	if len(key) > 0 {
-		start, err = strconv.ParseUint(key, 10, 64)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
-			return
-		}
-	}
-	if len(score) > 0 {
-		_, err = strconv.ParseUint(score, 10, 64)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"score type err"}`))
-			return
-		}
-	}
 	db := h.App.Db
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	logger := h.App.Logger
+	cid := pat.Param(r, "cid")
+	_, err = strconv.Atoi(cid)
+	if err != nil {
+		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
+		return
+	}
+	cobj, err = model.SQLCategoryGetByID(sqlDB, cid)
 
-	if h.InAPI {
-		cname := r.FormValue("tab")
-		cobj, err = model.SQLCategoryGetByName(sqlDB, cname)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	p := r.FormValue("page")
+	if len(p) > 0 {
+		page, err = strconv.ParseUint(p, 10, 64)
 		if err != nil {
-			w.Write([]byte(err.Error()))
-			return
-		}
-		p := r.FormValue("page")
-		if len(p) > 0 {
-			page, err = strconv.ParseUint(p, 10, 64)
-			if err != nil {
-				w.Write([]byte(`{"retcode":400,"retmsg":"page type err"}`))
-				return
-			}
-		}
-	} else {
-		cid := pat.Param(r, "cid")
-		_, err = strconv.Atoi(cid)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
-			return
-		}
-		cobj, err = model.SQLCategoryGetByID(sqlDB, cid)
-		if err != nil {
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(`{"retcode":400,"retmsg":"page type err"}`))
 			return
 		}
 	}
+	logger.Debug("Get page ", page, ", Get cobj", cobj)
 
 	tpl := h.CurrentTpl(r)
 
@@ -77,12 +55,17 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	}
 
 	evn := &pageData{}
-
-	if h.InAPI {
-		pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
-	} else {
-		pageInfo = model.SQLCIDArticleList(sqlDB, db, cobj.ID, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
+	if page == 0 {
+		page = 1
 	}
+
+	pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo.HasNext = true
+	if pageInfo.PagePrev != 0 {
+		pageInfo.HasPrev = true
+	}
+	// } else {
+	// }
 	categories, err := model.SQLGetAllCategory(sqlDB)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
