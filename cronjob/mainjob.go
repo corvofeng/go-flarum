@@ -1,6 +1,7 @@
 package cronjob
 
 import (
+	"github.com/go-redis/redis/v7"
 	"encoding/json"
 	"os"
 	"strings"
@@ -9,59 +10,80 @@ import (
 	"goyoubbs/model"
 	"goyoubbs/system"
 	"github.com/boltdb/bolt"
+	logging "github.com/op/go-logging"
 	"github.com/ego008/youdb"
 	"github.com/weint/httpclient"
 )
 
+// BaseHandler I do not know
 type BaseHandler struct {
 	App *system.Application
 }
 
+// MainCronJob my job
 func (h *BaseHandler) MainCronJob() {
 	db := h.App.Db
-	scf := h.App.Cf.Site
-	tick1 := time.Tick(3600 * time.Second)
-	tick2 := time.Tick(120 * time.Second)
-	tick3 := time.Tick(30 * time.Minute)
-	tick4 := time.Tick(31 * time.Second)
-	daySecond := int64(3600 * 24)
+	// scf := h.App.Cf.Site
+	logger := h.App.Logger
+	redisDB := h.App.RedisDB
+	// tick1 := time.Tick(3600 * time.Second)
+	// tick2 := time.Tick(120 * time.Second)
+	// tick3 := time.Tick(30 * time.Minute)
+	// tick4 := time.Tick(31 * time.Second)
+	// tick5 := time.Tick(1 * time.Minute)
+	tickRefreshOrder := time.Tick(3 * time.Second)
+	// daySecond := int64(3600 * 24)
+	logger.Info("Start cron job")
 
 	for {
 		select {
-		case <-tick1:
-			limit := 10
-			timeBefore := uint64(time.Now().UTC().Unix() - daySecond)
-			scoreStartB := youdb.I2b(timeBefore)
-			zbnList := []string{
-				"article_detail_token",
-				"user_login_token",
-			}
-			for _, bn := range zbnList {
-				rs := db.Zrscan(bn, []byte(""), scoreStartB, limit)
-				if rs.State == "ok" {
-					keys := make([][]byte, len(rs.Data)/2)
-					j := 0
-					for i := 0; i < (len(rs.Data) - 1); i += 2 {
-						keys[j] = rs.Data[i]
-						j++
-					}
-					db.Zmdel(bn, keys)
-				}
-			}
+		// case <-tick1:
+		// 	limit := 10
+		// 	timeBefore := uint64(time.Now().UTC().Unix() - daySecond)
+		// 	scoreStartB := youdb.I2b(timeBefore)
+		// 	zbnList := []string{
+		// 		"article_detail_token",
+		// 		"user_login_token",
+		// 	}
+		// 	for _, bn := range zbnList {
+		// 		rs := db.Zrscan(bn, []byte(""), scoreStartB, limit)
+		// 		if rs.State == "ok" {
+		// 			keys := make([][]byte, len(rs.Data)/2)
+		// 			j := 0
+		// 			for i := 0; i < (len(rs.Data) - 1); i += 2 {
+		// 				keys[j] = rs.Data[i]
+		// 				j++
+		// 			}
+		// 			db.Zmdel(bn, keys)
+		// 		}
+		// 	}
 
-		case <-tick2:
-			if scf.AutoGetTag && len(scf.GetTagApi) > 0 {
-				getTagFromTitle(db, scf.GetTagApi)
-			}
-		case <-tick3:
-			if h.App.Cf.Site.AutoDataBackup {
-				dataBackup(db)
-			}
-		case <-tick4:
-			setArticleTag(db)
+		// case <-tick2:
+		// 	if scf.AutoGetTag && len(scf.GetTagApi) > 0 {
+		// 		getTagFromTitle(db, scf.GetTagApi)
+		// 	}
+		// case <-tick3:
+		// 	if h.App.Cf.Site.AutoDataBackup {
+		// 		dataBackup(db)
+		// 	}
+		// case <-tick4:
+		// 	setArticleTag(db)
+		case <- tickRefreshOrder:
+			saveToRedisSorted(logger, db, redisDB)
 		}
 	}
 }
+
+func saveToRedisSorted(logger *logging.Logger, db* youdb.DB, redisDB *redis.Client) {
+	logger.Info("Start conn", db, redisDB)
+	// rep := db.Hget("article_views", youdb.I2b(item.ID))
+}
+
+// syncWithMySQL 将redis中的统计数据同步给mysql
+func syncWithMySQL(logger *logging.Logger) {
+
+}
+
 
 func dataBackup(db *youdb.DB) {
 	filePath := "databackup/" + time.Now().UTC().Format("2006-01-02") + ".db"

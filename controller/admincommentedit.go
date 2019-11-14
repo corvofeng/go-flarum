@@ -34,8 +34,10 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 
-	aobj, _ := model.ArticleGetByID(db, aid)
+	// aobj, _ := model.ArticleGetByID(db, aid)
+	aobj, _ := model.SQLArticleGetByID(sqlDB, aid)
 
 	// comment
 	cobj, err := model.CommentGetByKey(db, aid, cidI)
