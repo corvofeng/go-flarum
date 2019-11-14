@@ -273,13 +273,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		// rep := cacheDB.Hget("article_views", youdb.I2b(item.ID))
-		rep := redisDB.HGet("article_views", string(item.ID))
-		item.ClickCnt, err = rep.Uint64()
-		if err != nil {
-			fmt.Printf("Get {} with error :%v", item.ID, err)
-		}
-		item.ClickCnt = 0
+		item.ClickCnt = getArticleCntFromRedisDB(redisDB, item.ID)
 		m[item.ID] = item
 	}
 
@@ -307,7 +301,7 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 	if len(articleList) == 0 {
 		articleIteratorStart := GetCIDArticleMax(nodeID)
 		fmt.Println("Current iterator is in ", articleIteratorStart)
-		pageInfo = SQLCIDArticleList(db, cntDB, nodeID, articleIteratorStart, "next", limit, tz)
+		pageInfo = SQLCIDArticleList(db, cntDB, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
 		// 先前没有缓存, 需要加入到rank map中
 		var items []ArticleRankItem
 		for _, a := range pageInfo.Items {
@@ -329,7 +323,7 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 
 // SQLCIDArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
-func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -386,8 +380,7 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		rep := cntDB.Hget("article_views", youdb.I2b(item.ID))
-		item.ClickCnt = rep.Uint64()
+		item.ClickCnt = getArticleCntFromRedisDB(redisDB, item.ID)
 		items = append(items, item)
 	}
 	if len(items) > 0 {
@@ -421,10 +414,20 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, nodeID, start uint64, btnAct
 	}
 }
 
+func getArticleCntFromRedisDB(redisDB *redis.Client, aid uint64) uint64 {
+	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
+	data, err := rep.Uint64()
+	if err != nil &&  err !=  redis.Nil {
+		fmt.Printf("Get %d with error :%v", aid, err)
+		data = 0
+	}
+	return data
+}
+
 // SQLArticleList 返回所有节点的主题
-func SQLArticleList(db *sql.DB, cntDB *youdb.DB, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	return SQLCIDArticleList(
-		db, cntDB, 0, start, btnAct, limit, tz,
+		db, cntDB, redisDB, 0, start, btnAct, limit, tz,
 	)
 }
 

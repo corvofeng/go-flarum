@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -292,6 +293,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 	scf := h.App.Cf.Site
+	redisDB := h.App.RedisDB
 
 	type siteInfo struct {
 		Days     int
@@ -367,7 +369,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	si.PostNum = count
 
 	// 获取贴子列表
-	pageInfo := model.SQLArticleList(sqlDB, db, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo := model.SQLArticleList(sqlDB, db, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
@@ -656,10 +658,8 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	author, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
 
-	// TODO: 此部分数据将会删除
-	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.ID), 1)
-
-	redisDB.HIncrBy("article_views", string(aobj.ID), 1)
+	rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aobj.ID), 1)
+	viewsNum := uint64(rep.Val())
 
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
@@ -938,4 +938,3 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 	}
 	json.NewEncoder(w).Encode(rsp)
 }
-
