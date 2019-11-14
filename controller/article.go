@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -542,10 +541,10 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	logger := h.App.Logger
 	redisDB := h.App.RedisDB
-
 	sqlDB := h.App.MySQLdb
+
 	// 获取帖子详情
-	aobj, err := model.SQLArticleGetByID(sqlDB, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
 
 	// 获取帖子评论数目
 	err = sqlDB.QueryRow(
@@ -658,9 +657,6 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	author, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
 
-	rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aobj.ID), 1)
-	viewsNum := uint64(rep.Val())
-
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
 		evn.Aobj = articleForDetail{
@@ -669,7 +665,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
 			Avatar:      author.Avatar,
-			Views:       viewsNum,
+			Views:       aobj.ClickCnt,
 			AddTimeFmt:  util.TimeFmt(aobj.AddTime, "2006-01-02 15:04", scf.TimeZone),
 			EditTimeFmt: util.TimeFmt(aobj.EditTime, "2006-01-02 15:04", scf.TimeZone),
 		}
@@ -680,7 +676,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
 			Avatar:      author.Avatar,
-			Views:       viewsNum,
+			Views:       aobj.ClickCnt,
 			AddTimeFmt:  util.TimeFmt(aobj.AddTime, "2006-01-02 15:04", scf.TimeZone),
 			EditTimeFmt: util.TimeFmt(aobj.EditTime, "2006-01-02 15:04", scf.TimeZone),
 		}
@@ -775,7 +771,9 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
-	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+	cntDB := h.App.Db
+	redisDB := h.App.RedisDB
 	rsp := response{}
 
 	if rec.Act == "link_click" {
@@ -785,19 +783,19 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			urlMd5 := hex.EncodeToString(hash[:])
 			bn := "article_detail_token"
 			clickKey := []byte(token + ":click:" + urlMd5)
-			if db.Zget(bn, clickKey).State == "ok" {
+			if cntDB.Zget(bn, clickKey).State == "ok" {
 				w.Write([]byte(`{"retcode":403,"retmsg":"err"}`))
 				return
 			}
-			db.Zset(bn, clickKey, uint64(time.Now().UTC().Unix()))
-			db.Hincr("url_md5_click", []byte(urlMd5), 1)
+			cntDB.Zset(bn, clickKey, uint64(time.Now().UTC().Unix()))
+			cntDB.Hincr("url_md5_click", []byte(urlMd5), 1)
 
 			w.Write([]byte(`{"retcode":200,"retmsg":"ok"}`))
 			return
 		}
 	} else if rec.Act == "comment_preview" {
 		rsp.Retcode = 200
-		rsp.Html = template.HTML(util.ContentFmt(db, rec.Content))
+		rsp.Html = template.HTML(util.ContentFmt(cntDB, rec.Content))
 	} else if rec.Act == "comment_submit" {
 		timeStamp := uint64(time.Now().UTC().Unix())
 		currentUser, _ := h.CurrentUser(w, r)
@@ -809,9 +807,8 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"out off comment interval"}`))
 			return
 		}
-		sqlDB := h.App.MySQLdb
 		// 获取当前的话题
-		aobj, err := model.SQLArticleGetByID(sqlDB, aid)
+		aobj, err := model.SQLArticleGetByID(sqlDB, cntDB, redisDB, aid)
 		if err != nil {
 			w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 			return
@@ -820,7 +817,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"comment forbidden"}`))
 			return
 		}
-		commentID, _ := db.HnextSequence("article_comment:" + aid)
+		commentID, _ := cntDB.HnextSequence("article_comment:" + aid)
 		obj := model.Comment{
 			ID:       commentID,
 			Aid:      aobj.ID,
@@ -833,10 +830,10 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		obj.SQLSaveComment(sqlDB)
 		jb, _ := json.Marshal(obj)
 
-		db.Hset("article_comment:"+aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
-		db.Hincr("count", []byte("comment_num"), 1)            // 评论总数
+		cntDB.Hset("article_comment:"+aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
+		cntDB.Hincr("count", []byte("comment_num"), 1)            // 评论总数
 		// 用户回复文章列表
-		db.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
+		cntDB.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
 
 		// 更新文章列表时间
 
@@ -844,17 +841,17 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		aobj.RUID = currentUser.ID
 		aobj.EditTime = timeStamp
 		jb2, _ := json.Marshal(aobj)
-		db.Hset("article", youdb.I2b(aobj.ID), jb2)
+		cntDB.Hset("article", youdb.I2b(aobj.ID), jb2)
 
 		currentUser.LastReplyTime = timeStamp
 		currentUser.Replies += 1
 		jb3, _ := json.Marshal(currentUser)
-		db.Hset("user", youdb.I2b(currentUser.ID), jb3)
+		cntDB.Hset("user", youdb.I2b(currentUser.ID), jb3)
 
 		// 总文章列表
-		db.Zset("article_timeline", youdb.I2b(aobj.ID), timeStamp)
+		cntDB.Zset("article_timeline", youdb.I2b(aobj.ID), timeStamp)
 		// 分类文章列表
-		db.Zset("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), youdb.I2b(aobj.ID), timeStamp)
+		cntDB.Zset("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), youdb.I2b(aobj.ID), timeStamp)
 
 		// @ somebody in comment & topic author
 		sbs := util.GetMention("@"+strconv.FormatUint(aobj.UID, 10)+" "+rec.Content,
@@ -864,10 +861,10 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			sbu, err := strconv.ParseUint(sb, 10, 64)
 			if err != nil {
 				// @ user name
-				sbObj, err = model.UserGetByName(db, strings.ToLower(sb))
+				sbObj, err = model.UserGetByName(cntDB, strings.ToLower(sb))
 			} else {
 				// @ user id
-				sbObj, err = model.UserGetByID(db, sbu)
+				sbObj, err = model.UserGetByID(cntDB, sbu)
 			}
 
 			if err == nil {
@@ -883,7 +880,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 					sbObj.NoticeNum = 1
 				}
 				jb, _ := json.Marshal(sbObj)
-				db.Hset("user", youdb.I2b(sbObj.ID), jb)
+				cntDB.Hset("user", youdb.I2b(sbObj.ID), jb)
 			}
 		}
 

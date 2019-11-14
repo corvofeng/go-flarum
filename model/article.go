@@ -32,6 +32,7 @@ type Article struct {
 	AddTime           uint64 `json:"addtime"`
 	EditTime          uint64 `json:"edittime"`
 	Comments          uint64 `json:"comments"`
+	ClickCnt          uint64 `json:"clickcnt"`
 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
 	CloseComment      bool   `json:"closecomment"`
 	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
@@ -122,7 +123,7 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
+func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid string) (Article, error) {
 	obj := Article{}
 	rows, err := db.Query(
 		"SELECT id, node_id, user_id, title, content, created_at, updated_at, client_ip FROM topic WHERE id = ? and active !=0",
@@ -155,6 +156,7 @@ func SQLArticleGetByID(db *sql.DB, aid string) (Article, error) {
 			return obj, errors.New("No result")
 		}
 	}
+	obj.ClickCnt = incrArticleCntFromRedisDB(db, cntDB, redisDB, obj.ID)
 
 	return obj, nil
 }
@@ -186,7 +188,7 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 }
 
 // SQLArticleUpdate 更新当前帖子
-func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
+func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) bool {
 	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
 	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
 	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.
@@ -194,7 +196,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(db, strconv.FormatUint(article.ID, 10))
+	oldArticle, err := SQLArticleGetByID(db, cntDB, redisDB, strconv.FormatUint(article.ID, 10))
 	oldArticle.Active = 0
 	if util.CheckError(err, "修改时拷贝") {
 		return false
@@ -273,7 +275,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		item.ClickCnt = getArticleCntFromRedisDB(redisDB, item.ID)
+		item.ClickCnt = GetArticleCntFromRedisDB(db, cacheDB, redisDB, item.ID)
 		m[item.ID] = item
 	}
 
@@ -307,7 +309,9 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 		for _, a := range pageInfo.Items {
 			items = append(items, ArticleRankItem{
 				AID:     a.ID,
+				SQLDB:   db,
 				CacheDB: cntDB,
+				RedisDB: redisDB,
 				Weight:  a.ClickCnt,
 			})
 		}
@@ -380,7 +384,7 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		item.ClickCnt = getArticleCntFromRedisDB(redisDB, item.ID)
+		item.ClickCnt = GetArticleCntFromRedisDB(db, cntDB, redisDB, item.ID)
 		items = append(items, item)
 	}
 	if len(items) > 0 {
@@ -414,12 +418,66 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 	}
 }
 
-func getArticleCntFromRedisDB(redisDB *redis.Client, aid uint64) uint64 {
+func incrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) uint64 {
+	var clickCnt uint64 = 0
+	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
+	_, err := rep.Uint64()
+	if err == redis.Nil { // 只有当redis中的数据不存在时，才向mysql与内存数据库请求
+		if clickCnt == 0 {
+			// 首先从sqlDB中查找
+			fmt.Println("Get data from sqlDB", aid)
+			rows, err := sqlDB.Query("SELECT hits FROM topic where id = ?", aid)
+			defer func() {
+				if rows != nil {
+					rows.Close()
+				}
+			}()
+			if err != nil {
+				fmt.Printf("Query failed,err:%v", err)
+				clickCnt = 0
+			} else {
+				for rows.Next() {
+					err = rows.Scan(&clickCnt)
+					if err != nil {
+						fmt.Printf("Scan failed,err:%v", err)
+					}
+
+				}
+			}
+		}
+		if clickCnt == 0 {
+			fmt.Println("Get data from cntDB", aid)
+			// 从cntDB中查找
+			clickCnt, _ = cntDB.Hincr("article_views", youdb.I2b(aid), 1)
+			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), clickCnt)
+		}
+		if clickCnt == 0 {
+			rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aid), 1)
+			clickCnt = uint64(rep.Val())
+		}
+	} else {
+		rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aid), 1)
+		clickCnt = uint64(rep.Val())
+	}
+
+	return clickCnt
+}
+
+// GetArticleCntFromRedisDB 从不同的数据库中获取点击数
+func GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) uint64 {
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
 	data, err := rep.Uint64()
-	if err != nil &&  err !=  redis.Nil {
+
+	if err != nil && err != redis.Nil {
 		fmt.Printf("Get %d with error :%v", aid, err)
 		data = 0
+	}
+	if data == 0 {
+		rep := cntDB.Hget("article_views", youdb.I2b(aid))
+		if rep != nil {
+			data = rep.Uint64()
+			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), data)
+		}
 	}
 	return data
 }
