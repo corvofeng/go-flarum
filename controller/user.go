@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -113,6 +114,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		}
 		// uobj, err := model.UserGetByName(db, nameLow)
 		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
+		fmt.Println(uobj)
 
 		if err != nil {
 			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaID":"` + captcha.New() + `"}`))

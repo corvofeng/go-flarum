@@ -11,10 +11,10 @@ func TestRank(t *testing.T) {
 	RankMapInit(2)
 
 	rankItems := []ArticleRankItem{
-		{1, 3},
-		{2, 2},
-		{3, 1},
-		{4, 25},
+		{1, 3, nil},
+		{2, 2, nil},
+		{3, 1, nil},
+		{4, 25, nil},
 	}
 	AddNewArticleList(1, rankItems)
 	fmt.Println(GetTopicListByPageNum(1, 1, 2))
