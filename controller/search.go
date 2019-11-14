@@ -54,6 +54,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	logger := h.App.Logger
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 
 	var body []byte
 	resp, err := http.Get(
@@ -88,7 +89,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	// Although we get data from the search API, it is necessary to
 	// check the data in the database, also we need get article title.
-	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
+	pageInfo := model.SQLArticleGetByList(sqlDB, db, redisDB, articleList)
 
 	for _, item := range data.Items {
 		for idx := range pageInfo.Items {

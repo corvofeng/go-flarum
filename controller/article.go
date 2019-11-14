@@ -400,6 +400,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	var err error
 	db := h.App.Db
 	scf := h.App.Cf.Site
+	redisDB := h.App.RedisDB
 	logger := h.App.Logger
 
 	type siteInfo struct {
@@ -480,7 +481,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	}()
 	logger.Debug("Get Article List", articleList)
 
-	pageInfo := model.SQLArticleGetByList(sqlDB, db, articleList)
+	pageInfo := model.SQLArticleGetByList(sqlDB, db, redisDB, articleList)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
@@ -538,6 +539,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	db := h.App.Db
 	scf := h.App.Cf.Site
 	logger := h.App.Logger
+	redisDB := h.App.RedisDB
 
 	sqlDB := h.App.MySQLdb
 	// 获取帖子详情
@@ -653,7 +655,11 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
 	author, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
+
+	// TODO: 此部分数据将会删除
 	viewsNum, _ := db.Hincr("article_views", youdb.I2b(aobj.ID), 1)
+
+	redisDB.HIncrBy("article_views", string(aobj.ID), 1)
 
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
@@ -932,3 +938,4 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 	}
 	json.NewEncoder(w).Encode(rsp)
 }
+

@@ -24,6 +24,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	logger := h.App.Logger
+	redisDB := h.App.RedisDB
 	cid := pat.Param(r, "cid")
 	_, err = strconv.Atoi(cid)
 	if err != nil {
@@ -59,7 +60,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 		page = 1
 	}
 
-	pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	pageInfo.HasNext = true
 	if pageInfo.PagePrev != 0 {
 		pageInfo.HasPrev = true

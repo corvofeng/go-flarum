@@ -14,6 +14,8 @@ import (
 	"goyoubbs/util"
 	"html/template"
 
+	"github.com/go-redis/redis/v7"
+
 	"github.com/ego008/youdb"
 )
 
@@ -227,7 +229,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB) bool {
 }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) ArticlePageInfo {
+func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, articleList []uint64) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -271,8 +273,13 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) Ar
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		rep := cacheDB.Hget("article_views", youdb.I2b(item.ID))
-		item.ClickCnt = rep.Uint64()
+		// rep := cacheDB.Hget("article_views", youdb.I2b(item.ID))
+		rep := redisDB.HGet("article_views", string(item.ID))
+		item.ClickCnt, err = rep.Uint64()
+		if err != nil {
+			fmt.Printf("Get {} with error :%v", item.ID, err)
+		}
+		item.ClickCnt = 0
 		m[item.ID] = item
 	}
 
@@ -293,18 +300,8 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, articleList []uint64) Ar
 	}
 }
 
-func ArticleGetByID(db *youdb.DB, aid string) (Article, error) {
-	obj := Article{}
-	rs := db.Hget("article", youdb.DS2b(aid))
-	if rs.State == "ok" {
-		json.Unmarshal(rs.Data[0], &obj)
-		return obj, nil
-	}
-	return obj, errors.New(rs.State)
-}
-
 // SQLCIDArticleListByPage 根据页码获取某个分类的列表
-func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit uint64, tz int) ArticlePageInfo {
+func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	if len(articleList) == 0 {
@@ -322,7 +319,7 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, nodeID, page, limit ui
 		}
 		AddNewArticleList(nodeID, items)
 	} else {
-		pageInfo = SQLArticleGetByList(db, cntDB, articleList)
+		pageInfo = SQLArticleGetByList(db, cntDB, redisDB, articleList)
 	}
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1
