@@ -7,7 +7,7 @@ import (
 	"github.com/go-redis/redis/v7"
 	"sort"
 	"sync"
-	"time"
+	// "time"
 
 	"strconv"
 )
@@ -85,26 +85,23 @@ func (data *CategoryRankData) resort() {
 	}()
 }
 
-func timelyResort(sleeps uint64) {
+// TimelyResort 刷新Redis数据库中每个帖子的权重
+func TimelyResort() {
 	m := GetRankMap()
-	for range time.Tick(time.Second * time.Duration(sleeps)) { // 每10s刷新一次
-		func() {
-			m.mtx.Lock()
-			defer m.mtx.Unlock()
-			for _, v := range m.m {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+	for _, v := range m.m {
 
-				data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", v.CID), 0, -1).Result()
-				for _, topicID := range data {
+		data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", v.CID), 0, -1).Result()
+		for _, topicID := range data {
 
-					aid, _ := strconv.ParseUint(topicID, 10, 64)
+			aid, _ := strconv.ParseUint(topicID, 10, 64)
 
-					rankRedisDB.ZAddXX(fmt.Sprintf("%d", v.CID), &redis.Z{
-						Score:  float64(getWeight(m, aid)),
-						Member: fmt.Sprintf("%d", aid)},
-					)
-				}
-			}
-		}()
+			rankRedisDB.ZAddXX(fmt.Sprintf("%d", v.CID), &redis.Z{
+				Score:  float64(getWeight(m, aid)),
+				Member: fmt.Sprintf("%d", aid)},
+			)
+		}
 	}
 }
 
@@ -114,14 +111,13 @@ func newRankMap() (m *RankMap) {
 }
 
 // RankMapInit init a ttl map
-func RankMapInit(sleeps uint64, sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) {
+func RankMapInit(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) {
 	rankMap = newRankMap()
 	rankMap.SQLDB = sqlDB
 	rankMap.CacheDB = cntDB
 	rankMap.RedisDB = redisDB
 
 	rankRedisDB = redisDB
-	go timelyResort(sleeps)
 }
 
 // GetRankMap you can get ttlmap by this.
