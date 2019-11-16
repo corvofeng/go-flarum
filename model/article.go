@@ -231,7 +231,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, articleList []uint64) ArticlePageInfo {
+func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -253,7 +253,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 		}
 		articleListStr += strconv.FormatInt(int64(v), 10)
 	}
-	sql := "select id, title, user_id from topic where id in (" + articleListStr + ")"
+	sql := "select id, title, user_id, updated_at from topic where id in (" + articleListStr + ")"
 
 	rows, err = db.Query(sql)
 	defer func() {
@@ -268,7 +268,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 	m := make(map[uint64]ArticleListItem)
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.ID, &item.Title, &item.UID) //不scan会导致连接不释放
+		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.EditTime) //不scan会导致连接不释放
 		item.Avatar = GetAvatarByID(db, cacheDB, item.UID)
 
 		if err != nil {
@@ -276,6 +276,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 			continue
 		}
 		item.ClickCnt = GetArticleCntFromRedisDB(db, cacheDB, redisDB, item.ID)
+		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		m[item.ID] = item
 	}
 
@@ -317,12 +318,24 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 		}
 		AddNewArticleList(nodeID, items)
 	} else {
-		pageInfo = SQLArticleGetByList(db, cntDB, redisDB, articleList)
+		pageInfo = SQLArticleGetByList(db, cntDB, redisDB, articleList, tz)
 	}
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1
 	pageInfo.PagePrev = page - 1
 	return pageInfo
+}
+
+// SQLArticleSetClickCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
+func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
+
+	_, err := sqlDB.Exec("UPDATE `topic`" +
+		" set hits = ?" +
+		" where id = ?",
+		clickCnt,
+		aid,
+	)
+	util.CheckError(err, "更新帖子权重")
 }
 
 // SQLCIDArticleList 返回某个节点的主题

@@ -482,7 +482,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	}()
 	logger.Debug("Get Article List", articleList)
 
-	pageInfo := model.SQLArticleGetByList(sqlDB, db, redisDB, articleList)
+	pageInfo := model.SQLArticleGetByList(sqlDB, db, redisDB, articleList, scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
