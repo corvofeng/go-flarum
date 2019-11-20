@@ -3,7 +3,7 @@
 golang 实现的youBBS 官方论坛&示例 https://www.youbbs.org
 
 ```
-go get github.com/ego008/goyoubbs
+CGO_ENABLED=0 GOOS=linux go build
 ```
 
 ## 轻论坛功能
