@@ -294,23 +294,14 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	redisDB := h.App.RedisDB
 
-	type siteInfo struct {
-		Days     uint64
-		UserNum  uint64
-		NodeNum  uint64
-		TagNum   uint64
-		PostNum  uint64
-		ReplyNum uint64
-	}
-
 	type pageData struct {
 		PageData
-		SiteInfo siteInfo
+		SiteInfo model.SiteInfo 
 		PageInfo model.ArticlePageInfo
 		Links    []model.Link
 	}
 
-	si := siteInfo{}
+	si := model.SiteInfo{}
 	si.Days = model.GetDays(redisDB)
 	si.UserNum = db.Hsequence("user")
 	si.NodeNum = db.Hsequence("category")
@@ -318,27 +309,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	si.PostNum = db.Hsequence("article")
 	si.ReplyNum = db.Hget("count", []byte("comment_num")).Uint64()
 
-	// fix
-	if si.NodeNum == 0 {
-		// 我们已经有了自己的节点, 无需再添加这一项了
-		newCID, err2 := db.HnextSequence("category")
-		if err2 == nil {
-			cobj := model.Category{
-				ID:    newCID,
-				Name:  "默认分类",
-				About: "默认第一个分类",
-			}
-			jb, _ := json.Marshal(cobj)
-			db.Hset("category", youdb.I2b(cobj.ID), jb)
-			si.NodeNum = 1
-		}
-		// link
-		model.LinkSet(db, model.Link{
-			Name:  "youBBS",
-			URL:   "https://www.youbbs.org",
-			Score: 100,
-		})
-	}
 	var count uint64
 	sqlDB := h.App.MySQLdb
 	// 获取全部的帖子数目
@@ -373,7 +343,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
-	evn.Links = model.LinkList(db, false)
+	evn.Links = model.RedisLinkList(redisDB, false)
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
@@ -387,23 +357,14 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	logger := h.App.Logger
 
-	type siteInfo struct {
-		Days     uint64
-		UserNum  uint64
-		NodeNum  uint64
-		TagNum   uint64
-		PostNum  uint64
-		ReplyNum uint64
-	}
-
 	type pageData struct {
 		PageData
-		SiteInfo siteInfo
+		SiteInfo model.SiteInfo
 		PageInfo model.ArticlePageInfo
 		Links    []model.Link
 	}
 
-	si := siteInfo{}
+	si := model.SiteInfo{}
 	si.Days = model.GetDays(redisDB)
 	si.UserNum = db.Hsequence("user")
 	si.NodeNum = db.Hsequence("category")
@@ -461,7 +422,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = false
-	evn.PageName = "i fell lucky"
+	evn.PageName = "I feel lucky"
 	evn.NewestNodes = categories
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 
@@ -469,7 +430,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
-	evn.Links = model.LinkList(db, false)
+	evn.Links = model.RedisLinkList(redisDB, false)
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
