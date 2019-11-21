@@ -295,7 +295,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 
 	type siteInfo struct {
-		Days     int
+		Days     uint64
 		UserNum  uint64
 		NodeNum  uint64
 		TagNum   uint64
@@ -311,24 +311,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	si := siteInfo{}
-	rs := db.Hget("count", []byte("site_create_time"))
-	var siteCreateTime uint64
-	if rs.State == "ok" {
-		siteCreateTime = rs.Data[0].Uint64()
-	} else {
-		rs2 := db.Hscan("user", []byte(""), 1)
-		if rs2.State == "ok" {
-			user := model.User{}
-			json.Unmarshal(rs2.Data[1], &user)
-			siteCreateTime = user.RegTime
-		} else {
-			siteCreateTime = uint64(time.Now().UTC().Unix())
-		}
-		db.Hset("count", []byte("site_create_time"), youdb.I2b(siteCreateTime))
-	}
-	then := time.Unix(int64(siteCreateTime), 0)
-	diff := time.Now().UTC().Sub(then)
-	si.Days = int(diff.Hours()/24) + 1
+	si.Days = model.GetDays(redisDB)
 	si.UserNum = db.Hsequence("user")
 	si.NodeNum = db.Hsequence("category")
 	si.TagNum = db.Hsequence("tag")
@@ -405,7 +388,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	logger := h.App.Logger
 
 	type siteInfo struct {
-		Days     int
+		Days     uint64
 		UserNum  uint64
 		NodeNum  uint64
 		TagNum   uint64
@@ -421,24 +404,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	}
 
 	si := siteInfo{}
-	rs := db.Hget("count", []byte("site_create_time"))
-	var siteCreateTime uint64
-	if rs.State == "ok" {
-		siteCreateTime = rs.Data[0].Uint64()
-	} else {
-		rs2 := db.Hscan("user", []byte(""), 1)
-		if rs2.State == "ok" {
-			user := model.User{}
-			json.Unmarshal(rs2.Data[1], &user)
-			siteCreateTime = user.RegTime
-		} else {
-			siteCreateTime = uint64(time.Now().UTC().Unix())
-		}
-		db.Hset("count", []byte("site_create_time"), youdb.I2b(siteCreateTime))
-	}
-	then := time.Unix(int64(siteCreateTime), 0)
-	diff := time.Now().UTC().Sub(then)
-	si.Days = int(diff.Hours()/24) + 1
+	si.Days = model.GetDays(redisDB)
 	si.UserNum = db.Hsequence("user")
 	si.NodeNum = db.Hsequence("category")
 	si.TagNum = db.Hsequence("tag")

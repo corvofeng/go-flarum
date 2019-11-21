@@ -1,7 +1,5 @@
 # goyoubbs
 
-golang 实现的youBBS 官方论坛&示例 https://www.youbbs.org
-
 ```
 CGO_ENABLED=0 GOOS=linux go build
 ```
@@ -40,56 +38,3 @@ unzip site.zip
 2017/12/06 16:24:42 Web server Listen to http://127.0.0.1:8082
 ```
 在浏览器打开上面提示里`Web server Listen to` 的网址 `http://127.0.0.1:8082` 就可以看到网站首页
-
-## 开启HTTPS
-
-为什么要用HTTPS？网站更安全、搜索引擎更喜欢、没有宽带运营商劫持放广告。。。
-
-go youBBS 已经为开启HTTPS 做了最简化处理，提供两种方式开启
-
-### 自动配置（推荐）
-
-- 把你的域名 yourdomain.com 指向你的服务器
-- 修改配置文件 `config/config.yaml` 下面三项即可：
-
-```
-Main:
-    HttpPort: 80
-    HttpsOn: true
-    Domain: "yourdomain.com"
-```
-
-下面两个留空：
-```
-    TLSCrtFile: ""
-    TLSKeyFile: ""
-```
-
-保存配置文件，运行主程序 `./goyoubbs`
-
-打开浏览器，输入网址 `https://yourdomain.com`
-
-### 用其它工具
-
-用其它工具生成 `crt`, `key` 文件，在配置里填写这两个文件的路径，如：
-
-```
-Main:
-    HttpPort: 80
-    HttpsOn: true
-    Domain: "youbbs.org"
-    ...
-    TLSCrtFile: "/root/ssl/chained.pem"
-    TLSKeyFile: "/root/ssl/domain.key"
-```
-
-具体过程请移步 https://www.youbbs.org/t/2169
-
-## 问题、建议、贡献
-
-官方网站 https://www.youbbs.org
-
-
-
-
-

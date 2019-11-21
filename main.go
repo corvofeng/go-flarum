@@ -49,8 +49,8 @@ func main() {
 	logger := util.GetLogger()
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
-
 	httpPort := flag.String("HTTP_PORT", "8082", "http port")
+
 	flag.Parse()
 
 	c := system.LoadConfig(*configFile)
