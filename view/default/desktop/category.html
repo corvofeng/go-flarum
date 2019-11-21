@@ -3,7 +3,7 @@
 <div class="nav-title">
     <div class="float-left fs14">
         <a href="/">{{.SiteCf.Name}}</a> &raquo; {{.Cobj.Name}} ({{.Cobj.Articles}})
-        {{if ge .CurrentUser.Flag 99}}
+        {{if .CurrentUser.IsAdmin }}
         &nbsp;&nbsp;&nbsp; Hidden is {{.Cobj.Hidden}}• <a href="/admin/category/list?cid={{.Cobj.ID}}">编辑</a>
         {{end}}
     </div>
