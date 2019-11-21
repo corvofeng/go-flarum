@@ -239,8 +239,7 @@
 </div>
 {{ end }}
 
-{{if eq .PageName "home"}}
-{{/*
+{{/* if eq .PageName "home" */}}
 {{if .Links}}
 <div class="sider-box">
     <div class="sider-box-title">链接</div>
@@ -254,7 +253,6 @@
     </div>
 </div>
 {{ end }}
-*/}}
 
 {{if .SiteInfo}}
 <div class="sider-box">
@@ -273,5 +271,5 @@
 {{ end }}
 {{ end }}
 
-{{ end}}
+{{/* end */}}
 

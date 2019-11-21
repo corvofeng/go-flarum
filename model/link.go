@@ -7,8 +7,10 @@ import (
 	"sort"
 
 	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
 )
 
+// Link 保存右侧的链接
 type Link struct {
 	ID    uint64 `json:"id"`
 	Name  string `json:"name"`
@@ -61,8 +63,18 @@ func SqlLinkList(db *sql.DB, getAll bool) []Link {
 	return items
 }
 
+func RedisLinkList(redisDB *redis.Client, getAll bool) []Link {
+	var items []Link
+	// itemMap := map[uint64]Link{}
+	// TODO: insert link in redis.
+	return items
+
+}
+
 func LinkList(db *youdb.DB, getAll bool) []Link {
 	var items []Link
+	return items
+
 	itemMap := map[uint64]Link{}
 
 	startKey := []byte("")
