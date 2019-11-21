@@ -9,6 +9,7 @@ import (
 
 	"goyoubbs/util"
 	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
 )
 
 type Comment struct {
@@ -63,7 +64,7 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 }
 
 // SQLCommentList 获取在数据库中存储的评论
-func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
+func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -99,8 +100,8 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, topicID, start uint64, btnAct
 	for rows.Next() {
 		item := CommentListItem{}
 		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(db, cacheDB, item.UID)
-		item.UserName = GetUserNameByID(db, cacheDB, item.UID)
+		item.Avatar = GetAvatarByID(db, cacheDB, redisDB, item.UID)
+		item.UserName = GetUserNameByID(db, cacheDB, redisDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)

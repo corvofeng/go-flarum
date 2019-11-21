@@ -168,7 +168,7 @@
 
 {{ define "side" }}
 
-{{if eq .CurrentUser.Flag 99}}
+{{if .CurrentUser.IsAdmin }}
 <div class="sider-box">
     <div class="sider-box-title">管理员面板 （<a href="https://www.youbbs.org/" target="_blank">YouBBS官方支持</a>）</div>
     <div class="sider-box-content">

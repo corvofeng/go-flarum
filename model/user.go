@@ -219,19 +219,18 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	return obj, errors.New("No result")
 }
 
-
 // SQLUserUpdate 更新用户信息
-func  (user *User) SQLUserUpdate(db* sql.DB)  bool{
+func (user *User) SQLUserUpdate(db *sql.DB) bool {
 	_, err := db.Exec(
 		"UPDATE `user` "+
 			"set email=?,"+
 			"description=?,"+
 			"website=?"+
 			" where id=?",
-			user.Email,
-			user.About,
-			user.URL,
-			user.ID,
+		user.Email,
+		user.About,
+		user.URL,
+		user.ID,
 	)
 	if util.CheckError(err, "更新用户信息") {
 		return false
@@ -301,53 +300,53 @@ func (user *User) CanEdit() bool {
 }
 
 // SaveAvatar 更新用户头像
-func (user *User) SaveAvatar(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, avatar string) {
+func (user *User) SaveAvatar(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, avatar string) {
 	logger := util.GetLogger()
 
 	if user == nil {
 		return
 	}
-	_, err := db.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.ID)
+
+	_, err := sqlDB.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.ID)
 	if err != nil {
 		logger.Error("Set ", user, " avatar ", avatar, " failed!!")
 		return
 	}
 
-	redisDB.HSet("avatar", string(user.ID), avatar)
-	cntDB.Hdel("avatar", youdb.I2b(user.ID))
+	redisDB.HSet("avatar", fmt.Sprintf("%d", user.ID), avatar)
 	logger.Notice("Refresh user avatar", user)
 	return
 }
 
 // GetAvatarByID 获取用户头像
-func GetAvatarByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
+func GetAvatarByID(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, uid uint64) string {
 	var avatar string
 	logger := util.GetLogger()
 
-	rs := cntDB.Hget("avatar", youdb.I2b(uid))
-	if rs.State == "ok" {
-		return rs.String()
+	rep, err := redisDB.HGet("avatar", fmt.Sprintf("%d", uid)).Result()
+	if err != redis.Nil {
+		return rep
 	}
 
-	user, err := SQLUserGetByID(db, uid)
+	user, err := SQLUserGetByID(sqlDB, uid)
 	if util.CheckError(err, "查询用户") {
 		return avatar
 	}
 	avatar = user.Avatar
 
-	cntDB.Hset("avatar", youdb.I2b(uid), []byte(avatar))
-	logger.Debug("key not found for ", user.ID, user.Name, "but we refresh!")
+	redisDB.HSet("avatar", fmt.Sprintf("%d", uid), avatar)
+	logger.Debugf("avatar not found for %d %s but we refresh!", user.ID, user.Name)
 	return avatar
 }
 
-// GetUserNameByID 获取用户头像
-func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
+// GetUserNameByID 获取用户名称
+func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, uid uint64) string {
 	var username string
 	logger := util.GetLogger()
 
-	rs := cntDB.Hget("username", youdb.I2b(uid))
-	if rs.State == "ok" {
-		return rs.String()
+	rep, err := redisDB.HGet("username", fmt.Sprintf("%d", uid)).Result()
+	if err != redis.Nil {
+		return rep
 	}
 
 	user, err := SQLUserGetByID(db, uid)
@@ -356,7 +355,7 @@ func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, uid uint64) string {
 	}
 	username = user.Name
 
-	cntDB.Hset("username", youdb.I2b(uid), []byte(username))
-	logger.Debug("key not found for ", user.ID, user.Name, "but we refresh!")
+	redisDB.HSet("username", fmt.Sprintf("%d", uid), username)
+	logger.Debugf("username not found for %d %s but we refresh!", user.ID, user.Name)
 	return username
 }

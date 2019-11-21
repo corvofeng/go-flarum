@@ -539,6 +539,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	pageInfo := model.SQLCommentList(
 		sqlDB,
 		db,
+		redisDB,
 		aobj.ID,
 		start,
 		btn,

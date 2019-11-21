@@ -269,7 +269,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cacheDB, item.UID)
+		item.Avatar = GetAvatarByID(db, cacheDB, redisDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -391,7 +391,7 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.CID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cntDB, item.UID)
+		item.Avatar = GetAvatarByID(db, cntDB, redisDB, item.UID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
