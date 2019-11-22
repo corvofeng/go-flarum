@@ -10,11 +10,16 @@ pool: Digital
 
 variables:
   WORKDIR: /home/collipa/goyobbs-build
+  # for go build in alpine
+  CGO_ENABLED: 0
+  GOOS: linux 
 
 steps:
 - script: |
     pwd
     echo "$(System.DefaultWorkingDirectory)"
+    echo "Get build ID $(Build.BuildId)"
+    echo "Get build number $(Build.BuildNumber)"
   displayName: 'pwd and echo dir'
 
 - task: GoTool@0
@@ -30,8 +35,9 @@ steps:
   displayName: 'go build'
   inputs:
     command: build
-    arguments: '-o /home/collipa/goyoubbs/goyoubbs'
+    arguments: '-o goyoubbs'
     workingDirectory: '$(WORKDIR)'
+
 
 - task: CopyFiles@2
   displayName: 'Copy Files to: /home/collipa/goyoubbs'
