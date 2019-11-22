@@ -9,7 +9,7 @@ trigger:
 pool: Digital
 
 variables:
-  WORKDIR: /home/collipa/goyobbs-build
+  WORKDIR: /home/azure/goyobbs-build
   # for go build in alpine
   CGO_ENABLED: 0
   GOOS: linux 
@@ -39,8 +39,22 @@ steps:
     workingDirectory: '$(WORKDIR)'
 
 
+- script: |
+    echo "$(System.DefaultWorkingDirectory)"
+    cp /home/azure/yiqi-config.yaml $(WORKDIR)/config/config.yaml
+    docker build . -t 'yiqi:v$(Build.BuildId)'
+    sed -i 's/yiqi:dev/yiqi:v$(Build.BuildId)/' docker-compose.yaml
+    sed -i 's@- ./static:/home/goyoubbs/static@- /home/collipa/goyoubbs/static:/home/goyoubbs/static@' docker-compose.yaml
+  workingDirectory: '$(WORKDIR)'
+  displayName: 'Build yiqi image'
+
+- script: |
+    docker stack deploy --compose-file docker-compose.yaml yiqi
+  workingDirectory: '$(WORKDIR)'
+  displayName: 'Use docker stack to run'
+
 - task: CopyFiles@2
-  displayName: 'Copy Files to: /home/collipa/goyoubbs'
+  displayName: 'Copy Files to: /home/azure/goyoubbs'
   inputs:
     SourceFolder: '$(WORKDIR)'
     Contents: |
@@ -49,7 +63,7 @@ steps:
      **/view/**
      **/static/**
      whooshsearch.py
-    TargetFolder: /home/collipa/goyoubbs
+    TargetFolder: /home/azure/goyoubbs
     OverWrite: true
 # - script: |
 #     mkdir -p '$(GOBIN)'
