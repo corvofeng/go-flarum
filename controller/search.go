@@ -58,7 +58,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 
 	var body []byte
 	resp, err := http.Get(
-		fmt.Sprintf("http://127.0.0.1:9192?query=%s&pagenum=%d&pagelen=%d",
+		fmt.Sprintf("http://172.17.0.1:9192?query=%s&pagenum=%d&pagelen=%d",
 			q, pagenum,
 			scf.HomeShowNum,
 		),
