@@ -27,6 +27,7 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.App.Db
+	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
 	rs := db.Hscan("tag:"+tagLow, nil, 1)
 	if rs.State != "ok" {
@@ -68,6 +69,7 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 		Number: db.Zget("tag_article_num", []byte(tagLow)).Uint64(),
 	}
 	evn.PageInfo = pageInfo
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	h.Render(w, tpl, evn, "layout.html", "tag.html")
 }

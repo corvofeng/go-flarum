@@ -127,6 +127,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 
 	evn.Q = qLow
 	evn.PageInfo = pageInfo
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	h.Render(w, tpl, evn, "layout.html", "search.html")
 }

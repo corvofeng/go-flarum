@@ -11,11 +11,12 @@ import (
 	"goyoubbs/model"
 	"goyoubbs/util"
 	"github.com/dchest/captcha"
-	"github.com/ego008/youdb"
+	// "github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
 
+// UserLogin 用户登录与注册页面
 func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	type pageData struct {
 		PageData
@@ -52,7 +53,7 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "userlogin.html")
 }
 
-// UserLoginPost 用于用户登录及注册
+// UserLoginPost 用于用户登录及注册接口
 // 保存密码时, 用户前端传来的密码为md5值, 因此我们也不需要保存明文密码, 也就不需要token了
 func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -102,17 +103,17 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 	timeStamp := uint64(time.Now().UTC().Unix())
 
 	if act == "login" {
 		bn := "user_login_token"
 		key := []byte(token + ":loginerr")
 		if db.Zget(bn, key).State == "ok" {
-			// todo
-			//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
-			//return
+		// 	// todo
+		// 	//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
+		// 	//return
 		}
-		// uobj, err := model.UserGetByName(db, nameLow)
 		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
 		fmt.Println(uobj)
 
@@ -121,7 +122,6 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if uobj.Password != rec.Password {
-			db.Zset(bn, key, uint64(time.Now().UTC().Unix()))
 			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaID":"` + captcha.New() + `"}`))
 			return
 		}
@@ -129,7 +129,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
 		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.ID), jb)
+		redisDB.HSet("user", fmt.Sprintf("%d", uobj.ID), jb)
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 	} else {
 		// register
@@ -164,8 +164,8 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		// 	uobj.Avatar = uidStr
 		// }
 
-		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.ID), jb)
+		// jb, _ := json.Marshal(uobj)
+		// db.Hset("user", youdb.I2b(uobj.ID), jb)
 		// db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.ID))
 		// db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.ID), []byte(""))
 
@@ -179,6 +179,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
+// UserNotification 用户消息
 func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 	currentUser, _ := h.CurrentUser(w, r)
 	if currentUser.ID == 0 {
@@ -206,12 +207,12 @@ func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "user_notification"
 	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-
 	evn.PageInfo = model.ArticleNotificationList(db, currentUser.Notice, scf.TimeZone)
 
 	h.Render(w, tpl, evn, "layout.html", "notification.html")
 }
 
+// UserLogout 用户退出登录
 func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
 	for _, k := range cks {
@@ -220,6 +221,7 @@ func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// UserDetail 用户详情页
 func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	act, btn, key, score := r.FormValue("act"), r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
 	if len(key) > 0 {
@@ -238,6 +240,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.App.Db
+	redisDB := h.App.RedisDB
 	sqlDB := h.App.MySQLdb
 	scf := h.App.Cf.Site
 
@@ -316,6 +319,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 		RegTimeFmt: util.TimeFmt(uobj.RegTime, "2006-01-02 15:04", scf.TimeZone),
 	}
 	evn.PageInfo = pageInfo
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	h.Render(w, tpl, evn, "layout.html", "user.html")
 }

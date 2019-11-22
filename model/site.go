@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/go-redis/redis/v7"
 	"time"
+	"github.com/ego008/youdb"
 )
 
 type SiteInfo struct {
@@ -24,4 +25,17 @@ func GetDays(redisDB *redis.Client) uint64 {
 	then := time.Unix(int64(siteCreateTime), 0)
 	diff := time.Now().UTC().Sub(then)
 	return uint64(diff.Hours()/24) + 1
+}
+
+// GetSiteInfo 直接获取网站信息
+func GetSiteInfo(redisDB* redis.Client, db *youdb.DB) SiteInfo {
+	si := SiteInfo{}
+	si.Days = GetDays(redisDB)
+	si.UserNum = db.Hsequence("user")
+	si.NodeNum = db.Hsequence("category")
+	si.TagNum = db.Hsequence("tag")
+	si.PostNum = db.Hsequence("article")
+	si.ReplyNum = db.Hget("count", []byte("comment_num")).Uint64()
+
+	return si
 }

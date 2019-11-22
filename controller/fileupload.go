@@ -11,7 +11,6 @@ import (
 	"github.com/ego008/youdb"
 	"github.com/qiniu/api.v7/auth/qbox"
 	"github.com/qiniu/api.v7/storage"
-	// "gopkg.in/h2non/filetype.v1"
 	"github.com/h2non/filetype"
 	"image"
 	"image/jpeg"

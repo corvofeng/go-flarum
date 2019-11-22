@@ -301,14 +301,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		Links    []model.Link
 	}
 
-	si := model.SiteInfo{}
-	si.Days = model.GetDays(redisDB)
-	si.UserNum = db.Hsequence("user")
-	si.NodeNum = db.Hsequence("category")
-	si.TagNum = db.Hsequence("tag")
-	si.PostNum = db.Hsequence("article")
-	si.ReplyNum = db.Hget("count", []byte("comment_num")).Uint64()
-
 	var count uint64
 	sqlDB := h.App.MySQLdb
 	// 获取全部的帖子数目
@@ -317,8 +309,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error %s", err)
 		return
 	}
-
-	si.PostNum = count
 
 	// 获取贴子列表
 	pageInfo := model.SQLArticleList(sqlDB, db, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
@@ -339,7 +329,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	evn.SiteInfo = si
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
@@ -364,14 +354,6 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 		Links    []model.Link
 	}
 
-	si := model.SiteInfo{}
-	si.Days = model.GetDays(redisDB)
-	si.UserNum = db.Hsequence("user")
-	si.NodeNum = db.Hsequence("category")
-	si.TagNum = db.Hsequence("tag")
-	si.PostNum = db.Hsequence("article")
-	si.ReplyNum = db.Hget("count", []byte("comment_num")).Uint64()
-
 	var count uint64
 	sqlDB := h.App.MySQLdb
 	// 获取全部的帖子数目
@@ -381,7 +363,6 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	si.PostNum = count
 	luckNum := uint64(scf.HomeShowNum)
 	if luckNum > count {
 		luckNum = count
@@ -426,7 +407,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	evn.NewestNodes = categories
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 
-	evn.SiteInfo = si
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
@@ -567,6 +548,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		Relative model.ArticleRelative
 		PageInfo model.CommentPageInfo
 		Views    uint64
+		SiteInfo model.SiteInfo
 	}
 
 	tpl := h.CurrentTpl(r)
@@ -622,6 +604,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.Author = author
 	evn.Relative = model.ArticleGetRelative(db, aobj.ID, aobj.Tags)
 	evn.PageInfo = pageInfo
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
