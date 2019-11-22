@@ -150,7 +150,8 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 
 	rows, err := db.Query(
 		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id =  ?",
-		uid)
+		uid,
+	)
 
 	defer func() {
 		if rows != nil {

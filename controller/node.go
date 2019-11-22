@@ -60,6 +60,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 		page = 1
 	}
 
+	si := model.GetSiteInfo(redisDB, db)
 	pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	pageInfo.HasNext = true
 	if pageInfo.PagePrev != 0 {
@@ -84,6 +85,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	evn.PageName = "category_detail"
 	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	evn.NewestNodes = categories
+	evn.SiteInfo = si
 	if h.InAPI {
 		type NodeData struct {
 			model.RestfulAPIBase

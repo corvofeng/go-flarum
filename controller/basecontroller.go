@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"goyoubbs/util"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -16,11 +17,13 @@ import (
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
 
 type (
+	// BaseHandler 基础handler
 	BaseHandler struct {
 		App   *system.Application
 		InAPI bool
 	}
 
+	// PageData 每个页面中的基础信息
 	PageData struct {
 		SiteCf        *system.SiteConf
 		Title         string
@@ -34,6 +37,7 @@ type (
 		ShowSideAd    bool
 		HotNodes      []model.CategoryMini
 		NewestNodes   []model.CategoryMini
+		SiteInfo      model.SiteInfo
 	}
 	normalRsp struct {
 		Retcode int    `json:"retcode"`
@@ -41,6 +45,7 @@ type (
 	}
 )
 
+// Render 渲染html网站
 func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}, tplPath ...string) error {
 	if len(tplPath) == 0 {
 		return errors.New("File path can not be empty ")
@@ -67,7 +72,6 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	var uid uint64
 	var err error
 
-	db := h.App.Db
 	sqlDB := h.App.MySQLdb
 
 	ssValue := h.GetCookie(r, "SessionID")
@@ -76,7 +80,6 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	}
 	z := strings.Split(ssValue, ":")
 	rawUID := z[0]
-	sessionID := z[1]
 
 	if len(rawUID) > 0 {
 		uid, err = strconv.ParseUint(rawUID, 10, 64)
@@ -84,23 +87,16 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 			return user, nil
 		}
 	}
-	// 首先通过数据库获取当前用户
+	// TODO: 直接通过数据库获取当前用户， 性能瓶颈了再说
 	user, err = model.SQLUserGetByID(sqlDB, uid)
-
-	if err != nil {
+	if util.CheckError(err, "获取用户") {
 		return user, err
-	}
-
-	// 但是session仍然使用原文件, 是通过用户名来获取session值
-	uobj, err := model.UserGetByName(db, user.Name)
-	if sessionID == uobj.Session {
-		h.SetCookie(w, "SessionID", ssValue, 365)
-		return user, nil
 	}
 
 	return user, errors.New("user not found")
 }
 
+// SetCookie 浏览器设置cookie
 func (h *BaseHandler) SetCookie(w http.ResponseWriter, name, value string, days int) error {
 	encoded, err := h.App.Sc.Encode(name, value)
 	if err != nil {
@@ -128,6 +124,7 @@ func (h *BaseHandler) GetCookie(r *http.Request, name string) string {
 	return ""
 }
 
+// DelCookie 删除Cookie, 用户下线
 func (h *BaseHandler) DelCookie(w http.ResponseWriter, name string) {
 	if len(name) > 0 {
 		http.SetCookie(w, &http.Cookie{
