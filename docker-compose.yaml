@@ -6,7 +6,7 @@ services:
       - "8081:8082"
     image: yiqi:dev
     deploy:
-      replicas: 1
+      replicas: 2
     labels:
       - "com.docker.lb.hosts=demo.local"
       - "com.docker.lb.ip_hash=true"

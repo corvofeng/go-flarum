@@ -45,6 +45,7 @@ steps:
     docker build . -t 'yiqi:v$(Build.BuildId)'
     sed -i 's/yiqi:dev/yiqi:v$(Build.BuildId)/' docker-compose.yaml
     sed -i 's@- ./static:/home/goyoubbs/static@- /home/collipa/goyoubbs/static:/home/goyoubbs/static@' docker-compose.yaml
+    sed -i 's/- "com.docker.lb.hosts=demo.local"/- "com.docker.lb.hosts=yiqi.ml"/' docker-compose.yaml
   workingDirectory: '$(WORKDIR)'
   displayName: 'Build yiqi image'
 
