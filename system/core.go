@@ -118,7 +118,7 @@ func LoadConfig(filename string) *config.Engine {
 
 // Init ， 连接数据库
 func (app *Application) Init(c *config.Engine, currentFilePath string) {
-	// .. version_changed: 2019-11-09 
+	// .. version_changed: 2019-11-09
 	// 添加 redis, 目前redis只用于缓存数据，理论上不能包含数据结构
 
 	mcf := &MainConf{}
