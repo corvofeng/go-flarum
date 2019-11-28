@@ -4,8 +4,10 @@ venv/
 goyoubbs
 
 static/avatar
+static/captcha
 config/
 !config/config.yaml-tpl
+!static/captcha/readme.txt
 mydata.db
 vendor
 .vscode

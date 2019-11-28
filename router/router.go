@@ -1,10 +1,12 @@
 package router
 
 import (
+	"net/http"
+	// "fmt"
 	"goyoubbs/controller"
 	"goyoubbs/system"
 
-	"github.com/dchest/captcha"
+	// "github.com/dchest/captcha"
 
 	"goji.io"
 	"goji.io/pat"
@@ -21,7 +23,10 @@ func NewRouter(app *system.Application) *goji.Mux {
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
 
-	sp.Handle(pat.Get("/captcha/*"), captcha.Server(captcha.StdWidth, captcha.StdHeight))
+	// sp.Handle(pat.Get("/captcha/*"), captcha.Server(captcha.StdWidth, captcha.StdHeight))
+	// sp.Handle(pat.Get("/captcha/*"), http.FileServer(http.Dir("static/captcha/")))
+	fs := http.FileServer(http.Dir("static/captcha"))
+	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
 	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
 	sp.HandleFunc(pat.Get("/member/:uid"), h.UserDetail)

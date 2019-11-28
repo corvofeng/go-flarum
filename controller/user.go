@@ -10,8 +10,8 @@ import (
 
 	"goyoubbs/model"
 	"goyoubbs/util"
+
 	"github.com/dchest/captcha"
-	// "github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
@@ -43,6 +43,8 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	evn.Act = act
 	evn.CaptchaID = captcha.New()
+	model.SaveImage(evn.CaptchaID)
+	// captcha.WriteImage()
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
@@ -110,9 +112,9 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		bn := "user_login_token"
 		key := []byte(token + ":loginerr")
 		if db.Zget(bn, key).State == "ok" {
-		// 	// todo
-		// 	//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
-		// 	//return
+			// 	// todo
+			// 	//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
+			// 	//return
 		}
 		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
 		fmt.Println(uobj)
