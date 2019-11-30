@@ -76,7 +76,12 @@ func main() {
 
 	// cron job
 	cr := cronjob.BaseHandler{App: app}
-	go cr.MainCronJob()
+	if os.Getenv("type") == "cron" {
+		logger.Info("Cron worker start !!!")
+		go cr.MainCronJob()
+	} else {
+		logger.Info("This is not a cron worker")
+	}
 
 	root := goji.NewMux()
 

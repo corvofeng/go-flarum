@@ -173,6 +173,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	logger.Debug(pong, err)
 
 	sqlDb, err := sql.Open("mysql", dbStr)
+	sqlDb.SetConnMaxLifetime(time.Minute * 10)
 	if err != nil {
 		logger.Errorf("Connect mysql error, %s", err)
 		return
