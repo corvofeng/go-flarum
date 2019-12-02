@@ -23,8 +23,6 @@ func NewRouter(app *system.Application) *goji.Mux {
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
 
-	// sp.Handle(pat.Get("/captcha/*"), captcha.Server(captcha.StdWidth, captcha.StdHeight))
-	// sp.Handle(pat.Get("/captcha/*"), http.FileServer(http.Dir("static/captcha/")))
 	fs := http.FileServer(http.Dir("static/captcha"))
 	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
