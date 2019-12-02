@@ -53,18 +53,18 @@ steps:
   workingDirectory: '$(WORKDIR)'
   displayName: 'Use docker stack to run'
 
-- task: CopyFiles@2
-  displayName: 'Copy Files to: /home/azure/goyoubbs'
-  inputs:
-    SourceFolder: '$(WORKDIR)'
-    Contents: |
-     !.git/**/*
-     **/goyoubbs
-     **/view/**
-     **/static/**
-     whooshsearch.py
-    TargetFolder: /home/azure/goyoubbs
-    OverWrite: true
+# - task: CopyFiles@2
+#   displayName: 'Copy Files to: /home/azure/goyoubbs'
+#   inputs:
+#     SourceFolder: '$(WORKDIR)'
+#     Contents: |
+#      !.git/**/*
+#      **/goyoubbs
+#      **/view/**
+#      **/static/**
+#      whooshsearch.py
+#     TargetFolder: /home/azure/goyoubbs
+#     OverWrite: true
 # - script: |
 #     mkdir -p '$(GOBIN)'
 #     mkdir -p '$(GOPATH)/pkg'
