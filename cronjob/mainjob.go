@@ -42,7 +42,13 @@ func (h *BaseHandler) MainCronJob() {
 
 	// 每小时将点击量刷到数据库中
 	tickStoreHitToMySQL := time.Tick(1 * time.Hour)
+
+	// 每十分钟刷新排序
+	// tickRefreshOrder := time.Tick(10 * time.Minute)
+
 	logger.Info("Start cron job")
+	syncWithMySQL(logger, sqlDB, redisDB)
+	refreshRankMap(logger)
 
 	for {
 		select {

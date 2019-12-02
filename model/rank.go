@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"goyoubbs/util"
 	"sort"
 	"sync"
 
@@ -89,18 +90,45 @@ func (data *CategoryRankData) resort() {
 
 // TimelyResort 刷新Redis数据库中每个帖子的权重
 func TimelyResort() {
-	m := GetRankMap()
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	for _, v := range m.m {
+	// 刷新所有节点的排序
+	categoryList, err := SQLGetAllCategory(rankMap.SQLDB)
+	if util.CheckError(err, "获取所有节点") {
+		return
+	}
 
-		data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", v.CID), 0, -1).Result()
-		for _, topicID := range data {
+	for _, v := range categoryList {
 
+		// 删除redis中所有无效的帖子
+		sqlDataDel, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, false)
+		if util.CheckError(err, fmt.Sprintf("获取%d节点下的无效的帖子列表", v.ID)) {
+			return
+		}
+		for _, t := range sqlDataDel {
+			_, err := rankRedisDB.ZRem(fmt.Sprintf("%d", v.ID), fmt.Sprintf("%d", t.ID)).Result()
+			util.CheckError(err, "删除无效帖子")
+		}
+
+		// 将所有有效帖子更新至redis数据库中
+		sqlDataAdd, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, true)
+		if util.CheckError(err, fmt.Sprintf("获取%d节点下的有效的帖子列表", v.ID)) {
+			return
+		}
+
+		// 	首先从数据库中获取所有有效的ID
+		for _, t := range sqlDataAdd {
+			_, err := rankRedisDB.ZAddNX(fmt.Sprintf("%d", v.ID), &redis.Z{
+				Score:  float64(getWeight(rankMap, t.ID)),
+				Member: fmt.Sprintf("%d", t.ID)},
+			).Result()
+			util.CheckError(err, "更新当前帖子")
+		}
+
+		// 刷新权重
+		rdsData, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", v.ID), 0, -1).Result()
+		for _, topicID := range rdsData {
 			aid, _ := strconv.ParseUint(topicID, 10, 64)
-
-			rankRedisDB.ZAddXX(fmt.Sprintf("%d", v.CID), &redis.Z{
-				Score:  float64(getWeight(m, aid)),
+			rankRedisDB.ZAddXX(fmt.Sprintf("%d", v.ID), &redis.Z{
+				Score:  float64(getWeight(rankMap, aid)),
 				Member: fmt.Sprintf("%d", aid)},
 			)
 		}

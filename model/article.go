@@ -45,6 +45,7 @@ type Article struct {
 	Active uint64 `json:"active"`
 }
 
+// ArticleMini 缩略版的Article信息
 type ArticleMini struct {
 	ID       uint64 `json:"id"`
 	UID      uint64 `json:"uid"`
@@ -329,8 +330,8 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 // SQLArticleSetClickCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
 func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
 
-	_, err := sqlDB.Exec("UPDATE `topic`" +
-		" set hits = ?" +
+	_, err := sqlDB.Exec("UPDATE `topic`"+
+		" set hits = ?"+
 		" where id = ?",
 		clickCnt,
 		aid,
@@ -431,6 +432,38 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 	}
 }
 
+func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini, error) {
+	var articles []ArticleMini
+	var rows *sql.Rows
+	var err error
+	if active {
+		rows, err = db.Query("SELECT id FROM topic WHERE node_id = ? AND active = ?", cid, 1)
+	} else {
+		rows, err = db.Query("SELECT id FROM topic WHERE node_id = ? AND active = ?", cid, 0)
+	}
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	if err != nil {
+		fmt.Printf("Query failed,err:%v", err)
+		return articles, err
+	}
+	for rows.Next() {
+		obj := ArticleMini{}
+		err = rows.Scan(&obj.ID)
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			return articles, err
+		}
+
+		articles = append(articles, obj)
+	}
+
+	return articles, nil
+}
+
 func incrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) uint64 {
 	var clickCnt uint64 = 0
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
@@ -438,7 +471,7 @@ func incrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 	if err == redis.Nil { // 只有当redis中的数据不存在时，才向mysql与内存数据库请求
 		if clickCnt == 0 {
 			// 首先从sqlDB中查找
-			fmt.Println("Get data from sqlDB", aid)
+			// fmt.Println("Get data from sqlDB", aid)
 			rows, err := sqlDB.Query("SELECT hits FROM topic where id = ?", aid)
 			defer func() {
 				if rows != nil {
