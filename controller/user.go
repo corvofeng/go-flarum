@@ -42,9 +42,7 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "user_login_register"
 
 	evn.Act = act
-	evn.CaptchaID = captcha.New()
-	model.SaveImage(evn.CaptchaID)
-	// captcha.WriteImage()
+	evn.CaptchaID = model.NewCaptcha()
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
@@ -99,7 +97,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
-		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaID":"` + captcha.New() + `"}`))
+		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaID":"` + model.NewCaptcha() + `"}`))
 		return
 	}
 
@@ -120,11 +118,11 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(uobj)
 
 		if err != nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaID":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaID":"` + model.NewCaptcha() + `"}`))
 			return
 		}
 		if uobj.Password != rec.Password {
-			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaID":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaID":"` + model.NewCaptcha() + `"}`))
 			return
 		}
 		sessionid := xid.New().String()
@@ -145,7 +143,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err == nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaID":"` + captcha.New() + `"}`))
+			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaID":"` + model.NewCaptcha() + `"}`))
 			return
 		}
 

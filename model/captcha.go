@@ -5,9 +5,10 @@ import (
 	"os"
 	"time"
 
+	"goyoubbs/util"
+
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"
-	"goyoubbs/util"
 )
 
 // redisStore is an internal store for captcha ids and their values.
@@ -20,6 +21,13 @@ func SetCaptchaUseRedisStore(redisDB *redis.Client) {
 	captcha.SetCustomStore(&redisStore{
 		redisDB: redisDB,
 	})
+}
+
+// NewCaptcha 产生新的验证码图片
+func NewCaptcha() string {
+	captchaID := captcha.New()
+	SaveImage(captchaID)
+	return captchaID
 }
 
 // Set sets the digits for the captcha id.
