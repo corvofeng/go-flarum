@@ -3,10 +3,12 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ego008/youdb"
-	"github.com/go-redis/redis/v7"
 	"sort"
 	"sync"
+
+	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
+
 	// "time"
 
 	"strconv"
@@ -136,31 +138,25 @@ func min(a, b uint64) uint64 {
 func GetTopicListByPageNum(cid uint64, page uint64, limit uint64) []uint64 {
 	var retData []uint64
 	// var tmpData []ArticleRankItem
-	m := GetRankMap()
-	if _, ok := m.m[cid]; !ok {
-		return retData
+
+	// m := GetRankMap()
+	// if _, ok := m.m[cid]; !ok {
+	// 	return retData
+	// }
+
+	// crd := m.m[cid] // categoryRankData
+
+	// func() {
+	// crd.mtx.Lock()
+	// defer crd.mtx.Unlock()
+	start := (page - 1) * limit
+	end := (page) * limit
+	data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", cid), int64(start), int64(end)).Result()
+	for _, val := range data {
+		aid, _ := strconv.ParseUint(val, 10, 64)
+		retData = append(retData, aid)
 	}
-
-	crd := m.m[cid] // categoryRankData
-
-	func() {
-		crd.mtx.Lock()
-		defer crd.mtx.Unlock()
-		start := (page - 1) * limit
-		end := (page) * limit
-		// maxIDx := uint64(len(crd.topicData))
-		// start = min(start, maxIDx)
-		// end = min(end, maxIDx)
-		// tmpData = append(tmpData, crd.topicData[start:end]...)
-		data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", cid), int64(start), int64(end)).Result()
-		for _, val := range data {
-			// fmt.Println("Get val", val)
-			aid, _ := strconv.ParseUint(val, 10, 64)
-			retData = append(retData, aid)
-		}
-		// fmt.Printf("%p %p", tmpData, crd.topicData[start:end])
-		// fmt.Println("Get ret data", retData)
-	}()
+	// }()
 	return retData
 }
 
