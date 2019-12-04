@@ -254,7 +254,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 		}
 		articleListStr += strconv.FormatInt(int64(v), 10)
 	}
-	sql := "select id, title, user_id, updated_at from topic where id in (" + articleListStr + ")"
+	sql := "select id, title, node_id, user_id, updated_at from topic where id in (" + articleListStr + ")"
 
 	rows, err = db.Query(sql)
 	defer func() {
@@ -269,7 +269,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 	m := make(map[uint64]ArticleListItem)
 	for rows.Next() {
 		item := ArticleListItem{}
-		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.EditTime) //不scan会导致连接不释放
+		err = rows.Scan(&item.ID, &item.Title, &item.CID, &item.UID, &item.EditTime) //不scan会导致连接不释放
 		item.Avatar = GetAvatarByID(db, cacheDB, redisDB, item.UID)
 
 		if err != nil {
@@ -278,6 +278,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 		}
 		item.ClickCnt = GetArticleCntFromRedisDB(db, cacheDB, redisDB, item.ID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
+		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
 		m[item.ID] = item
 	}
 
@@ -303,6 +304,7 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	if len(articleList) == 0 {
+		// TODO: remove it
 		articleIteratorStart := GetCIDArticleMax(nodeID)
 		fmt.Println("Current iterator is in ", articleIteratorStart)
 		pageInfo = SQLCIDArticleList(db, cntDB, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
@@ -399,6 +401,7 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 			continue
 		}
 		item.ClickCnt = GetArticleCntFromRedisDB(db, cntDB, redisDB, item.ID)
+		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
 		items = append(items, item)
 	}
 	if len(items) > 0 {

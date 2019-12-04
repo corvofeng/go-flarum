@@ -28,6 +28,8 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 		Uobj model.User
 		Now  int64
 	}
+	redisDB := h.App.RedisDB
+	db := h.App.Db
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
@@ -40,6 +42,7 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 
 	evn.ShowSideAd = true
 	evn.PageName = "user_setting"
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	evn.Uobj = currentUser
 	evn.Now = time.Now().UTC().Unix()
@@ -48,6 +51,7 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "usersetting.html")
 }
 
+// UserSettingPost 用户修改资料
 func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 

@@ -296,7 +296,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 	type pageData struct {
 		PageData
-		SiteInfo model.SiteInfo 
+		SiteInfo model.SiteInfo
 		PageInfo model.ArticlePageInfo
 		Links    []model.Link
 	}
