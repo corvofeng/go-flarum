@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"goyoubbs/util"
 	"strconv"
 	"strings"
 
 	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
 )
 
 type Category struct {
@@ -71,6 +73,22 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 // SQLCategoryGetByID 通过id获取节点
 func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
 	return sqlCategoryGet(db, cid, "")
+}
+
+// GetCategoryNameByCID 通过CID获取该分类的名称
+func GetCategoryNameByCID(sqlDB *sql.DB, redisDB *redis.Client, cid uint64) string {
+	var cname string
+	logger := util.GetLogger()
+	rep, err := redisDB.HGet("category", fmt.Sprintf("%d", cid)).Result()
+	if err != redis.Nil {
+		return rep
+	}
+	category, err := SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", cid))
+	cname = category.Name
+	redisDB.HSet("category", fmt.Sprintf("%d", cid), cname)
+
+	logger.Debugf("category not found for %d %s but we refresh!", category.ID, category.Name)
+	return cname
 }
 
 // SQLCategoryGetByName 通过name获取节点
