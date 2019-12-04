@@ -33,8 +33,15 @@
             <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
             <span class="item-date">
                 • 点击数 {{$item.ClickCnt}}
-                <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
+
+                {{ if $item.Cname }}
+                • <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
+                {{ end }}
+
+                {{ if $item.EditTimeFmt }}
                 • {{$item.EditTimeFmt}}
+                {{ end }}
+
                 {{if $item.Comments}}
                 • <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>
                 {{else}}

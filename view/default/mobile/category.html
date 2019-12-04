@@ -27,14 +27,20 @@
         <div class="item-content">
             <h1><a href="/topic/{{$item.ID}}">{{$item.Title}}</a></h1>
             <span class="item-date">
-                <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
-                {{$item.ClickCnt}}次点击
+                • 点击数 {{$item.ClickCnt}}
+                {{ if $item.Cname }}
+                • <a href="/node/{{$item.CID}}">{{$item.Cname}}</a>
+                {{ end }}
+
+                {{ if $item.EditTimeFmt }}
                 • {{$item.EditTimeFmt}}
+                {{ end }}
                 {{if $item.Comments}}
                  • <a href="/member/{{$item.Ruid}}">{{$item.Rname}}</a>
                 {{else}}
                 • <a href="/member/{{$item.UID}}">{{$item.Name}}</a>
                 {{end}}
+
             </span>
         </div>
         {{if $item.Comments}}
