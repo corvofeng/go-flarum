@@ -165,26 +165,14 @@ func min(a, b uint64) uint64 {
 // GetTopicListByPageNum 通过给定的页码查找话题的ID值
 func GetTopicListByPageNum(cid uint64, page uint64, limit uint64) []uint64 {
 	var retData []uint64
-	// var tmpData []ArticleRankItem
 
-	// m := GetRankMap()
-	// if _, ok := m.m[cid]; !ok {
-	// 	return retData
-	// }
-
-	// crd := m.m[cid] // categoryRankData
-
-	// func() {
-	// crd.mtx.Lock()
-	// defer crd.mtx.Unlock()
 	start := (page - 1) * limit
-	end := (page) * limit
+	end := (page) * limit - 1
 	data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", cid), int64(start), int64(end)).Result()
 	for _, val := range data {
 		aid, _ := strconv.ParseUint(val, 10, 64)
 		retData = append(retData, aid)
 	}
-	// }()
 	return retData
 }
 
