@@ -66,8 +66,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	if pageInfo.PagePrev != 0 {
 		pageInfo.HasPrev = true
 	}
-	// } else {
-	// }
+
 	categories, err := model.SQLGetAllCategory(sqlDB)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
