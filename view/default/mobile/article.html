@@ -28,7 +28,7 @@
                 {{end}}
                 {{end}}
 
-                {{if .CurrentUser.CanEdit }}
+                {{if (.CurrentUser.CanEdit .Aobj.ArticleBase )}}
                 &nbsp;&nbsp;• <a href="/admin/post/edit/{{.Aobj.ID}}">编辑</a>
                 {{end}}
            </div>

@@ -19,11 +19,15 @@ import (
 	"github.com/ego008/youdb"
 )
 
+type ArticleBase struct {
+	ID  uint64 `json:"id"`
+	UID uint64 `json:"uid"`
+	CID uint64 `json:"cid"`
+}
+
 // Article store in database
 type Article struct {
-	ID                uint64 `json:"id"`
-	UID               uint64 `json:"uid"`
-	CID               uint64 `json:"cid"`
+	ArticleBase
 	RUID              uint64 `json:"ruid"`
 	Title             string `json:"title"`
 	Content           string `json:"content"`
@@ -47,9 +51,7 @@ type Article struct {
 
 // ArticleMini 缩略版的Article信息
 type ArticleMini struct {
-	ID       uint64 `json:"id"`
-	UID      uint64 `json:"uid"`
-	CID      uint64 `json:"cid"`
+	ArticleBase
 	Ruid     uint64 `json:"ruid"`
 	Title    string `json:"title"`
 	EditTime uint64 `json:"edittime"`
@@ -59,11 +61,9 @@ type ArticleMini struct {
 
 // ArticleListItem data strucy only used in page.
 type ArticleListItem struct {
-	ID          uint64 `json:"id"`
-	UID         uint64 `json:"uid"`
+	ArticleBase
 	Name        string `json:"name"`
 	Avatar      string `json:"avatar"`
-	CID         uint64 `json:"cid"`
 	Cname       string `json:"cname"`
 	Ruid        uint64 `json:"ruid"`
 	Rname       string `json:"rname"`
@@ -613,11 +613,13 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 			user := userMap[article.UID]
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				ID:          article.ID,
-				UID:         article.UID,
+				ArticleBase: ArticleBase{
+					ID:  article.ID,
+					UID: article.UID,
+					CID: article.CID,
+				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -818,11 +820,13 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 			user := userMap[article.UID]
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				ID:          article.ID,
-				UID:         article.UID,
+				ArticleBase: ArticleBase{
+					ID:  article.ID,
+					UID: article.UID,
+					CID: article.CID,
+				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -916,11 +920,13 @@ func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
 			user := userMap[article.UID]
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				ID:          article.ID,
-				UID:         article.UID,
+				ArticleBase: ArticleBase{
+					ID:  article.ID,
+					UID: article.UID,
+					CID: article.CID,
+				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
 				Title:       article.Title,
@@ -1016,11 +1022,13 @@ func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePag
 			user := userMap[article.UID]
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
-				ID:          article.ID,
-				UID:         article.UID,
+				ArticleBase: ArticleBase{
+					ID:  article.ID,
+					UID: article.UID,
+					CID: article.CID,
+				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
-				CID:         article.CID,
 				Cname:       category.Name,
 				Ruid:        article.RUID,
 				Title:       article.Title,

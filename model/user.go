@@ -295,9 +295,15 @@ func (user *User) IsAdmin() bool {
 	return false
 }
 
-// CanEdit 检查当前用户是否可以创建帖子
-func (user *User) CanEdit() bool {
-	return user.IsAdmin()
+// CanEdit 检查当前用户是否可以编辑帖子
+func (user *User) CanEdit(aobjBase *ArticleBase) bool {
+	if user == nil {
+		return false
+	}
+	if aobjBase == nil {
+		return false
+	}
+	return user.IsAdmin() || user.ID == aobjBase.UID
 }
 
 // SaveAvatar 更新用户头像
