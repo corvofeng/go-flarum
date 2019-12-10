@@ -32,12 +32,6 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-
-	if !currentUser.IsAdmin() {
-		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
-		return
-	}
-
 	db := h.App.Db
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
@@ -47,8 +41,13 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
 	}
-	aidB := youdb.I2b(aobj.ID)
 
+	if !currentUser.CanEdit(&aobj.ArticleBase) {
+		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
+		return
+	}
+
+	aidB := youdb.I2b(aobj.ID)
 	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
 	// cobj, err := model.CategoryGetByID(db, strconv.FormatUint(aobj.CID, 10))
 	if err != nil {
@@ -144,11 +143,23 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored require"}`))
 		return
 	}
-	if !currentUser.IsAdmin() {
+
+	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	if err != nil {
+		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
+		return
+	}
+
+	if !currentUser.CanEdit(&aobj.ArticleBase) {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
 
+	// 提交的表单
 	type recForm struct {
 		Aid          uint64 `json:"aid"`
 		Act          string `json:"act"`
@@ -170,16 +181,13 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 
 	rec.Aid = uint64(aidI)
 
-	aidS := strconv.FormatUint(rec.Aid, 10)
+	// aidS := strconv.FormatUint(rec.Aid, 10)
 	aidB := youdb.I2b(rec.Aid)
 
 	rec.Title = strings.TrimSpace(rec.Title)
 	rec.Content = strings.TrimSpace(rec.Content)
 	rec.Tags = util.CheckTags(rec.Tags)
 
-	db := h.App.Db
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
 	if rec.Act == "preview" {
 		tmp := struct {
 			normalRsp
@@ -220,13 +228,6 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	_, err = model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(rec.CID, 10))
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
-		return
-	}
-
-	// 获取原始的帖子
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aidS)
-	if err != nil {
-		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
 	}
 

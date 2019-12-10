@@ -183,9 +183,11 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 
 	newAid, _ := db.HnextSequence("article")
 	aobj := model.Article{
-		ID:       newAid,
-		UID:      currentUser.ID,
-		CID:      rec.CID,
+		ArticleBase: model.ArticleBase{
+			ID:  newAid,
+			UID: currentUser.ID,
+			CID: rec.CID,
+		},
 		Title:    rec.Title,
 		Content:  rec.Content,
 		AddTime:  now,
