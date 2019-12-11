@@ -47,7 +47,6 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aidB := youdb.I2b(aobj.ID)
 	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
 	// cobj, err := model.CategoryGetByID(db, strconv.FormatUint(aobj.CID, 10))
 	if err != nil {
@@ -58,6 +57,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	act := r.FormValue("act")
 
 	if act == "del" {
+		aidB := youdb.I2b(aobj.ID)
 		// remove
 		// 总文章列表
 		db.Zdel("article_timeline", aidB)

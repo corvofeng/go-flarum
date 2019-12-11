@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -455,6 +456,10 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	// 获取帖子详情
 	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	if util.CheckError(err, fmt.Sprintf("获取帖子 %s 失败", aid)) {
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	// 获取帖子评论数目
 	err = sqlDB.QueryRow(
