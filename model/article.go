@@ -125,9 +125,10 @@ type ArticleTag struct {
 
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid string) (Article, error) {
+	logger := util.GetLogger()
 	obj := Article{}
 	rows, err := db.Query(
-		"SELECT id, node_id, user_id, title, content, created_at, updated_at, client_ip FROM topic WHERE id = ? and active !=0",
+		"SELECT id, node_id, user_id, title, content, created_at, updated_at, father_topic_id, client_ip FROM topic WHERE id = ? and active !=0",
 		aid,
 	)
 	defer func() {
@@ -135,12 +136,9 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid s
 			rows.Close() //可以关闭掉未scan连接一直占用
 		}
 	}()
+	util.CheckError(err, fmt.Sprintf("Query %s failed", aid))
 
-	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
-	}
-
-	for rows.Next() {
+	if rows.Next() {
 		err = rows.Scan(
 			&obj.ID,
 			&obj.CID,
@@ -149,15 +147,17 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid s
 			&obj.Content,
 			&obj.AddTime,
 			&obj.EditTime,
+			&obj.FatherTopicID,
 			&obj.ClientIP,
 		)
-
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
+		if util.CheckError(err, fmt.Sprintf("scan %s", aid)) {
 			return obj, errors.New("No result")
 		}
+		obj.ClickCnt = incrArticleCntFromRedisDB(db, cntDB, redisDB, obj.ID)
+	} else {
+		logger.Debug("failed query ", aid)
+		return obj, errors.New("No result")
 	}
-	obj.ClickCnt = incrArticleCntFromRedisDB(db, cntDB, redisDB, obj.ID)
 
 	return obj, nil
 }
@@ -204,7 +204,6 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 	}
 	oldArticle.SQLCreateTopic(db)
 
-	//" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
 	_, err = db.Exec(
 		"UPDATE `topic` "+
 			"set title=?,"+
