@@ -112,6 +112,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "article_edit"
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	evn.Cobj = cobj
 	evn.MainNodes = model.CategoryGetMain(db, cobj)
