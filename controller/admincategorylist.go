@@ -2,15 +2,21 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
 	"goyoubbs/model"
 	"net/http"
 	"strconv"
+
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
 )
 
+// AdminCategoryList 获取category列表
+/*
+ * w (http.ResponseWriter): TODO
+ * r (*http.Request): TODO
+ */
 func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) {
-	cid, btn, key := r.FormValue("cid"), r.FormValue("btn"), r.FormValue("key")
+	cid, _, key := r.FormValue("cid"), r.FormValue("btn"), r.FormValue("key")
 	if len(key) > 0 {
 		_, err := strconv.ParseUint(key, 10, 64)
 		if err != nil {
@@ -24,28 +30,23 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
 
-	cmd := "hrscan"
-	if btn == "prev" {
-		cmd = "hscan"
-	}
-
-	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 
 	var err error
 	var cobj model.Category
 	if len(cid) > 0 {
-		cobj, err = model.CategoryGetByID(db, cid)
+		cobj, err = model.SQLCategoryGetByID(sqlDB, cid)
 		if err != nil {
 			cobj = model.Category{}
 		}
 	}
 
-	pageInfo := model.CategoryList(db, cmd, key, h.App.Cf.Site.PageShowNum)
+	pageInfo := model.SQLCategoryList(sqlDB)
 
 	type pageData struct {
 		PageData
@@ -74,6 +75,11 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 	h.Render(w, tpl, evn, "layout.html", "admincategorylist.html")
 }
 
+// AdminCategoryListPost 添加标签
+/*
+ * w (http.ResponseWriter): TODO
+ * r (*http.Request): TODO
+ */
 func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	token := h.GetCookie(r, "token")
@@ -87,7 +93,7 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}

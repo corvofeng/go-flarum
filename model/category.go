@@ -13,6 +13,7 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
+// Category 帖子分类
 type Category struct {
 	ID       uint64 `json:"id"`
 	Name     string `json:"name"`
@@ -34,23 +35,13 @@ type CategoryPageInfo struct {
 	LastKey  uint64     `json:"lastkey"`
 }
 
-func CategoryGetByID(db *youdb.DB, cid string) (Category, error) {
-	obj := Category{}
-	rs := db.Hget("category", youdb.DS2b(cid))
-	if rs.State == "ok" {
-		json.Unmarshal(rs.Data[0], &obj)
-		return obj, nil
-	}
-	return obj, errors.New(rs.State)
-}
-
 // SQLGetAllCategory 获取所有分类
 func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 	var categories []CategoryMini
 	rows, err := db.Query("SELECT id, name FROM node order by topic_count desc limit 30")
 	defer func() {
 		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
+			rows.Close() // 可以关闭掉未scan连接一直占用
 		}
 	}()
 	if err != nil {
@@ -58,7 +49,7 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 	}
 	for rows.Next() {
 		obj := CategoryMini{}
-		err = rows.Scan(&obj.ID, &obj.Name) //不scan会导致连接不释放
+		err = rows.Scan(&obj.ID, &obj.Name) // 不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -73,22 +64,6 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 // SQLCategoryGetByID 通过id获取节点
 func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
 	return sqlCategoryGet(db, cid, "")
-}
-
-// GetCategoryNameByCID 通过CID获取该分类的名称
-func GetCategoryNameByCID(sqlDB *sql.DB, redisDB *redis.Client, cid uint64) string {
-	var cname string
-	logger := util.GetLogger()
-	rep, err := redisDB.HGet("category", fmt.Sprintf("%d", cid)).Result()
-	if err != redis.Nil {
-		return rep
-	}
-	category, err := SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", cid))
-	cname = category.Name
-	redisDB.HSet("category", fmt.Sprintf("%d", cid), cname)
-
-	logger.Debugf("category not found for %d %s but we refresh!", category.ID, category.Name)
-	return cname
 }
 
 // SQLCategoryGetByName 通过name获取节点
@@ -127,6 +102,63 @@ func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
 	}
 
 	return obj, nil
+}
+
+// SQLCategoryList 获取分类列表
+func SQLCategoryList(db *sql.DB) CategoryPageInfo {
+	// tb := "category"
+	var items []Category
+	// var keys [][]byte
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+
+	categrayList, err := SQLGetAllCategory(db)
+	if !util.CheckError(err, "获取所有category") {
+		for _, cate := range categrayList {
+			fullCategory, err := SQLCategoryGetByName(db, cate.Name)
+			if !util.CheckError(err, fmt.Sprintf("获取category: %s", cate.Name)) {
+				items = append(items, fullCategory)
+			}
+		}
+	}
+
+	return CategoryPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
+
+}
+
+//  以下代码不再使用
+// ============================================================ //
+
+func CategoryGetByID(db *youdb.DB, cid string) (Category, error) {
+	obj := Category{}
+	rs := db.Hget("category", youdb.DS2b(cid))
+	if rs.State == "ok" {
+		json.Unmarshal(rs.Data[0], &obj)
+		return obj, nil
+	}
+	return obj, errors.New(rs.State)
+}
+
+// GetCategoryNameByCID 通过CID获取该分类的名称
+func GetCategoryNameByCID(sqlDB *sql.DB, redisDB *redis.Client, cid uint64) string {
+	var cname string
+	logger := util.GetLogger()
+	rep, err := redisDB.HGet("category", fmt.Sprintf("%d", cid)).Result()
+	if err != redis.Nil {
+		return rep
+	}
+	category, err := SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", cid))
+	cname = category.Name
+	redisDB.HSet("category", fmt.Sprintf("%d", cid), cname)
+
+	logger.Debugf("category not found for %d %s but we refresh!", category.ID, category.Name)
+	return cname
 }
 
 func CategoryHot(db *youdb.DB, limit int) []CategoryMini {

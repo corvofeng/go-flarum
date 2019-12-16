@@ -10,7 +10,7 @@
     {{range $_, $item := .PageInfo.Items}}
     <li style="margin-bottom: 8px;">
         id:{{$item.ID}} - {{$item.Name}} - Articles: {{$item.Articles}} - Hidden: {{$item.Hidden}}
-        <a href="/n/{{$item.ID}}">查看</a>
+        <a href="/node/{{$item.ID}}">查看</a>
         <a href="/admin/category/list?cid={{$item.ID}}">编辑</a>
     </li>
     {{end}}
