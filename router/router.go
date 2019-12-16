@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"os"
 	// "fmt"
 	"goyoubbs/controller"
 	"goyoubbs/system"
@@ -58,16 +59,19 @@ func NewRouter(app *system.Application) *goji.Mux {
 
 	sp.HandleFunc(pat.Get("/admin/post/edit/:aid"), h.ArticleEdit)
 	sp.HandleFunc(pat.Post("/admin/post/edit/:aid"), h.ArticleEditPost)
-	// sp.HandleFunc(pat.Get("/admin/comment/edit/:aid/:cid"), h.CommentEdit)
-	// sp.HandleFunc(pat.Post("/admin/comment/edit/:aid/:cid"), h.CommentEditPost)
-	// sp.HandleFunc(pat.Get("/admin/user/edit/:uid"), h.UserEdit)
-	// sp.HandleFunc(pat.Post("/admin/user/edit/:uid"), h.UserEditPost)
-	// sp.HandleFunc(pat.Get("/admin/user/list"), h.AdminUserList)
-	// sp.HandleFunc(pat.Post("/admin/user/list"), h.AdminUserListPost)
-	// sp.HandleFunc(pat.Get("/admin/category/list"), h.AdminCategoryList)
-	// sp.HandleFunc(pat.Post("/admin/category/list"), h.AdminCategoryListPost)
-	// sp.HandleFunc(pat.Get("/admin/link/list"), h.AdminLinkList)
-	// sp.HandleFunc(pat.Post("/admin/link/list"), h.AdminLinkListPost)
+
+	if os.Getenv("type") == "admin" {
+		sp.HandleFunc(pat.Get("/admin/comment/edit/:aid/:cid"), h.CommentEdit)
+		sp.HandleFunc(pat.Post("/admin/comment/edit/:aid/:cid"), h.CommentEditPost)
+		sp.HandleFunc(pat.Get("/admin/user/edit/:uid"), h.UserEdit)
+		sp.HandleFunc(pat.Post("/admin/user/edit/:uid"), h.UserEditPost)
+		sp.HandleFunc(pat.Get("/admin/user/list"), h.AdminUserList)
+		sp.HandleFunc(pat.Post("/admin/user/list"), h.AdminUserListPost)
+		sp.HandleFunc(pat.Get("/admin/category/list"), h.AdminCategoryList)
+		sp.HandleFunc(pat.Post("/admin/category/list"), h.AdminCategoryListPost)
+		sp.HandleFunc(pat.Get("/admin/link/list"), h.AdminLinkList)
+		sp.HandleFunc(pat.Post("/admin/link/list"), h.AdminLinkListPost)
+	}
 
 	return sp
 }
