@@ -2,16 +2,21 @@ package controller
 
 import (
 	"encoding/json"
-	"goyoubbs/model"
-	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// AdminUserList 管理员查看所有用户
+/*
+ * w (http.ResponseWriter): TODO
+ * r (*http.Request): TODO
+ */
 func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 	flag, btn, key := r.FormValue("flag"), r.FormValue("btn"), r.FormValue("key")
 	if len(key) > 0 {
@@ -27,7 +32,7 @@ func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
@@ -85,7 +90,7 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}

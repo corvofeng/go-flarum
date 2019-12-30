@@ -490,7 +490,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if aobj.Hidden && currentUser.Flag < 99 {
+	if aobj.Hidden && !currentUser.IsAdmin() {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 		return
@@ -506,7 +506,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cobj.Hidden && currentUser.Flag < 99 {
+	if cobj.Hidden && !currentUser.IsAdmin() {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 		return
