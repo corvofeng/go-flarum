@@ -29,7 +29,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
@@ -71,6 +71,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "comment_edit"
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	evn.Aobj = aobj
 	evn.Cobj = cobj
@@ -99,7 +100,7 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}

@@ -36,6 +36,8 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 	}
 
 	sqlDB := h.App.MySQLdb
+	db := h.App.Db
+	redisDB := h.App.RedisDB
 
 	var err error
 	var cobj model.Category
@@ -65,6 +67,7 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 
 	evn.PageInfo = pageInfo
 	evn.Cobj = cobj
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {

@@ -3,11 +3,11 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"goyoubbs/model"
-	"goyoubbs/util"
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 	"goji.io/pat"
+	"goyoubbs/model"
+	"goyoubbs/util"
 	"io"
 	"net/http"
 	"strconv"
@@ -28,7 +28,7 @@ func (h *BaseHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
@@ -78,7 +78,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}

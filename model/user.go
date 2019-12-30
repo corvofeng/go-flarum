@@ -144,6 +144,29 @@ func UserListByFlag(db *youdb.DB, cmd, tb, key string, limit int) UserPageInfo {
 	}
 }
 
+// SQLUserListByFlag 从数据库中查找用户列表
+/*
+ * db (*youdb.DB): TODO
+ * cmd (TODO): TODO
+ * tb (TODO): TODO
+ * key (string): TODO
+ * limit (int): TODO
+ */
+func SQLUserListByFlag(sqlDB *sql.DB, db *youdb.DB, cmd, tb, key string, limit int) UserPageInfo {
+	var items []User
+	// var keys [][]byte
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+
+	return UserPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
+}
+
 // SQLUserGetByID 获取数据库用户
 func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 	obj := User{}

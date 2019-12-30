@@ -269,7 +269,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 
 	currentUser, _ := h.CurrentUser(w, r)
 
-	if uobj.Hidden && currentUser.Flag < 99 {
+	if uobj.Hidden && !currentUser.IsAdmin() {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 		return

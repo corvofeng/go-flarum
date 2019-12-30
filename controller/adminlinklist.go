@@ -2,8 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"goyoubbs/model"
 	"github.com/rs/xid"
+	"goyoubbs/model"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +13,7 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 	lid := r.FormValue("lid")
 
 	db := h.App.Db
+	redisDB := h.App.RedisDB
 
 	var lobj model.Link
 	if len(lid) > 0 {
@@ -36,7 +37,7 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden"}`))
 		return
 	}
@@ -55,6 +56,8 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "user_list"
+
+	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	evn.Items = model.LinkList(db, true)
 	evn.Lobj = lobj
@@ -81,7 +84,7 @@ func (h *BaseHandler) AdminLinkListPost(w http.ResponseWriter, r *http.Request) 
 		w.Write([]byte(`{"retcode":401,"retmsg":"authored err"}`))
 		return
 	}
-	if currentUser.Flag < 99 {
+	if !currentUser.IsAdmin() {
 		w.Write([]byte(`{"retcode":403,"retmsg":"flag forbidden}`))
 		return
 	}
