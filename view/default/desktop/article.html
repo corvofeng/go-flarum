@@ -45,8 +45,24 @@
         {{end}}
     </div>
     <div class="topic-content">
-
+        {{/* <div class="cell" style="max-height: 600px;overflow: hidden;transition: max-height 2s ease 0s;"> */}}
+        <div id="folder" class="cell">
         {{.Aobj.ContentFmt}}
+        </div>
+
+        <div id="showTopic" style="padding:16px; color:#778087;text-align: center;">
+            <span id="btn-topic" style="cursor: pointer;
+    padding: 4px 7px;
+    border-radius: 3px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(166, 166, 166);
+    border-image: initial;
+    transition: all 0.1s ease 0s;"
+            >展开主题</span>
+            <div style="height:10px;"></div>
+            <span style="font-size:0.6em">主题超长已自动折叠，点击按钮显示完整的主题。</span>
+        </div>
 
         {{if .Aobj.Tags}}
         <div class="c"></div>
@@ -151,6 +167,37 @@
 <div class="no-comment">目前尚无回复</div>
 {{end}}
 
+<script>
+    jQuery(function($){
+        let fold_topic = function() {
+            $("#folder").css({
+                maxHeight: '500px',
+                overflow: 'hidden',
+                transition: 'max-height 2s ease 0s',
+            });
+        }
+        let unfold_topic = function() {
+            // 取消折叠
+            $("#folder").css({
+                maxHeight: 'none',
+                overflow: 'hidden',
+            });
+            // 移除按钮
+            $('#showTopic').remove();
+        }
+        if($('.topic-content').text().length > 1000) {
+            fold_topic();
+        } else {
+            // 直接移除按钮
+            $('#showTopic').remove();
+        }
+        $("#btn-topic").click(function(){
+            // max-height: none; overflow: hidden;
+            unfold_topic();
+        });
+    });
+</script>
+
 {{if .Aobj.CloseComment}}
 <div class="no-comment">该帖评论已关闭</div>
 {{end}}
@@ -220,7 +267,6 @@
             }
             return false;
         });
-
         $("#btn-submit").click(function(){
             var content = $("#id-content").val();
             if(content){
