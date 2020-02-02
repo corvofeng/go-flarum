@@ -440,8 +440,8 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	aid := pat.Param(r, "aid")
-	_, err = strconv.Atoi(aid)
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"aid type err"}`))
 		return
@@ -456,7 +456,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	// 获取帖子详情
 	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
-	if util.CheckError(err, fmt.Sprintf("获取帖子 %s 失败", aid)) {
+	if util.CheckError(err, fmt.Sprintf("获取帖子 %d 失败", aid)) {
 		w.Write([]byte(err.Error()))
 		return
 	}
@@ -472,23 +472,25 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	currentUser, _ := h.CurrentUser(w, r)
 
-	if len(currentUser.Notice) > 0 && len(currentUser.Notice) >= len(aid) {
-		if len(aid) == len(currentUser.Notice) && aid == currentUser.Notice {
-			currentUser.Notice = ""
-			currentUser.NoticeNum = 0
-			jb, _ := json.Marshal(currentUser)
-			db.Hset("user", youdb.I2b(currentUser.ID), jb)
-		} else {
-			subStr := "," + aid + ","
-			newNotice := "," + currentUser.Notice + ","
-			if strings.Index(newNotice, subStr) >= 0 {
-				currentUser.Notice = strings.Trim(strings.Replace(newNotice, subStr, "", 1), ",")
-				currentUser.NoticeNum--
+	/*
+		if len(currentUser.Notice) > 0 && len(currentUser.Notice) >= len(aid) {
+			if len(aid) == len(currentUser.Notice) && aid == currentUser.Notice {
+				currentUser.Notice = ""
+				currentUser.NoticeNum = 0
 				jb, _ := json.Marshal(currentUser)
 				db.Hset("user", youdb.I2b(currentUser.ID), jb)
+			} else {
+				subStr := "," + aid + ","
+				newNotice := "," + currentUser.Notice + ","
+				if strings.Index(newNotice, subStr) >= 0 {
+					currentUser.Notice = strings.Trim(strings.Replace(newNotice, subStr, "", 1), ",")
+					currentUser.NoticeNum--
+					jb, _ := json.Marshal(currentUser)
+					db.Hset("user", youdb.I2b(currentUser.ID), jb)
+				}
 			}
 		}
-	}
+	*/
 
 	if aobj.Hidden && !currentUser.IsAdmin() {
 		w.WriteHeader(http.StatusNotFound)
@@ -661,8 +663,8 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	aid := pat.Param(r, "aid")
-	_, err := strconv.Atoi(aid)
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"aid type err:` + err.Error() + `"}`))
 		return
@@ -735,9 +737,8 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"comment forbidden"}`))
 			return
 		}
-		commentID, _ := cntDB.HnextSequence("article_comment:" + aid)
+		// commentID, _ := cntDB.HnextSequence("article_comment:" + aid)
 		obj := model.Comment{
-			ID:       commentID,
 			Aid:      aobj.ID,
 			UID:      currentUser.ID,
 			Content:  rec.Content,
@@ -746,23 +747,23 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		}
 
 		obj.SQLSaveComment(sqlDB)
-		jb, _ := json.Marshal(obj)
+		// jb, _ := json.Marshal(obj)
 
-		cntDB.Hset("article_comment:"+aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
-		cntDB.Hincr("count", []byte("comment_num"), 1)            // 评论总数
-		// 用户回复文章列表
-		cntDB.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
+		// cntDB.Hset("article_comment:"+aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
+		// cntDB.Hincr("count", []byte("comment_num"), 1)            // 评论总数
+		// // 用户回复文章列表
+		// cntDB.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
 
 		// 更新文章列表时间
 
-		aobj.Comments = commentID
+		// aobj.Comments = commentID
 		aobj.RUID = currentUser.ID
 		aobj.EditTime = timeStamp
 		jb2, _ := json.Marshal(aobj)
 		cntDB.Hset("article", youdb.I2b(aobj.ID), jb2)
 
 		currentUser.LastReplyTime = timeStamp
-		currentUser.Replies += 1
+		currentUser.Replies++
 		jb3, _ := json.Marshal(currentUser)
 		cntDB.Hset("user", youdb.I2b(currentUser.ID), jb3)
 
@@ -771,36 +772,36 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		// 分类文章列表
 		cntDB.Zset("category_article_timeline:"+strconv.FormatUint(aobj.CID, 10), youdb.I2b(aobj.ID), timeStamp)
 
-		// @ somebody in comment & topic author
-		sbs := util.GetMention("@"+strconv.FormatUint(aobj.UID, 10)+" "+rec.Content,
-			[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
-		for _, sb := range sbs {
-			var sbObj model.User
-			sbu, err := strconv.ParseUint(sb, 10, 64)
-			if err != nil {
-				// @ user name
-				sbObj, err = model.UserGetByName(cntDB, strings.ToLower(sb))
-			} else {
-				// @ user id
-				sbObj, err = model.UserGetByID(cntDB, sbu)
-			}
+		// // @ somebody in comment & topic author
+		// sbs := util.GetMention("@"+strconv.FormatUint(aobj.UID, 10)+" "+rec.Content,
+		// 	[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
+		// for _, sb := range sbs {
+		// 	var sbObj model.User
+		// 	sbu, err := strconv.ParseUint(sb, 10, 64)
+		// 	if err != nil {
+		// 		// @ user name
+		// 		sbObj, err = model.UserGetByName(cntDB, strings.ToLower(sb))
+		// 	} else {
+		// 		// @ user id
+		// 		sbObj, err = model.UserGetByID(cntDB, sbu)
+		// 	}
 
-			if err == nil {
-				if len(sbObj.Notice) > 0 {
-					aidList := util.SliceUniqStr(strings.Split(aid+","+sbObj.Notice, ","))
-					if len(aidList) > 100 {
-						aidList = aidList[:100]
-					}
-					sbObj.Notice = strings.Join(aidList, ",")
-					sbObj.NoticeNum = len(aidList)
-				} else {
-					sbObj.Notice = aid
-					sbObj.NoticeNum = 1
-				}
-				jb, _ := json.Marshal(sbObj)
-				cntDB.Hset("user", youdb.I2b(sbObj.ID), jb)
-			}
-		}
+		// 	if err == nil {
+		// 		if len(sbObj.Notice) > 0 {
+		// 			aidList := util.SliceUniqStr(strings.Split(aid+","+sbObj.Notice, ","))
+		// 			if len(aidList) > 100 {
+		// 				aidList = aidList[:100]
+		// 			}
+		// 			sbObj.Notice = strings.Join(aidList, ",")
+		// 			sbObj.NoticeNum = len(aidList)
+		// 		} else {
+		// 			sbObj.Notice = aid
+		// 			sbObj.NoticeNum = 1
+		// 		}
+		// 		jb, _ := json.Marshal(sbObj)
+		// 		cntDB.Hset("user", youdb.I2b(sbObj.ID), jb)
+		// 	}
+		// }
 
 		rsp.Retcode = 200
 	}

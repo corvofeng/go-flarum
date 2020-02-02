@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -124,7 +125,7 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid string) (Article, error) {
+func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) (Article, error) {
 	logger := util.GetLogger()
 	obj := Article{}
 	rows, err := db.Query(
@@ -162,6 +163,54 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid s
 	return obj, nil
 }
 
+// GetCommentsSize 获取评论
+/*
+ * db (*sql.DB): TODO
+ * cntDB (*youdb.DB): TODO
+ * redisDB (redis.Client): TODO
+ */
+func (article *Article) GetCommentsSize(db *sql.DB) int {
+	var count int
+
+	row := db.QueryRow(
+		"SELECT count(*) FROM reply where topic_id = ?",
+		article.ID,
+	)
+
+	err := row.Scan(&count)
+	if util.CheckError(err, "查询评论数量") {
+		return 0
+	}
+
+	return count
+}
+
+// GetWeight 获取当前帖子的权重
+/**
+ * (Log10(QView) * 4 + comments)/ QAge
+ *
+ * db (*sql.DB): TODO
+ * redisDB (redis.Client): TODO
+ */
+func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) float64 {
+	var editTime time.Time
+	var now = time.Now()
+	if article.EditTime == 0 {
+		editTime = time.Unix(now.Unix()-2*24*3600, 0)
+	} else {
+		editTime = time.Unix(int64(article.EditTime), 0)
+		sTime := time.Unix(1577836800, 0) // 2020-01-01 08:00:00
+
+		if editTime.Before(sTime) {
+			editTime = time.Unix(now.Unix()-2*24*3600, 0)
+		}
+	}
+	qAge := now.Sub(editTime).Hours()
+	weight := (math.Log10(float64(article.ClickCnt))*4.0 + 1.0*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
+
+	return weight
+}
+
 // SQLCreateTopic 创建主题
 func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 	row, err := db.Exec(
@@ -197,7 +246,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(db, cntDB, redisDB, strconv.FormatUint(article.ID, 10))
+	oldArticle, err := SQLArticleGetByID(db, cntDB, redisDB, article.ID)
 	oldArticle.Active = 0
 	if util.CheckError(err, "修改时拷贝") {
 		return false

@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"strconv"
 
 	"goyoubbs/util"
+
 	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 )
@@ -140,9 +142,9 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, topicI
 	}
 }
 
-func CommentGetByKey(db *youdb.DB, aid string, cid uint64) (Comment, error) {
+func CommentGetByKey(db *youdb.DB, aid uint64, cid uint64) (Comment, error) {
 	obj := Comment{}
-	rs := db.Hget("article_comment:"+aid, youdb.I2b(cid))
+	rs := db.Hget("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid))
 	if rs.State == "ok" {
 		json.Unmarshal(rs.Data[0], &obj)
 		return obj, nil
@@ -150,13 +152,13 @@ func CommentGetByKey(db *youdb.DB, aid string, cid uint64) (Comment, error) {
 	return obj, errors.New(rs.State)
 }
 
-func CommentSetByKey(db *youdb.DB, aid string, cid uint64, obj Comment) error {
+func CommentSetByKey(db *youdb.DB, aid uint64, cid uint64, obj Comment) error {
 	jb, _ := json.Marshal(obj)
-	return db.Hset("article_comment:"+aid, youdb.I2b(cid), jb)
+	return db.Hset("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid), jb)
 }
 
-func CommentDelByKey(db *youdb.DB, aid string, cid uint64) error {
-	return db.Hdel("article_comment:"+aid, youdb.I2b(cid))
+func CommentDelByKey(db *youdb.DB, aid uint64, cid uint64) error {
+	return db.Hdel("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid))
 }
 
 func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageInfo {

@@ -12,8 +12,8 @@ import (
 )
 
 func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
-	aid, cid := pat.Param(r, "aid"), pat.Param(r, "cid")
-	_, err := strconv.ParseUint(aid, 10, 64)
+	_aid, cid := pat.Param(r, "aid"), pat.Param(r, "cid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"aid type err"}`))
 		return
@@ -83,8 +83,8 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	aid, cid := pat.Param(r, "aid"), pat.Param(r, "cid")
-	aidI, err := strconv.ParseUint(aid, 10, 64)
+	_aid, cid := pat.Param(r, "aid"), pat.Param(r, "cid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"aid type err"}`))
 		return
@@ -158,7 +158,7 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 		Aid uint64 `json:"aid"`
 	}{
 		normalRsp{200, "ok"},
-		aidI,
+		aid,
 	}
 	json.NewEncoder(w).Encode(tmp)
 }
