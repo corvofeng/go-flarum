@@ -333,7 +333,7 @@
         if(link.indexOf("/member/") !== 0) {
             $.ajax({
                 type: "POST",
-                url: "/t/{{.Aobj.ID}}",
+                url: "/topic/{{.Aobj.ID}}",
                 data: JSON.stringify({"act": "link_click", "link": link}),
                 dataType: "json",
                 success: function(data){
