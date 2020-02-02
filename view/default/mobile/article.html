@@ -264,7 +264,7 @@
                 $(this).attr("disabled", true);
                 $.ajax({
                     type: "POST",
-                    url: "/t/{{.Aobj.ID}}",
+                    url: "/topic/{{.Aobj.ID}}",
                     data: JSON.stringify({"act": "comment_submit", "content": content}),
                     dataType: "json",
                     contentType: "application/json",
