@@ -20,8 +20,8 @@ import (
 
 // ArticleEdit 超级管理员可以编辑帖子
 func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
-	aid := pat.Param(r, "aid")
-	_, err := strconv.Atoi(aid)
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.Atoi(_aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
 		return
@@ -36,7 +36,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, uint64(aid))
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -126,8 +126,8 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
-	aid := pat.Param(r, "aid")
-	aidI, err := strconv.Atoi(aid)
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.Atoi(_aid)
 	if err != nil {
 		w.Write([]byte(`{"retcode":400,"retmsg":"cid type err"}`))
 		return
@@ -149,7 +149,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, uint64(aid))
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -180,7 +180,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	rec.Aid = uint64(aidI)
+	rec.Aid = uint64(aid)
 
 	// aidS := strconv.FormatUint(rec.Aid, 10)
 	aidB := youdb.I2b(rec.Aid)

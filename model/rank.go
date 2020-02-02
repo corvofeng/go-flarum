@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"goyoubbs/util"
-	"sort"
 	"sync"
 
 	"github.com/ego008/youdb"
@@ -29,20 +28,20 @@ type ArticleRankItem struct {
 	RedisDB *redis.Client
 }
 
-// GetWeight 获取权重
-func (articleItem *ArticleRankItem) GetWeight() uint64 {
+// // GetWeight 获取权重
+// func (articleItem *ArticleRankItem) GetWeight() uint64 {
 
-	if articleItem.CacheDB != nil {
-		articleItem.Weight = GetArticleCntFromRedisDB(
-			articleItem.SQLDB,
-			articleItem.CacheDB,
-			articleItem.RedisDB,
-			articleItem.AID,
-		)
-	}
+// 	if articleItem.CacheDB != nil {
+// 		articleItem.Weight = GetArticleCntFromRedisDB(
+// 			articleItem.SQLDB,
+// 			articleItem.CacheDB,
+// 			articleItem.RedisDB,
+// 			articleItem.AID,
+// 		)
+// 	}
 
-	return articleItem.Weight
-}
+// 	return articleItem.Weight
+// }
 
 // CategoryRankData 一个分类下的排序数据
 type CategoryRankData struct {
@@ -61,32 +60,41 @@ type RankMap struct {
 	RedisDB *redis.Client
 }
 
-func getWeight(rankMap *RankMap, aid uint64) uint64 {
-
-	weight := GetArticleCntFromRedisDB(
+func getWeight(rankMap *RankMap, aid uint64) float64 {
+	article, err := SQLArticleGetByID(rankMap.SQLDB, rankMap.CacheDB, rankMap.RedisDB, aid)
+	if util.CheckError(err, "查询帖子") {
+		return 0
+	}
+	return article.GetWeight(
 		rankMap.SQLDB,
 		rankMap.CacheDB,
 		rankMap.RedisDB,
-		aid,
 	)
 
-	return weight
+	// weight := GetArticleCntFromRedisDB(
+	// 	rankMap.SQLDB,
+	// 	rankMap.CacheDB,
+	// 	rankMap.RedisDB,
+	// 	aid,
+	// )
+
+	// return weight
 }
 
 var rankMap *RankMap
 var rankRedisDB *redis.Client
 
-func (data *CategoryRankData) resort() {
-	// fmt.Println("In sort ", data.CID, data.topicData)
-	func() {
-		data.mtx.Lock()
-		defer data.mtx.Unlock()
-		// Sort by age, keeping original order or equal elements.
-		sort.SliceStable(data.topicData, func(i, j int) bool {
-			return data.topicData[i].GetWeight() >= data.topicData[j].GetWeight()
-		})
-	}()
-}
+// func (data *CategoryRankData) resort() {
+// 	// fmt.Println("In sort ", data.CID, data.topicData)
+// 	func() {
+// 		data.mtx.Lock()
+// 		defer data.mtx.Unlock()
+// 		// Sort by age, keeping original order or equal elements.
+// 		sort.SliceStable(data.topicData, func(i, j int) bool {
+// 			return data.topicData[i].GetWeight() >= data.topicData[j].GetWeight()
+// 		})
+// 	}()
+// }
 
 // TimelyResort 刷新Redis数据库中每个帖子的权重
 func TimelyResort() {
@@ -167,7 +175,7 @@ func GetTopicListByPageNum(cid uint64, page uint64, limit uint64) []uint64 {
 	var retData []uint64
 
 	start := (page - 1) * limit
-	end := (page) * limit - 1
+	end := (page)*limit - 1
 	data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", cid), int64(start), int64(end)).Result()
 	for _, val := range data {
 		aid, _ := strconv.ParseUint(val, 10, 64)
