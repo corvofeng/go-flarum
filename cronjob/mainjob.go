@@ -37,8 +37,8 @@ func (h *BaseHandler) MainCronJob() {
 	// tickRefreshOrder := time.Tick(3 * time.Second)
 	// daySecond := int64(3600 * 24)
 
-	// 每十分钟将Redis中的数据库中的排序数据刷新
-	tickResortRankMap := time.Tick(10 * time.Minute)
+	// 每3小时将Redis中的数据库中的排序数据刷新
+	tickResortRankMap := time.Tick(3 * time.Hour)
 
 	// 每小时将点击量刷到数据库中
 	tickStoreHitToMySQL := time.Tick(1 * time.Hour)
