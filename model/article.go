@@ -181,16 +181,16 @@ func (article *Article) GetCommentsSize(db *sql.DB) int {
 	if util.CheckError(err, "查询评论数量") {
 		count = 0
 	}
-	if count != 0 {
-		util.GetLogger().Debugf("The %s has comments %d", article.Title, count)
-	}
+	// if count != 0 {
+	// 	util.GetLogger().Debugf("The %s has comments %d", article.Title, count)
+	// }
 
 	return count
 }
 
 // GetWeight 获取当前帖子的权重
 /**
- * (Log10(QView) * 4 + comments)/ QAge
+ * (Log10(QView) * 2 + 4 * comments)/ QAge
  *
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
@@ -209,7 +209,7 @@ func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 		}
 	}
 	qAge := now.Sub(editTime).Hours()
-	weight := (math.Log10(float64(article.ClickCnt))*4 + float64(article.GetCommentsSize(db))) / (qAge * 1.0)
+	weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
 
 	return weight
 }
