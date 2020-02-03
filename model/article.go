@@ -179,7 +179,10 @@ func (article *Article) GetCommentsSize(db *sql.DB) int {
 
 	err := row.Scan(&count)
 	if util.CheckError(err, "查询评论数量") {
-		return 0
+		count = 0
+	}
+	if count != 0 {
+		util.GetLogger().Debugf("The %s has comments %d", article.Title, count)
 	}
 
 	return count
