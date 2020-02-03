@@ -137,7 +137,7 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid u
 			rows.Close() //可以关闭掉未scan连接一直占用
 		}
 	}()
-	util.CheckError(err, fmt.Sprintf("Query %s failed", aid))
+	util.CheckError(err, fmt.Sprintf("Query %d failed", aid))
 
 	if rows.Next() {
 		err = rows.Scan(
@@ -151,10 +151,10 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid u
 			&obj.FatherTopicID,
 			&obj.ClientIP,
 		)
-		if util.CheckError(err, fmt.Sprintf("scan %s", aid)) {
+		if util.CheckError(err, fmt.Sprintf("scan %d", aid)) {
 			return obj, errors.New("No result")
 		}
-		obj.ClickCnt = incrArticleCntFromRedisDB(db, cntDB, redisDB, obj.ID)
+		obj.GetArticleCntFromRedisDB(db, cntDB, redisDB)
 	} else {
 		logger.Debug("failed query ", aid)
 		return obj, errors.New("No result")
@@ -206,7 +206,7 @@ func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 		}
 	}
 	qAge := now.Sub(editTime).Hours()
-	weight := (math.Log10(float64(article.ClickCnt))*4.0 + 1.0*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
+	weight := (math.Log10(float64(article.ClickCnt))*4 + float64(article.GetCommentsSize(db))) / (qAge * 1.0)
 
 	return weight
 }
@@ -515,8 +515,10 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 	return articles, nil
 }
 
-func incrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) uint64 {
+// IncrArticleCntFromRedisDB 增加点击次数
+func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) uint64 {
 	var clickCnt uint64 = 0
+	aid := article.ID
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
 	_, err := rep.Uint64()
 	if err == redis.Nil { // 只有当redis中的数据不存在时，才向mysql与内存数据库请求
@@ -558,6 +560,17 @@ func incrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 	}
 
 	return clickCnt
+}
+
+// GetArticleCntFromRedisDB 获取当前帖子的点击次数
+/*
+ * sqlDB (*sql.DB): TODO
+ * cntDB (*youdb.DB): TODO
+ * redisDB (*redis.Client): TODO
+ */
+func (article *Article) GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) uint64 {
+	article.ClickCnt = GetArticleCntFromRedisDB(sqlDB, cntDB, redisDB, article.ID)
+	return article.ClickCnt
 }
 
 // GetArticleCntFromRedisDB 从不同的数据库中获取点击数
