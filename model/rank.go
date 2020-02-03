@@ -62,11 +62,13 @@ var rankRedisDB *redis.Client
 func TimelyResort() {
 	// 刷新所有节点的排序
 	categoryList, err := SQLGetAllCategory(rankMap.SQLDB)
+	logger := util.GetLogger()
 	if util.CheckError(err, "获取所有节点") {
 		return
 	}
 
 	for _, v := range categoryList {
+		logger.Debugf("Start refresh %s", v.Name)
 
 		// 删除redis中所有无效的帖子
 		sqlDataDel, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, false)
