@@ -9,8 +9,6 @@ import (
 	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 
-	// "time"
-
 	"strconv"
 )
 
@@ -27,21 +25,6 @@ type ArticleRankItem struct {
 	CacheDB *youdb.DB
 	RedisDB *redis.Client
 }
-
-// // GetWeight 获取权重
-// func (articleItem *ArticleRankItem) GetWeight() uint64 {
-
-// 	if articleItem.CacheDB != nil {
-// 		articleItem.Weight = GetArticleCntFromRedisDB(
-// 			articleItem.SQLDB,
-// 			articleItem.CacheDB,
-// 			articleItem.RedisDB,
-// 			articleItem.AID,
-// 		)
-// 	}
-
-// 	return articleItem.Weight
-// }
 
 // CategoryRankData 一个分类下的排序数据
 type CategoryRankData struct {
@@ -70,31 +53,10 @@ func getWeight(rankMap *RankMap, aid uint64) float64 {
 		rankMap.CacheDB,
 		rankMap.RedisDB,
 	)
-
-	// weight := GetArticleCntFromRedisDB(
-	// 	rankMap.SQLDB,
-	// 	rankMap.CacheDB,
-	// 	rankMap.RedisDB,
-	// 	aid,
-	// )
-
-	// return weight
 }
 
 var rankMap *RankMap
 var rankRedisDB *redis.Client
-
-// func (data *CategoryRankData) resort() {
-// 	// fmt.Println("In sort ", data.CID, data.topicData)
-// 	func() {
-// 		data.mtx.Lock()
-// 		defer data.mtx.Unlock()
-// 		// Sort by age, keeping original order or equal elements.
-// 		sort.SliceStable(data.topicData, func(i, j int) bool {
-// 			return data.topicData[i].GetWeight() >= data.topicData[j].GetWeight()
-// 		})
-// 	}()
-// }
 
 // TimelyResort 刷新Redis数据库中每个帖子的权重
 func TimelyResort() {
