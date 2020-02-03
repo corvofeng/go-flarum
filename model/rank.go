@@ -89,7 +89,7 @@ func TimelyResort() {
 		// 	首先从数据库中获取所有有效的ID
 		for _, t := range sqlDataAdd {
 			_, err := rankRedisDB.ZAddNX(fmt.Sprintf("%d", v.ID), &redis.Z{
-				Score:  float64(getWeight(rankMap, t.ID)),
+				Score:  getWeight(rankMap, t.ID),
 				Member: fmt.Sprintf("%d", t.ID)},
 			).Result()
 			util.CheckError(err, "更新当前帖子")

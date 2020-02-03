@@ -460,6 +460,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
+	aobj.IncrArticleCntFromRedisDB(sqlDB, db, redisDB)
 
 	// 获取帖子评论数目
 	err = sqlDB.QueryRow(
