@@ -180,6 +180,7 @@ func main() {
 	<-stopChan // wait for SIGINT
 	logger.Notice("Shutting down server...")
 
+	// refer to https://medium.com/honestbee-tw-engineer/gracefully-shutdown-in-go-http-server-5f5e6b83da5a
 	// shut down gracefully, but wait no longer than 10 seconds before halting
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	defer func() {
