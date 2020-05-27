@@ -1,11 +1,6 @@
 package model
 
-import (
-	"fmt"
-	"testing"
-	"time"
-)
-
+/*
 func TestRank(t *testing.T) {
 	fmt.Println("Hello world")
 	RankMapInit(2)
@@ -22,3 +17,4 @@ func TestRank(t *testing.T) {
 	<-time.After(3 * time.Second)
 	fmt.Println(GetTopicListByPageNum(1, 1, 4))
 }
+*/
