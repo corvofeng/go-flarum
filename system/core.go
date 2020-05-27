@@ -18,12 +18,15 @@ import (
 	logging "github.com/op/go-logging"
 	"github.com/qiniu/api.v7/storage"
 	"github.com/weint/config"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/go-redis/redis/v7"
 )
 
+// MainConf 主配置
 type MainConf struct {
-	HttpPort       int
+	HTTPPort       int
 	HttpsOn        bool
 	Domain         string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
 	HttpsPort      int
@@ -32,6 +35,7 @@ type MainConf struct {
 	MySQL_USER     string
 	MySQL_PASS     string
 	MySQL_DB       string
+	MongoURL       string
 	RedisHost      string
 	RedisPort      string
 	RedisPass      string
@@ -50,6 +54,7 @@ type MainConf struct {
 	SCBlockKey string
 }
 
+// SiteConf 站点配置
 type SiteConf struct {
 	GoVersion         string
 	MD5Sums           string
@@ -93,16 +98,19 @@ type SiteConf struct {
 	UpyunPw           string
 }
 
+// AppConf 应用配置文件
 type AppConf struct {
 	Main *MainConf
 	Site *SiteConf
 }
 
+// Application 应用数据库以及外部服务
 type Application struct {
 	Cf      *AppConf
 	Db      *youdb.DB
 	RedisDB *redis.Client
 	MySQLdb *sql.DB
+	MongoDB *mongo.Client
 	Sc      *securecookie.SecureCookie
 	QnZone  *storage.Zone
 	Logger  *logging.Logger
@@ -153,24 +161,31 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	scf.UploadMaxSizeByte = int64(scf.UploadMaxSize) << 20
 
 	app.Cf = &AppConf{mcf, scf}
-	db, err := youdb.Open(mcf.Youdb)
-	if err != nil {
-		logger.Fatalf("Connect Error: %v", err)
-	}
+	// db, err := youdb.Open(mcf.Youdb)
+	// if err != nil {
+	// 	logger.Fatalf("Connect Error: %v", err)
+	// }
 	dbStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
-	logger.Debug("Get db str: ", dbStr)
+	logger.Debugf("Get mysql db url: %s", dbStr)
 
-	client := redis.NewClient(&redis.Options{
+	rdsClient := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", mcf.RedisHost, mcf.RedisPort),
 		Password: mcf.RedisPass,
 		DB:       mcf.RedisDB,
 	})
-	pong, err := client.Ping().Result()
+	pong, err := rdsClient.Ping().Result()
 	if err != nil {
 		logger.Errorf("Connect redis error, %s", err)
 		return
 	}
 	logger.Debug(pong, err)
+
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
+	logger.Debugf("Get mongo db url: %s", mcf.MongoURL)
+	if err != nil {
+		logger.Errorf("Connect mongo error, %s", err)
+		return
+	}
 
 	sqlDb, err := sql.Open("mysql", dbStr)
 	sqlDb.SetConnMaxLifetime(time.Minute * 10)
@@ -178,13 +193,14 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		logger.Errorf("Connect mysql error, %s", err)
 		return
 	}
-	app.Db = db
+	app.Db = nil
 	app.MySQLdb = sqlDb
-	app.RedisDB = client
+	app.RedisDB = rdsClient
+	app.MongoDB = mongoClient
 	app.Logger = util.GetLogger()
 
 	// set main node
-	db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))
+	// db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))
 
 	app.Sc = securecookie.New(
 		[]byte(app.Cf.Main.SCHashKey),
