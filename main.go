@@ -145,7 +145,7 @@ func main() {
 		} else {
 			// rewrite
 			go func() {
-				if err := http.ListenAndServe(":"+strconv.Itoa(mcf.HttpPort), http.HandlerFunc(redirectHandler)); err != nil {
+				if err := http.ListenAndServe(":"+strconv.Itoa(mcf.HTTPPort), http.HandlerFunc(redirectHandler)); err != nil {
 					logger.Debug("Http2https server failed ", err)
 				}
 			}()
@@ -168,13 +168,13 @@ func main() {
 
 	} else {
 		// http
-		srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HttpPort), Handler: root}
+		srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
 		// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
 		go func() {
 			log.Fatal(srv.ListenAndServe())
 		}()
 
-		logger.Debug("Web server Listen port", strconv.Itoa(mcf.HttpPort))
+		logger.Debug("Web server Listen port", strconv.Itoa(mcf.HTTPPort))
 	}
 
 	<-stopChan // wait for SIGINT

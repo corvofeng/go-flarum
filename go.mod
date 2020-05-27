@@ -13,7 +13,6 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/h2non/filetype v1.0.10
 	github.com/johnzeng/leancloud-go-sdk v0.0.0-20161009075602-5586a9f6a406
-	github.com/klauspost/compress v1.8.3 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/o1egl/govatar v0.3.0
@@ -27,6 +26,7 @@ require (
 	github.com/weint/config v0.0.0-20170804020532-16809f7a2214
 	github.com/weint/httpclient v0.0.0-20180504101821-32544e5b5992
 	github.com/xi2/httpgzip v0.0.0-20190509075255-932ab5e254ae
+	go.mongodb.org/mongo-driver v1.3.3
 	goji.io v2.0.2+incompatible
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7
 	golang.org/x/net v0.0.0-20190909003024-a7b16738d86b
