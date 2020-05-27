@@ -178,13 +178,17 @@ func main() {
 	}
 
 	<-stopChan // wait for SIGINT
-	log.Println("Shutting down server...")
+	logger.Notice("Shutting down server...")
 
 	// shut down gracefully, but wait no longer than 10 seconds before halting
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	srv.Shutdown(ctx)
-	app.Close()
+	defer func() {
+		app.Close()
+	}()
 
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Errorf("Server shutdown error: %+v", err)
+	}
 	logger.Notice("Server gracefully stopped")
 }
 

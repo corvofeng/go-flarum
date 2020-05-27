@@ -215,7 +215,9 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 
 // Close 清理程序连接
 func (app *Application) Close() {
-	app.Db.Close()
+	if app.Db != nil {
+		app.Db.Close()
+	}
 	app.MySQLdb.Close()
 	app.RedisDB.Close()
 	app.Logger.Debug("db cloded")
