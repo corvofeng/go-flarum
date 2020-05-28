@@ -5,6 +5,7 @@ import (
 	"goyoubbs/util"
 	"html/template"
 	"net/http"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -46,32 +47,24 @@ type (
 	}
 )
 
-// Render 渲染html网站
+// Render 渲染html
+/**
+ * .. version_changed: 2020-05-28 增加了对flaru主题的支持, 将会渲染不同的模板
+ */
 func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}, tplPath ...string) error {
 	if len(tplPath) == 0 {
 		return errors.New("File path can not be empty ")
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Server", "GoYouBBS")
+	w.Header().Set("Server", h.App.Cf.Main.ServerName)
 
-	tpl = "flarum"
-	var tmpl *template.Template
-
-	tplDir := h.App.Cf.Main.ViewDir + "/" + tpl + "/"
-	if tpl == "flarum" {
-		tmpl = template.New("flarum")
-		for _, tpath := range tplPath {
-			tpath = tpath + ".tmpl"
-			tmpl = template.Must(tmpl.ParseFiles(tplDir + tpath))
-		}
-
-	} else {
-		tmpl = template.New("youbbs")
-		for _, tpath := range tplPath {
-			tmpl = template.Must(tmpl.ParseFiles(tplDir + tpath))
-		}
-
+	tplDir := path.Join(h.App.Cf.Main.ViewDir, tpl)
+	tmpl := template.New(h.App.Cf.Main.ServerStyle)
+	for _, tpath := range tplPath {
+		tmpl = template.Must(tmpl.ParseFiles(
+			path.Join(tplDir, tpath),
+		))
 	}
 	err := tmpl.Execute(w, data)
 
@@ -152,7 +145,14 @@ func (h *BaseHandler) DelCookie(w http.ResponseWriter, name string) {
 	}
 }
 
+// CurrentTpl 当前使用的模板类型
 func (h *BaseHandler) CurrentTpl(r *http.Request) string {
+	// 如果使用其他主题, 那么直接返回该主题
+	serverStyle := h.App.Cf.Main.ServerStyle
+	if serverStyle != "youbbs" {
+		return serverStyle
+	}
+
 	tpl := "desktop"
 	//tpl := "mobile"
 

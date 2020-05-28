@@ -43,6 +43,8 @@ type MainConf struct {
 	PubDir         string
 	ViewDir        string
 	Youdb          string
+	ServerStyle    string // 选择使用的样式
+	ServerName     string
 	CookieSecure   bool
 	CookieHttpOnly bool
 	OldSiteDomain  string
