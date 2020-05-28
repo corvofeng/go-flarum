@@ -38,6 +38,7 @@ type (
 		HotNodes      []model.CategoryMini
 		NewestNodes   []model.CategoryMini
 		SiteInfo      model.SiteInfo
+		PrimaryColor  string
 	}
 	normalRsp struct {
 		Retcode int    `json:"retcode"`
@@ -54,10 +55,23 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Server", "GoYouBBS")
 
+	tpl = "flarum"
+	var tmpl *template.Template
+
 	tplDir := h.App.Cf.Main.ViewDir + "/" + tpl + "/"
-	tmpl := template.New("youbbs")
-	for _, tpath := range tplPath {
-		tmpl = template.Must(tmpl.ParseFiles(tplDir + tpath))
+	if tpl == "flarum" {
+		tmpl = template.New("flarum")
+		for _, tpath := range tplPath {
+			tpath = tpath + ".tmpl"
+			tmpl = template.Must(tmpl.ParseFiles(tplDir + tpath))
+		}
+
+	} else {
+		tmpl = template.New("youbbs")
+		for _, tpath := range tplPath {
+			tmpl = template.Must(tmpl.ParseFiles(tplDir + tpath))
+		}
+
 	}
 	err := tmpl.Execute(w, data)
 
