@@ -585,13 +585,13 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Cli
 		fmt.Printf("Get %d with error :%v", aid, err)
 		data = 0
 	}
-	if data == 0 {
-		rep := cntDB.Hget("article_views", youdb.I2b(aid))
-		if rep != nil {
-			data = rep.Uint64()
-			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), data)
-		}
-	}
+	// if data == 0 {
+	// rep := cntDB.Hget("article_views", youdb.I2b(aid))
+	// if rep != nil {
+	// data = rep.Uint64()
+	// redisDB.HSet("article_views", fmt.Sprintf("%d", aid), data)
+	// }
+	// }
 	return data
 }
 

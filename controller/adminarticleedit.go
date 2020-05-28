@@ -115,7 +115,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
 
 	evn.Cobj = cobj
-	evn.MainNodes = model.CategoryGetMain(db, cobj)
+	// evn.MainNodes = model.CategoryGetMain(db, cobj)
 	evn.Aobj = aobj
 
 	h.SetCookie(w, "token", xid.New().String(), 1)

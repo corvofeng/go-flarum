@@ -2,8 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"html/template"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -122,8 +122,8 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "category_detail"
-	evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
+	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
+	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
 	evn.Q = qLow
 	evn.PageInfo = pageInfo
