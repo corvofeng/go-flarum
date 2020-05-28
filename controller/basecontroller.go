@@ -41,10 +41,11 @@ type (
 		SiteInfo      model.SiteInfo
 		PrimaryColor  string
 	}
-	normalRsp struct {
+	response struct {
 		Retcode int    `json:"retcode"`
 		Retmsg  string `json:"retmsg"`
 	}
+	normalRsp = response
 )
 
 // Render 渲染html
