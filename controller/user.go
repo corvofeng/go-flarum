@@ -57,10 +57,11 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 // 保存密码时, 用户前端传来的密码为md5值, 因此我们也不需要保存明文密码, 也就不需要token了
 func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
+	rsp := response{}
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
-		w.Write([]byte(`{"retcode":400,"retmsg":"token cookie missed"}`))
+		rsp = response{400, "token cookie missed"}
+		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 
@@ -73,56 +74,67 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		CaptchaSolution string `json:"captchaSolution"`
 	}
 
-	type response struct {
-		normalRsp
-	}
-
 	decoder := json.NewDecoder(r.Body)
 	var rec recForm
 	err := decoder.Decode(&rec)
 	if err != nil {
-		w.Write([]byte(`{"retcode":400,"retmsg":"json Decode err:` + err.Error() + `"}`))
+		rsp = normalRsp{
+			400,
+			"表单解析错误:" + err.Error(),
+		}
+		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 	defer r.Body.Close()
 
 	if len(rec.Name) == 0 || len(rec.Password) == 0 {
-		w.Write([]byte(`{"retcode":400,"retmsg":"name or pw is empty"}`))
+		rsp = normalRsp{400, "name or pw is empty"}
+		json.NewEncoder(w).Encode(rsp)
 		return
 	}
 	nameLow := strings.ToLower(rec.Name)
 	if !util.IsUserName(nameLow) {
-		w.Write([]byte(`{"retcode":400,"retmsg":"name fmt err"}`))
+		rsp = response{400, "name fmt err"}
+		json.NewEncoder(w).Encode(rsp)
 		return
 	}
+	// 返回并且携带新的验证码
+	type captchaData struct {
+		response
+		NewCaptchaID string `json:"newCaptchaID"`
+	}
+	var respCaptcha captchaData
 
 	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
-		w.Write([]byte(`{"retcode":405,"retmsg":"验证码错误","newCaptchaID":"` + model.NewCaptcha() + `"}`))
+		respCaptcha = captchaData{
+			response{405, "验证码错误"},
+			model.NewCaptcha(),
+		}
+		json.NewEncoder(w).Encode(respCaptcha)
 		return
 	}
 
-	db := h.App.Db
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	timeStamp := uint64(time.Now().UTC().Unix())
 
 	if act == "login" {
-		bn := "user_login_token"
-		key := []byte(token + ":loginerr")
-		if db.Zget(bn, key).State == "ok" {
-			// 	// todo
-			// 	//w.Write([]byte(`{"retcode":400,"retmsg":"name and pw not match"}`))
-			// 	//return
-		}
 		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
-		fmt.Println(uobj)
 
 		if err != nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"json Decode err:` + err.Error() + `","newCaptchaID":"` + model.NewCaptcha() + `"}`))
+			respCaptcha = captchaData{
+				response{405, "登录失败, 请检查用户名与密码"},
+				model.NewCaptcha(),
+			}
+			json.NewEncoder(w).Encode(respCaptcha)
 			return
 		}
 		if uobj.Password != rec.Password {
-			w.Write([]byte(`{"retcode":405,"retmsg":"name and pw not match","newCaptchaID":"` + model.NewCaptcha() + `"}`))
+			respCaptcha = captchaData{
+				response{405, "登录失败, 请检查用户名与密码"},
+				model.NewCaptcha(),
+			}
+			json.NewEncoder(w).Encode(respCaptcha)
 			return
 		}
 		sessionid := xid.New().String()
@@ -174,7 +186,6 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	h.DelCookie(w, "token")
 
-	rsp := response{}
 	rsp.Retcode = 200
 	json.NewEncoder(w).Encode(rsp)
 }
