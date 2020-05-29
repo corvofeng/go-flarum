@@ -44,7 +44,7 @@ type RankMap struct {
 }
 
 func getWeight(rankMap *RankMap, aid uint64) float64 {
-	article, err := SQLArticleGetByID(rankMap.SQLDB, rankMap.CacheDB, rankMap.RedisDB, aid)
+	article, err := SQLArticleGetByID(rankMap.SQLDB, rankMap.RedisDB, aid)
 	if util.CheckError(err, "查询帖子") {
 		return 0
 	}

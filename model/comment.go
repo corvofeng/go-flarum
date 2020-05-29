@@ -66,7 +66,7 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 }
 
 // SQLCommentList 获取在数据库中存储的评论
-func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
+func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -102,8 +102,8 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, topicI
 	for rows.Next() {
 		item := CommentListItem{}
 		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(db, cacheDB, redisDB, item.UID)
-		item.UserName = GetUserNameByID(db, cacheDB, redisDB, item.UID)
+		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
+		item.UserName = GetUserNameByID(db, redisDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -114,7 +114,7 @@ func SQLCommentList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, topicI
 
 		// 预防XSS漏洞
 		item.ContentFmt = template.HTML(
-			util.ContentFmt(cacheDB, item.Content))
+			util.ContentFmt(item.Content))
 
 		items = append(items, item)
 	}
@@ -214,7 +214,7 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 				Avatar:     user.Avatar,
 				AddTime:    citem.AddTime,
 				AddTimeFmt: util.TimeFmt(citem.AddTime, "2006-01-02 15:04", tz),
-				ContentFmt: template.HTML(util.ContentFmt(db, citem.Content)),
+				ContentFmt: template.HTML(util.ContentFmt(citem.Content)),
 			}
 			items = append(items, item)
 			if firstKey == 0 {

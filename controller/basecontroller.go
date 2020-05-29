@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"errors"
 	"goyoubbs/util"
 	"html/template"
@@ -45,7 +46,7 @@ type (
 		Retcode int    `json:"retcode"`
 		Retmsg  string `json:"retmsg"`
 	}
-	normalRsp = response
+	normalRsp = response // .. deprecated: 2020-05-29 Please don't use it
 )
 
 // Render 渲染html
@@ -70,6 +71,12 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	err := tmpl.Execute(w, data)
 
 	return err
+}
+
+// Jsonify 序列化结构体并进行返回
+func (h *BaseHandler) Jsonify(w http.ResponseWriter, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	return json.NewEncoder(w).Encode(data)
 }
 
 // CurrentUser 当前用户

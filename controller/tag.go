@@ -70,7 +70,7 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 		Number: db.Zget("tag_article_num", []byte(tagLow)).Uint64(),
 	}
 	evn.PageInfo = pageInfo
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	h.Render(w, tpl, evn, "layout.html", "tag.html")
 }

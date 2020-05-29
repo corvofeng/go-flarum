@@ -2,11 +2,12 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/rs/xid"
 	"goyoubbs/model"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/rs/xid"
 )
 
 func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +58,7 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 	evn.ShowSideAd = true
 	evn.PageName = "user_list"
 
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	evn.Items = model.LinkList(db, true)
 	evn.Lobj = lobj

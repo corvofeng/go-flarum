@@ -36,7 +36,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, uint64(aid))
+	aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, uint64(aid))
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -112,7 +112,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "article_edit"
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	evn.Cobj = cobj
 	// evn.MainNodes = model.CategoryGetMain(db, cobj)
@@ -149,7 +149,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, uint64(aid))
+	aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, uint64(aid))
 	if err != nil {
 		w.Write([]byte(`{"retcode":403,"retmsg":"aid not found"}`))
 		return
@@ -195,7 +195,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 			Html string `json:"html"`
 		}{
 			normalRsp{200, ""},
-			util.ContentFmt(db, rec.Content),
+			util.ContentFmt(rec.Content),
 		}
 		json.NewEncoder(w).Encode(tmp)
 		return

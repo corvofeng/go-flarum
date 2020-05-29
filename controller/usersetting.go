@@ -29,7 +29,6 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 		Now  int64
 	}
 	redisDB := h.App.RedisDB
-	db := h.App.Db
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
@@ -42,7 +41,7 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 
 	evn.ShowSideAd = true
 	evn.PageName = "user_setting"
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	evn.Uobj = currentUser
 	evn.Now = time.Now().UTC().Unix()
