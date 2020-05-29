@@ -125,7 +125,7 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) (Article, error) {
+func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, error) {
 	logger := util.GetLogger()
 	obj := Article{}
 	rows, err := db.Query(
@@ -154,7 +154,7 @@ func SQLArticleGetByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid u
 		if util.CheckError(err, fmt.Sprintf("scan %d", aid)) {
 			return obj, errors.New("No result")
 		}
-		obj.GetArticleCntFromRedisDB(db, cntDB, redisDB)
+		obj.GetArticleCntFromRedisDB(db, redisDB)
 	} else {
 		logger.Debug("failed query ", aid)
 		return obj, errors.New("No result")
@@ -249,7 +249,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(db, cntDB, redisDB, article.ID)
+	oldArticle, err := SQLArticleGetByID(db, redisDB, article.ID)
 	oldArticle.Active = 0
 	if util.CheckError(err, "修改时拷贝") {
 		return false
@@ -321,13 +321,13 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.ID, &item.Title, &item.CID, &item.UID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cacheDB, redisDB, item.UID)
+		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		item.ClickCnt = GetArticleCntFromRedisDB(db, cacheDB, redisDB, item.ID)
+		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
 		m[item.ID] = item
@@ -358,7 +358,7 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 		// TODO: remove it
 		articleIteratorStart := GetCIDArticleMax(nodeID)
 		fmt.Println("Current iterator is in ", articleIteratorStart)
-		pageInfo = SQLCIDArticleList(db, cntDB, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
+		pageInfo = SQLCIDArticleList(db, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
 		// 先前没有缓存, 需要加入到rank map中
 		var items []ArticleRankItem
 		for _, a := range pageInfo.Items {
@@ -394,7 +394,7 @@ func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
 
 // SQLCIDArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
-func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -445,13 +445,13 @@ func SQLCIDArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeI
 	for rows.Next() {
 		item := ArticleListItem{}
 		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.CID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, cntDB, redisDB, item.UID)
+		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		item.ClickCnt = GetArticleCntFromRedisDB(db, cntDB, redisDB, item.ID)
+		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
 		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
 		items = append(items, item)
 	}
@@ -519,7 +519,7 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 }
 
 // IncrArticleCntFromRedisDB 增加点击次数
-func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) uint64 {
+func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
 	var clickCnt uint64 = 0
 	aid := article.ID
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
@@ -550,7 +550,7 @@ func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB
 		if clickCnt == 0 {
 			fmt.Println("Get data from cntDB", aid)
 			// 从cntDB中查找
-			clickCnt, _ = cntDB.Hincr("article_views", youdb.I2b(aid), 1)
+			// clickCnt, _ = cntDB.Hincr("article_views", youdb.I2b(aid), 1)
 			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), clickCnt)
 		}
 		if clickCnt == 0 {
@@ -568,16 +568,15 @@ func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB
 // GetArticleCntFromRedisDB 获取当前帖子的点击次数
 /*
  * sqlDB (*sql.DB): TODO
- * cntDB (*youdb.DB): TODO
  * redisDB (*redis.Client): TODO
  */
-func (article *Article) GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) uint64 {
-	article.ClickCnt = GetArticleCntFromRedisDB(sqlDB, cntDB, redisDB, article.ID)
+func (article *Article) GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
+	article.ClickCnt = GetArticleCntFromRedisDB(sqlDB, redisDB, article.ID)
 	return article.ClickCnt
 }
 
 // GetArticleCntFromRedisDB 从不同的数据库中获取点击数
-func GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, aid uint64) uint64 {
+func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) uint64 {
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
 	data, err := rep.Uint64()
 
@@ -596,9 +595,9 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Cli
 }
 
 // SQLArticleList 返回所有节点的主题
-func SQLArticleList(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLArticleList(db *sql.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
 	return SQLCIDArticleList(
-		db, cntDB, redisDB, 0, start, btnAct, limit, tz,
+		db, redisDB, 0, start, btnAct, limit, tz,
 	)
 }
 
@@ -726,38 +725,38 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 	}
 }
 
-func ArticleGetRelative(db *youdb.DB, aid uint64, tags string) ArticleRelative {
+func ArticleGetRelative(aid uint64, tags string) ArticleRelative {
 	if len(tags) == 0 {
 		return ArticleRelative{}
 	}
 	getMax := 10
-	scanMax := 100
+	// scanMax := 100
 
 	var aitems []ArticleLi
 	var titems []string
 
-	tagsLow := strings.ToLower(tags)
+	// tagsLow := strings.ToLower(tags)
 
-	ctagMap := map[string]struct{}{}
+	// ctagMap := map[string]struct{}{}
 
 	aidCount := map[uint64]int{}
 
-	for _, tag := range strings.Split(tagsLow, ",") {
-		ctagMap[tag] = struct{}{}
-		rs := db.Hrscan("tag:"+tag, []byte(""), scanMax)
-		if rs.State == "ok" {
-			for i := 0; i < len(rs.Data)-1; i += 2 {
-				aid2 := youdb.B2i(rs.Data[i])
-				if aid2 != aid {
-					if _, ok := aidCount[aid2]; ok {
-						aidCount[aid2] += 1
-					} else {
-						aidCount[aid2] = 1
-					}
-				}
-			}
-		}
-	}
+	// for _, tag := range strings.Split(tagsLow, ",") {
+	// 	ctagMap[tag] = struct{}{}
+	// 	rs := db.Hrscan("tag:"+tag, []byte(""), scanMax)
+	// 	if rs.State == "ok" {
+	// 		for i := 0; i < len(rs.Data)-1; i += 2 {
+	// 			aid2 := youdb.B2i(rs.Data[i])
+	// 			if aid2 != aid {
+	// 				if _, ok := aidCount[aid2]; ok {
+	// 					aidCount[aid2] += 1
+	// 				} else {
+	// 					aidCount[aid2] = 1
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	if len(aidCount) > 0 {
 
@@ -785,24 +784,24 @@ func ArticleGetRelative(db *youdb.DB, aid uint64, tags string) ArticleRelative {
 			}
 		}
 
-		rs := db.Hmget("article", akeys)
-		if rs.State == "ok" {
-			tmpMap := map[string]struct{}{}
-			for i := 0; i < len(rs.Data)-1; i += 2 {
-				item := ArticleLi{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				aitems = append(aitems, item)
-				for _, tag := range strings.Split(strings.ToLower(item.Tags), ",") {
-					if _, ok := ctagMap[tag]; !ok {
-						tmpMap[tag] = struct{}{}
-					}
-				}
-			}
+		// rs := db.Hmget("article", akeys)
+		// if rs.State == "ok" {
+		// 	tmpMap := map[string]struct{}{}
+		// 	for i := 0; i < len(rs.Data)-1; i += 2 {
+		// 		item := ArticleLi{}
+		// 		json.Unmarshal(rs.Data[i+1], &item)
+		// 		aitems = append(aitems, item)
+		// 		for _, tag := range strings.Split(strings.ToLower(item.Tags), ",") {
+		// 			if _, ok := ctagMap[tag]; !ok {
+		// 				tmpMap[tag] = struct{}{}
+		// 			}
+		// 		}
+		// 	}
 
-			for k := range tmpMap {
-				titems = append(titems, k)
-			}
-		}
+		// 	for k := range tmpMap {
+		// 		titems = append(titems, k)
+		// 	}
+		// }
 	}
 
 	return ArticleRelative{

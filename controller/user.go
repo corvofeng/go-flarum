@@ -56,12 +56,13 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 // UserLoginPost 用于用户登录及注册接口
 // 保存密码时, 用户前端传来的密码为md5值, 因此我们也不需要保存明文密码, 也就不需要token了
 func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8") // .. deprecated: 2020-05-29
+
 	rsp := response{}
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
 		rsp = response{400, "token cookie missed"}
-		json.NewEncoder(w).Encode(rsp)
+		h.Jsonify(w, rsp)
 		return
 	}
 
@@ -82,20 +83,20 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			400,
 			"表单解析错误:" + err.Error(),
 		}
-		json.NewEncoder(w).Encode(rsp)
+		h.Jsonify(w, rsp)
 		return
 	}
 	defer r.Body.Close()
 
 	if len(rec.Name) == 0 || len(rec.Password) == 0 {
 		rsp = normalRsp{400, "name or pw is empty"}
-		json.NewEncoder(w).Encode(rsp)
+		h.Jsonify(w, rsp)
 		return
 	}
 	nameLow := strings.ToLower(rec.Name)
 	if !util.IsUserName(nameLow) {
 		rsp = response{400, "name fmt err"}
-		json.NewEncoder(w).Encode(rsp)
+		h.Jsonify(w, rsp)
 		return
 	}
 	// 返回并且携带新的验证码
@@ -103,14 +104,14 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		response
 		NewCaptchaID string `json:"newCaptchaID"`
 	}
-	var respCaptcha captchaData
 
+	var respCaptcha captchaData
 	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
 		respCaptcha = captchaData{
 			response{405, "验证码错误"},
 			model.NewCaptcha(),
 		}
-		json.NewEncoder(w).Encode(respCaptcha)
+		h.Jsonify(w, respCaptcha)
 		return
 	}
 
@@ -126,7 +127,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 				response{405, "登录失败, 请检查用户名与密码"},
 				model.NewCaptcha(),
 			}
-			json.NewEncoder(w).Encode(respCaptcha)
+			h.Jsonify(w, respCaptcha)
 			return
 		}
 		if uobj.Password != rec.Password {
@@ -134,7 +135,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 				response{405, "登录失败, 请检查用户名与密码"},
 				model.NewCaptcha(),
 			}
-			json.NewEncoder(w).Encode(respCaptcha)
+			h.Jsonify(w, respCaptcha)
 			return
 		}
 		sessionid := xid.New().String()
@@ -147,15 +148,21 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		// register
 		siteCf := h.App.Cf.Site
 		if siteCf.QQClientID > 0 || siteCf.WeiboClientID > 0 {
-			w.Write([]byte(`{"retcode":400,"retmsg":"请用QQ 或 微博一键登录"}`))
+			rsp = response{400, "请用QQ 或 微博一键登录"}
+			h.Jsonify(w, rsp)
 			return
 		}
 		if siteCf.CloseReg {
-			w.Write([]byte(`{"retcode":400,"retmsg":"stop to new register"}`))
+			rsp = response{400, "已经停用用户注册"}
+			h.Jsonify(w, rsp)
 			return
 		}
 		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err == nil {
-			w.Write([]byte(`{"retcode":405,"retmsg":"name is exist","newCaptchaID":"` + model.NewCaptcha() + `"}`))
+			respCaptcha = captchaData{
+				response{405, "用户名已经存在"},
+				model.NewCaptcha(),
+			}
+			h.Jsonify(w, respCaptcha)
 			return
 		}
 
@@ -187,7 +194,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	h.DelCookie(w, "token")
 
 	rsp.Retcode = 200
-	json.NewEncoder(w).Encode(rsp)
+	h.Jsonify(w, rsp)
 }
 
 // UserNotification 用户消息
@@ -330,7 +337,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 		RegTimeFmt: util.TimeFmt(uobj.RegTime, "2006-01-02 15:04", scf.TimeZone),
 	}
 	evn.PageInfo = pageInfo
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	h.Render(w, tpl, evn, "layout.html", "user.html")
 }

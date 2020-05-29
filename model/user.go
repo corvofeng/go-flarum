@@ -349,7 +349,7 @@ func (user *User) SaveAvatar(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Clie
 }
 
 // GetAvatarByID 获取用户头像
-func GetAvatarByID(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, uid uint64) string {
+func GetAvatarByID(sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
 	var avatar string
 	logger := util.GetLogger()
 
@@ -370,7 +370,7 @@ func GetAvatarByID(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, uid ui
 }
 
 // GetUserNameByID 获取用户名称
-func GetUserNameByID(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, uid uint64) string {
+func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 	var username string
 	logger := util.GetLogger()
 

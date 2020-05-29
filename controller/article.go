@@ -133,7 +133,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 			Html string `json:"html"`
 		}{
 			normalRsp{200, ""},
-			util.ContentFmt(db, rec.Content),
+			util.ContentFmt(rec.Content),
 		}
 		json.NewEncoder(w).Encode(tmp)
 		return
@@ -293,7 +293,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	db := h.App.Db
 	scf := h.App.Cf.Site
 	redisDB := h.App.RedisDB
 
@@ -314,7 +313,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取贴子列表
-	pageInfo := model.SQLArticleList(sqlDB, db, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo := model.SQLArticleList(sqlDB, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
@@ -332,7 +331,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
@@ -410,7 +409,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	evn.NewestNodes = categories
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
@@ -448,19 +447,18 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var commentsCnt uint64
-	db := h.App.Db
 	scf := h.App.Cf.Site
 	logger := h.App.Logger
 	redisDB := h.App.RedisDB
 	sqlDB := h.App.MySQLdb
 
 	// 获取帖子详情
-	aobj, err := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 	if util.CheckError(err, fmt.Sprintf("获取帖子 %d 失败", aid)) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	aobj.IncrArticleCntFromRedisDB(sqlDB, db, redisDB)
+	aobj.IncrArticleCntFromRedisDB(sqlDB, redisDB)
 
 	// 获取帖子评论数目
 	err = sqlDB.QueryRow(
@@ -526,10 +524,9 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// 	start = start - uint64(scf.HomeShowNum) - 1
 	// }
 
-	cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.ID)).Uint64()
+	// cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.ID)).Uint64()
 	pageInfo := model.SQLCommentList(
 		sqlDB,
-		db,
 		redisDB,
 		aobj.ID,
 		start,
@@ -592,7 +589,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	} else {
 		evn.Aobj = articleForDetail{
 			Article:     aobj,
-			ContentFmt:  template.HTML(util.ContentFmt(db, aobj.Content)),
+			ContentFmt:  template.HTML(util.ContentFmt(aobj.Content)),
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
 			Avatar:      author.Avatar,
@@ -612,9 +609,9 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	evn.Cobj = cobj
 	evn.Author = author
-	evn.Relative = model.ArticleGetRelative(db, aobj.ID, aobj.Tags)
+	evn.Relative = model.ArticleGetRelative(aobj.ID, aobj.Tags)
 	evn.PageInfo = pageInfo
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
@@ -716,7 +713,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		}
 	} else if rec.Act == "comment_preview" {
 		rsp.Retcode = 200
-		rsp.Html = template.HTML(util.ContentFmt(cntDB, rec.Content))
+		rsp.Html = template.HTML(util.ContentFmt(rec.Content))
 	} else if rec.Act == "comment_submit" {
 		timeStamp := uint64(time.Now().UTC().Unix())
 		currentUser, _ := h.CurrentUser(w, r)
@@ -729,7 +726,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		// 获取当前的话题
-		aobj, err := model.SQLArticleGetByID(sqlDB, cntDB, redisDB, aid)
+		aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 		if err != nil {
 			w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
 			return
@@ -846,12 +843,12 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
-	db := h.App.Db
+	// db := h.App.Db
 	rsp := response{}
 
 	if rec.Act == "preview" && len(rec.Content) > 0 {
 		rsp.Retcode = 200
-		rsp.Html = template.HTML(util.ContentFmt(db, rec.Content))
+		rsp.Html = template.HTML(util.ContentFmt(rec.Content))
 	}
 	json.NewEncoder(w).Encode(rsp)
 }

@@ -2,14 +2,15 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
 	"goyoubbs/model"
 	"goyoubbs/util"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
 )
 
 // AdminUserList 管理员查看所有用户
@@ -18,7 +19,7 @@ import (
  * r (*http.Request): TODO
  */
 func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
-	flag, btn, key := r.FormValue("flag"), r.FormValue("btn"), r.FormValue("key")
+	flag, _, key := r.FormValue("flag"), r.FormValue("btn"), r.FormValue("key")
 	if len(key) > 0 {
 		_, err := strconv.ParseUint(key, 10, 64)
 		if err != nil {
@@ -37,18 +38,19 @@ func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := "hrscan"
-	if btn == "prev" {
-		cmd = "hscan"
-	}
+	// cmd := "hrscan"
+	// if btn == "prev" {
+	// 	cmd = "hscan"
+	// }
 
-	db := h.App.Db
+	// db := h.App.Db
 
 	if len(flag) == 0 {
 		flag = "5"
 	}
 
-	pageInfo := model.UserListByFlag(db, cmd, "user_flag:"+flag, key, h.App.Cf.Site.PageShowNum)
+	// pageInfo := model.UserListByFlag(cmd, "user_flag:"+flag, key, h.App.Cf.Site.PageShowNum)
+	// evn.PageInfo = pageInfo
 
 	type pageData struct {
 		PageData
@@ -65,7 +67,6 @@ func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 	evn.ShowSideAd = true
 	evn.PageName = "user_list"
 
-	evn.PageInfo = pageInfo
 	evn.Flag = flag
 
 	token := h.GetCookie(r, "token")

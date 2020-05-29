@@ -39,7 +39,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 
 	// aobj, _ := model.ArticleGetByID(db, aid)
-	aobj, _ := model.SQLArticleGetByID(sqlDB, db, redisDB, aid)
+	aobj, _ := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 
 	// comment
 	cobj, err := model.CommentGetByKey(db, aid, cidI)
@@ -71,7 +71,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "comment_edit"
-	evn.SiteInfo = model.GetSiteInfo(redisDB, db)
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	evn.Aobj = aobj
 	evn.Cobj = cobj
@@ -134,7 +134,7 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 			Html string `json:"html"`
 		}{
 			normalRsp{200, ""},
-			util.ContentFmt(db, rec.Content),
+			util.ContentFmt(rec.Content),
 		}
 		json.NewEncoder(w).Encode(tmp)
 		return

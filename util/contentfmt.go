@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/ego008/youdb"
 )
 
 var (
@@ -22,7 +20,7 @@ var (
 )
 
 // ContentFmt 防止XSS漏洞, 并处理样式
-func ContentFmt(db *youdb.DB, input string) string {
+func ContentFmt(input string) string {
 	if strings.Index(input, "```") >= 0 {
 		sepNum := strings.Count(input, "```")
 		if sepNum < 2 {
@@ -42,7 +40,7 @@ func ContentFmt(db *youdb.DB, input string) string {
 			return codeTag
 		})
 
-		input = ContentRich(db, input)
+		input = ContentRich(input)
 		// replace tmp code tag
 		if len(codeMap) > 0 {
 			for k, v := range codeMap {
@@ -54,7 +52,7 @@ func ContentFmt(db *youdb.DB, input string) string {
 		input = strings.Replace(input, "</pre></p>", "</pre>", -1)
 		return input
 	}
-	return ContentRich(db, input)
+	return ContentRich(input)
 }
 
 type urlInfo struct {
@@ -63,7 +61,7 @@ type urlInfo struct {
 }
 
 // ContentRich 用来转换文本, 转义以及允许用户添加一些富文本样式
-func ContentRich(cacheDB *youdb.DB, input string) string {
+func ContentRich(input string) string {
 	input = strings.TrimSpace(input)
 	input = " " + input // fix Has url Prefix
 	input = strings.Replace(input, "<", "&lt;", -1)
@@ -98,25 +96,25 @@ func ContentRich(cacheDB *youdb.DB, input string) string {
 			keys = append(keys, []byte(urlMd5))
 			return m[:n] + "[" + urlMd5 + "]"
 		})
-
-		if len(urlMd5Map) > 0 {
-			rs := cacheDB.Hmget("url_md5_click", keys)
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				key := rs.Data[i].String()
-				tmp := urlMd5Map[key]
-				tmp.Click = youdb.B2ds(rs.Data[i+1])
-				urlMd5Map[key] = tmp
-			}
-			for k, v := range urlMd5Map {
-				var aTag string
-				if len(v.Click) > 0 {
-					aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a> <span class="badge-notification clicks" title="` + v.Click + ` 次点击">` + v.Click + `</span>`
-				} else {
-					aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a>`
-				}
-				input = strings.Replace(input, "["+k+"]", aTag, -1)
-			}
-		}
+		// #2: URL链接允许用户查看已经点击的次数, 本身属于旧的功能, 未来可以考虑支持一下吧
+		// if len(urlMd5Map) > 0 {
+		// rs := cacheDB.Hmget("url_md5_click", keys)
+		// for i := 0; i < (len(rs.Data) - 1); i += 2 {
+		// key := rs.Data[i].String()
+		// tmp := urlMd5Map[key]
+		// tmp.Click = youdb.B2ds(rs.Data[i+1])
+		// urlMd5Map[key] = tmp
+		// }
+		// for k, v := range urlMd5Map {
+		// var aTag string
+		// if len(v.Click) > 0 {
+		// aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a> <span class="badge-notification clicks" title="` + v.Click + ` 次点击">` + v.Click + `</span>`
+		// } else {
+		// aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a>`
+		// }
+		// input = strings.Replace(input, "["+k+"]", aTag, -1)
+		// }
+		// }
 	}
 
 	input = strings.Replace(input, "\r\n", "\n", -1)

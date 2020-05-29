@@ -3,7 +3,6 @@ package model
 import (
 	"time"
 
-	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -29,7 +28,7 @@ func GetDays(redisDB *redis.Client) uint64 {
 }
 
 // GetSiteInfo 直接获取网站信息
-func GetSiteInfo(redisDB *redis.Client, db *youdb.DB) SiteInfo {
+func GetSiteInfo(redisDB *redis.Client) SiteInfo {
 	si := SiteInfo{}
 	si.Days = GetDays(redisDB)
 	// si.UserNum = db.Hsequence("user")
