@@ -2,12 +2,10 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"goyoubbs/util"
 
-	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -34,8 +32,8 @@ type CategoryPageInfo struct {
 }
 
 // SQLGetAllCategory 获取所有分类
-func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
-	var categories []CategoryMini
+func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
+	var categories []Category
 	rows, err := db.Query("SELECT id, name FROM node order by topic_count desc limit 30")
 	defer func() {
 		if rows != nil {
@@ -46,7 +44,7 @@ func SQLGetAllCategory(db *sql.DB) ([]CategoryMini, error) {
 		fmt.Printf("Query failed,err:%v", err)
 	}
 	for rows.Next() {
-		obj := CategoryMini{}
+		obj := Category{}
 		err = rows.Scan(&obj.ID, &obj.Name) // 不scan会导致连接不释放
 
 		if err != nil {
@@ -128,19 +126,6 @@ func SQLCategoryList(db *sql.DB) CategoryPageInfo {
 		LastKey:  lastKey,
 	}
 
-}
-
-//  以下代码不再使用
-// ============================================================ //
-
-func CategoryGetByID(db *youdb.DB, cid string) (Category, error) {
-	obj := Category{}
-	rs := db.Hget("category", youdb.DS2b(cid))
-	if rs.State == "ok" {
-		json.Unmarshal(rs.Data[0], &obj)
-		return obj, nil
-	}
-	return obj, errors.New(rs.State)
 }
 
 // GetCategoryNameByCID 通过CID获取该分类的名称

@@ -14,7 +14,7 @@ type Group struct {
 
 // DoInit 初始化Group
 func (g *Group) DoInit() {
-	g.Type = "group"
+	g.Type = "groups"
 }
 
 // GetDefaultAttributes 获取属性

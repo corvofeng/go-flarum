@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ego008/youdb"
 	"github.com/rs/xid"
 )
 
@@ -125,33 +124,31 @@ func (h *BaseHandler) AdminCategoryListPost(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	db := h.App.Db
-
 	var hidden bool
 	if rec.Hidden == "1" {
 		hidden = true
 	}
 
 	var cobj model.Category
-	if rec.CID > 0 {
-		// edit
-		cobj, err = model.CategoryGetByID(db, strconv.FormatUint(rec.CID, 10))
-		if err != nil {
-			w.Write([]byte(`{"retcode":404,"retmsg":"cid not found"}`))
-			return
-		}
-	} else {
-		// add
-		newCID, _ := db.HnextSequence("category")
-		cobj.ID = newCID
-	}
+	// if rec.CID > 0 {
+	// 	// edit
+	// 	cobj, err = model.CategoryGetByID(db, strconv.FormatUint(rec.CID, 10))
+	// 	if err != nil {
+	// 		w.Write([]byte(`{"retcode":404,"retmsg":"cid not found"}`))
+	// 		return
+	// 	}
+	// } else {
+	// 	// add
+	// 	newCID, _ := db.HnextSequence("category")
+	// 	cobj.ID = newCID
+	// }
 
 	cobj.Name = rec.Name
 	cobj.About = rec.About
 	cobj.Hidden = hidden
 
-	jb, _ := json.Marshal(cobj)
-	db.Hset("category", youdb.I2b(cobj.ID), jb)
+	// jb, _ := json.Marshal(cobj)
+	// db.Hset("category", youdb.I2b(cobj.ID), jb)
 
 	rsp := response{}
 	rsp.Retcode = 200

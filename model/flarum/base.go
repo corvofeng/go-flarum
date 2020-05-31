@@ -18,20 +18,28 @@ const (
 	EDiscussion EResourceType = "discussion"
 
 	// EForum 论坛信息
-	EForum EResourceType = "forum"
+	EForum EResourceType = "forums"
+
+	// ETAG 标签信息
+	ETAG EResourceType = "tag"
+
+	// EPost 评论信息
+	EPost EResourceType = "post"
 )
 
 // IDataBase flarum数据
 type IDataBase interface {
 	// GetAttributes()
 	DoInit()
+	GetType() string
+	// GetID() uint64
 	GetDefaultAttributes(obj interface{})
 }
 
 // BaseRelation flarum中的基础资源关系
 type BaseRelation struct {
 	Type string `json:"type"`
-	ID   string `json:"id"`
+	ID   uint64 `json:"id"`
 }
 
 // RelationDict 字典形式的关系
@@ -46,10 +54,10 @@ type RelationArray struct {
 
 // Resource flarum资源
 type Resource struct {
-	ID            int           `json:"id"`
-	Type          string        `json:"type"`
-	Attributes    IDataBase     `json:"attributes"`
-	Relationships []interface{} `json:"relationships"`
+	ID            uint64      `json:"id"`
+	Type          string      `json:"type"`
+	Attributes    *IDataBase  `json:"attributes"`
+	Relationships interface{} `json:"relationships"`
 }
 
 // Session flarum session数据
@@ -58,38 +66,64 @@ type Session struct {
 	CsrfToken string `json:"csrfToken"`
 }
 
-// APIDoc flarum api document
+// APIDoc flarum api将会返回的结果
 type APIDoc struct {
-	Links    []string    `json:"links"`
-	Data     []IDataBase `json:"data"`
-	Included []IDataBase `json:"included"`
+	/**
+	 * Links 当前可点的链接:
+	 * 		first: 首页
+	 * 		next: 下一页
+	 * 		prev: 前一页
+	 */
+	Links map[string]string `json:"links"`
+
+	Data     []Resource `json:"data"`
+	Included []Resource `json:"included"`
 }
 
 // CoreData flarum需要返回的数据
 type CoreData struct {
-	Resources   []IDataBase         `json:"resource"`
-	Sessions    Session             `json:"session"`
-	Locale      string              `json:"locale"`
-	Locales     []map[string]string `json:"locales"`
-	APIDocument APIDoc              `json:"apiDocument"`
+	Resources   []Resource        `json:"resources"`
+	Sessions    Session           `json:"session"`
+	Locale      string            `json:"locale"`
+	Locales     map[string]string `json:"locales"`
+	APIDocument APIDoc            `json:"apiDocument"`
 }
 
 // NewResource 根据类型初始化一个资源
-func NewResource(resourceType EResourceType) IDataBase {
-
-	var obj IDataBase
+func NewResource(resourceType EResourceType) Resource {
+	var obj Resource
+	var data IDataBase
 	switch resourceType {
 	case EBaseUser:
-		obj = &BaseUser{}
+		data = &BaseUser{}
 		break
 	case ECurrentUser:
-		obj = &CurrentUser{}
+		data = &CurrentUser{}
 		break
-
+	case EDiscussion:
+		data = &Discussion{}
+		break
 	case EForum:
-		obj = &Forum{}
+		data = &Forum{}
+		break
+	case ETAG:
+		data = &Tag{}
+		break
+	case EPost:
+		data = &Post{}
 		break
 	}
-	obj.DoInit()
+	data.DoInit()
+	obj = Resource{
+		Type:       data.GetType(),
+		Attributes: &data,
+	}
 	return obj
+}
+
+// NewAPIDoc 新建一个APIDoc对象
+func NewAPIDoc() APIDoc {
+	apiDoc := APIDoc{}
+	apiDoc.Links = make(map[string]string)
+	return apiDoc
 }

@@ -5,8 +5,8 @@ import "time"
 // Tag flarum tag信息
 type Tag struct {
 	Type string `json:"type"`
+	ID   uint64 `json:"id"`
 
-	ID                 string      `json:"id"`
 	Name               string      `json:"name"`
 	Description        string      `json:"description"`
 	Slug               string      `json:"slug"`
@@ -14,7 +14,7 @@ type Tag struct {
 	BackgroundURL      string      `json:"backgroundUrl"`
 	BackgroundMode     string      `json:"backgroundMode"`
 	Icon               string      `json:"icon"`
-	DiscussionCount    int         `json:"discussionCount"`
+	DiscussionCount    uint64      `json:"discussionCount"`
 	Position           int         `json:"position"`
 	DefaultSort        interface{} `json:"defaultSort"`
 	IsChild            bool        `json:"isChild"`
@@ -38,4 +38,9 @@ func (t *Tag) DoInit() {
 
 // GetDefaultAttributes 获取属性
 func (t *Tag) GetDefaultAttributes(obj interface{}) {
+}
+
+// GetType 获取类型
+func (t *Tag) GetType() string {
+	return t.Type
 }

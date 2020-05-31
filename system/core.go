@@ -11,6 +11,7 @@ import (
 
 	"database/sql"
 
+	"goyoubbs/model"
 	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
@@ -24,92 +25,9 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-// MainConf 主配置
-type MainConf struct {
-	HTTPPort  int
-	HttpsOn   bool
-	Domain    string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
-	HttpsPort int
-	// MySQL_HOST     string
-	// MySQL_PORT     string
-	// MySQL_USER     string
-	// MySQL_PASS     string
-	// MySQL_DB       string
-	MySQLURL       string
-	MongoURL       string
-	RedisHost      string
-	RedisPort      string
-	RedisPass      string
-	RedisDB        int
-	PubDir         string
-	ViewDir        string
-	Youdb          string
-	ServerStyle    string // 选择使用的样式
-	ServerName     string
-	CookieSecure   bool
-	CookieHttpOnly bool
-	OldSiteDomain  string
-	TLSCrtFile     string
-	TLSKeyFile     string
-
-	// secure cookie 初始化时需要
-	SCHashKey  string
-	SCBlockKey string
-}
-
-// SiteConf 站点配置
-type SiteConf struct {
-	GoVersion         string
-	MD5Sums           string
-	Name              string
-	Desc              string
-	AdminEmail        string
-	MainDomain        string // 上传图片后添加网址前缀, eg: http://domian.com 、http://234.21.35.89:8082
-	MainNodeIDs       string
-	TimeZone          int
-	HomeShowNum       int
-	PageShowNum       int
-	TagShowNum        int
-	CategoryShowNum   int
-	TitleMaxLen       int
-	ContentMaxLen     int
-	PostInterval      int
-	CommentListNum    int
-	CommentInterval   int
-	Authorized        bool
-	RegReview         bool
-	CloseReg          bool
-	AutoDataBackup    bool
-	AutoGetTag        bool
-	GetTagApi         string
-	QQClientID        int
-	QQClientSecret    string
-	WeiboClientID     int
-	WeiboClientSecret string // eg: "jpg,jpeg,gif,zip,pdf"
-	UploadSuffix      string
-	UploadImgOnly     bool
-	UploadImgResize   bool
-	UploadMaxSize     int
-	UploadMaxSizeByte int64
-	QiniuAccessKey    string
-	QiniuSecretKey    string
-	QiniuDomain       string
-	QiniuBucket       string
-	UpyunDomain       string
-	UpyunBucket       string
-	UpyunUser         string
-	UpyunPw           string
-}
-
-// AppConf 应用配置文件
-type AppConf struct {
-	Main *MainConf
-	Site *SiteConf
-}
-
 // Application 应用数据库以及外部服务
 type Application struct {
-	Cf      *AppConf
+	Cf      *model.AppConf
 	Db      *youdb.DB
 	RedisDB *redis.Client
 	MySQLdb *sql.DB
@@ -132,7 +50,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	// .. version_changed: 2019-11-09
 	// 添加 redis, 目前redis只用于缓存数据，理论上不能包含数据结构
 
-	mcf := &MainConf{}
+	mcf := &model.MainConf{}
 	c.GetStruct("Main", mcf)
 	logger := util.GetLogger()
 
@@ -149,7 +67,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		mcf.Domain = strings.Trim(mcf.Domain, "/")
 	}
 
-	scf := &SiteConf{}
+	scf := &model.SiteConf{}
 	c.GetStruct("Site", scf)
 	scf.GoVersion = runtime.Version()
 	fMd5, _ := util.HashFileMD5(currentFilePath)
@@ -163,7 +81,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	}
 	scf.UploadMaxSizeByte = int64(scf.UploadMaxSize) << 20
 
-	app.Cf = &AppConf{mcf, scf}
+	app.Cf = &model.AppConf{mcf, scf}
 	// db, err := youdb.Open(mcf.Youdb)
 	// if err != nil {
 	// 	logger.Fatalf("Connect Error: %v", err)
@@ -214,6 +132,11 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	//app.Sc.SetSerializer(securecookie.JSONEncoder{})
 
 	app.Logger.Debug("youdb Connect to", mcf.Youdb)
+}
+
+// IsFlarum 当前论坛是否为flarum风格
+func (app *Application) IsFlarum() bool {
+	return app.Cf.Main.ServerStyle == "flarum"
 }
 
 // Close 清理程序连接
