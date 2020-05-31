@@ -19,6 +19,7 @@ import (
 	"goyoubbs/cronjob"
 	"goyoubbs/getold"
 	"goyoubbs/model"
+
 	"goyoubbs/router"
 	"goyoubbs/system"
 	"goyoubbs/util"
@@ -94,8 +95,6 @@ func main() {
 		staticPath = "static"
 	}
 
-	root.Handle(pat.New("/.well-known/acme-challenge/*"),
-		http.StripPrefix("/.well-known/acme-challenge/", http.FileServer(http.Dir(staticPath))))
 	root.Handle(pat.New("/static/*"),
 		http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 
