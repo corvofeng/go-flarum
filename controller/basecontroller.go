@@ -69,6 +69,9 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 		))
 	}
 	err := tmpl.Execute(w, data)
+	if err != nil {
+		h.App.Logger.Error("Can't render template with err", err)
+	}
 
 	return err
 }
