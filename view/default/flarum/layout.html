@@ -5,8 +5,16 @@
   <head>
     <meta charset="utf-8">
     <title>{{.SiteCf.Name}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <link rel="stylesheet" href="/static/css/flaurm/forum.css">
+    <link rel="canonical" href="https://flarum.yjzq.fun">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+<meta name="description" content="">
+<meta name="theme-color" content="#4D698E">
+    {{/* <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1"> */}}
 
+
+    {{/* {{ template "header" . }} */}}
+{{/* 
     <style>
       * {
        box-sizing: border-box;
@@ -92,14 +100,92 @@
         margin: 0;
         padding: 0;
       }
-    </style>
+    </style> */}}
   </head>
 
-  <body>
-    <div class="container">
-      {{ template "content" . }}
-    </div>
-  </body>
+  {{ template "layout" . }}
+
+  <div id="modal"></div>
+  <div id="alerts"></div>
+
+  <script>
+      document.getElementById('flarum-loading').style.display = 'block';
+      var flarum = {extensions: {}};
+  </script>
+
+  {{/* {{ template "js" . }} */}}
+  <script src="/static/js/flarum/forum.js"></script>
+  {{/* <script src="https://discuss.flarum.org/assets/forum-en-cd5e9c4e.js"></script> */}}
+
+  <script>
+      document.getElementById('flarum-loading').style.display = 'none';
+
+      try {
+          {{/* flarum.core.app.load({"resources":[{"type":"forums","id":"1","attributes":{"title":"MyFlarum","description":"","showLanguageSelector":true,"baseUrl":"https:\/\/flarum.yjzq.fun","basePath":"","debug":false,"apiUrl":"https:\/\/flarum.yjzq.fun\/api","welcomeTitle":"Welcome to MyFlarum","welcomeMessage":"This is beta software and you should not use it in production.","themePrimaryColor":"#4D698E","themeSecondaryColor":"#4D698E","logoUrl":null,"faviconUrl":null,"headerHtml":null,"footerHtml":null,"allowSignUp":true,"defaultRoute":"\/all","canViewDiscussions":true,"canStartDiscussion":true,"canViewUserList":true,"adminUrl":"https:\/\/flarum.yjzq.fun\/admin","version":"0.1.0-beta.13","canViewFlags":true,"flagCount":0,"guidelinesUrl":null,"minPrimaryTags":"1","maxPrimaryTags":"1","minSecondaryTags":"0","maxSecondaryTags":"3"},"relationships":{"groups":{"data":[{"type":"groups","id":"1"},{"type":"groups","id":"2"},{"type":"groups","id":"3"},{"type":"groups","id":"4"}]},"tags":{"data":[{"type":"tags","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}},{"type":"groups","id":"2","attributes":{"nameSingular":"Guest","namePlural":"Guests","color":null,"icon":null,"isHidden":0}},{"type":"groups","id":"3","attributes":{"nameSingular":"Member","namePlural":"Members","color":null,"icon":null,"isHidden":0}},{"type":"groups","id":"4","attributes":{"nameSingular":"Mod","namePlural":"Mods","color":"#80349E","icon":"fas fa-bolt","isHidden":0}},{"type":"tags","id":"1","attributes":{"name":"General","description":null,"slug":"general","color":"#888","backgroundUrl":null,"backgroundMode":null,"icon":null,"discussionCount":1,"position":0,"defaultSort":null,"isChild":false,"isHidden":false,"lastPostedAt":"2020-05-28T02:01:41+00:00","canStartDiscussion":true,"canAddToDiscussion":true,"isRestricted":false},"relationships":{"lastPostedDiscussion":{"data":{"type":"discussions","id":"1"}}}},{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-28T02:01:41+00:00","lastPostNumber":1,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-28T02:01:41+00:00","lastReadPostNumber":1,"isApproved":true,"isLocked":false,"canLock":true,"isSticky":false,"canSticky":true,"subscription":false,"canTag":true}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":1,"commentCount":1,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-05-30T05:11:50+00:00","isEmailConfirmed":true,"email":"corvofeng@gmail.com","markedAllAsReadAt":null,"unreadNotificationCount":0,"newNotificationCount":0,"preferences":{"notify_discussionRenamed_alert":true,"notify_postLiked_alert":true,"notify_discussionLocked_alert":true,"notify_postMentioned_alert":true,"notify_postMentioned_email":false,"notify_userMentioned_alert":true,"notify_userMentioned_email":false,"notify_newPost_alert":true,"notify_newPost_email":true,"notify_userSuspended_alert":true,"notify_userUnsuspended_alert":true,"followAfterReply":false,"discloseOnline":true,"indexProfile":true,"locale":null},"newFlagCount":0,"canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}],"session":{"userId":1,"csrfToken":"idW9vG5m2SY9cuesZEgkQJiZEx1EA6eyEXqogctS"},"locales":{"en":"English"},"locale":"en","apiDocument":{"links":{"first":"https:\/\/flarum.yjzq.fun\/api\/discussions?sort=\u0026page%5Blimit%5D=20"},"data":[{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-28T02:01:41+00:00","lastPostNumber":1,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-28T02:01:41+00:00","lastReadPostNumber":1,"isApproved":true,"isLocked":false,"canLock":true,"isSticky":false,"canSticky":true,"subscription":false,"canTag":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"lastPostedUser":{"data":{"type":"users","id":"1"}},"firstPost":{"data":{"type":"posts","id":"1"}},"tags":{"data":[{"type":"tags","id":"1"}]}}}],"included":[{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null}},{"type":"posts","id":"1","attributes":{"number":1,"createdAt":"2020-05-28T02:01:41+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9\u003C\/p\u003E"}},{"type":"tags","id":"1","attributes":{"name":"General","description":null,"slug":"general","color":"#888","backgroundUrl":null,"backgroundMode":null,"icon":null,"discussionCount":1,"position":0,"defaultSort":null,"isChild":false,"isHidden":false,"lastPostedAt":"2020-05-28T02:01:41+00:00","canStartDiscussion":true,"canAddToDiscussion":true,"isRestricted":false}}]}}); */}}
+          flarum.core.app.load({{ marshal .FlarumInfo }});
+          flarum.core.app.bootExtensions(flarum.extensions);
+          flarum.core.app.boot();
+      } catch (e) {
+          var error = document.getElementById('flarum-loading-error');
+          error.innerHTML += document.getElementById('flarum-content').textContent;
+          error.style.display = 'block';
+          throw e;
+      }
+  </script>
+
+
+
+  {{/* {{ template "foot" . }} */}}
+
 </html>
 
 {{ end }}
+
+{{ define "layout" }}
+{{/* {!! array_get($forum, 'headerHtml') !!} */}}
+
+<div id="app" class="App">
+
+    <div id="app-navigation" class="App-navigation"></div>
+
+    <div id="drawer" class="App-drawer">
+
+        <header id="header" class="App-header navbar-fixed-top">
+            <div id="header-navigation" class="Header-navigation"></div>
+            <div class="container">
+                <h1 class="Header-title">
+
+                    <a href="https://flarum.yjzq.fun" id="home-link">
+                                                    MyFlarum
+                                            </a>
+                    {{/* <a href="{{ array_get($forum, 'baseUrl') }}" id="home-link">
+                        @if ($logo = array_get($forum, 'logoUrl'))
+                            <img src="{{ $logo }}" alt="{{ array_get($forum, 'title') }}" class="Header-logo">
+                        @else
+                            {{ array_get($forum, 'title') }}
+                        @endif
+                    </a> */}}
+                </h1>
+                <div id="header-primary" class="Header-primary"></div>
+                <div id="header-secondary" class="Header-secondary"></div>
+            </div>
+        </header>
+
+    </div>
+
+    <main class="App-content">
+        <div id="content"></div>
+
+        {{ template "content" . }}
+
+        <div class="App-composer">
+            <div class="container">
+                <div id="composer"></div>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+{{/* {!! array_get($forum, 'footerHtml') !!} */}}
+{{end }}
