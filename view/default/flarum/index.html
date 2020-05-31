@@ -1,9 +1,97 @@
 {{ define "content" }}
+<div id="flarum-loading" style="display: none">
+    {{/* {{ $translator->trans('core.views.content.loading_text') }} */}}
+    Loading...
+</div>
 
-Big Big
-<div class="nav-title">
-    <div class="float-left fs14">
+<noscript>
+    <div class="Alert">
+        <div class="container">
+        {{/* {{ $translator->trans('core.views.content.javascript_disabled_message') }} */}}
+        This site is best viewed in a modern browser with JavaScript enabled.
+
+        </div>
     </div>
+</noscript>
+
+<div id="flarum-loading-error" style="display: none">
+    <div class="Alert">
+        <div class="container">
+            {{/* {{ $translator->trans('core.views.content.load_error_message') }} */}}
+
+            Something went wrong while trying to load the full version of this site. Try hard-refreshing this page to fix the error.
+        </div>
+    </div>
+</div>
+
+<noscript id="flarum-content">
+    {{ template "index-content" . }}
+</noscript>
+{{ end }}
+
+{{ define "discussion-content" }}
+<div class="container">
+    <h2>Hello world</h2>
+    <div>
+            <div>
+                {{/* <?php $user = ! empty($post->relationships->user->data) ? $getResource($post->relationships->user->data) : null; ?> */}}
+                {{/* <h3>{{ $user ? $user->attributes->username : $translator->trans('core.lib.username.deleted_text') }}</h3> */}}
+                <div class="Post-body">
+                    {{/* {!! $post->attributes->contentHtml !!} */}}
+                </div>
+            </div>
+
+            <hr>
+    </div>
+
+    {{/* @if (isset($apiDocument->links->prev))
+        <a href="{{ $url(['page' => $page - 1]) }}">&laquo; {{ $translator->trans('core.views.discussion.previous_page_button') }}</a>
+    @endif */}}
+
+    {{/* @if (isset($apiDocument->links->next))
+        <a href="{{ $url(['page' => $page + 1]) }}">{{ $translator->trans('core.views.discussion.next_page_button') }} &raquo;</a>
+    @endif */}}
+</div>
+{{ end }}
+
+
+{{ define "index-content" }}
+
+<div class="container">
+{{/* 
+    <h2>All Discussions</h2>
+
+    <ul>
+                    <li>
+                <a href="https://flarum.yjzq.fun/d/1">
+                    这是一个新的主题
+                </a>
+            </li>
+            </ul>
+
+    
+    </div> */}}
+
+
+    <h2>All Discussions</h2>
+
+    <ul>
+        {{range $_, $item := .PageInfo.Items}}
+            <li>
+                <a href="/topic/{{$item.ID}}" id="{{$item.ID}}">{{$item.Title}}</a>
+                    {{$item.Title}}
+                </a>
+            </li>
+        {{end}}
+    </ul>
+
+    {{/* @if (isset($apiDocument->links->prev))
+        <a href="{{ $url->to('forum')->route('index') }}?page={{ $page - 1 }}">&laquo; {{ $translator->trans('core.views.index.previous_page_button') }}</a>
+    @endif */}}
+
+    {{/* @if (isset($apiDocument->links->next))
+        <a href="{{ $url->to('forum')->route('index') }}?page={{ $page + 1 }}">{{ $translator->trans('core.views.index.next_page_button') }} &raquo;</a>
+    @endif */}}
 </div>
 
 {{ end }}
