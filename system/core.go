@@ -26,15 +26,16 @@ import (
 
 // MainConf 主配置
 type MainConf struct {
-	HTTPPort       int
-	HttpsOn        bool
-	Domain         string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
-	HttpsPort      int
-	MySQL_HOST     string
-	MySQL_PORT     string
-	MySQL_USER     string
-	MySQL_PASS     string
-	MySQL_DB       string
+	HTTPPort  int
+	HttpsOn   bool
+	Domain    string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
+	HttpsPort int
+	// MySQL_HOST     string
+	// MySQL_PORT     string
+	// MySQL_USER     string
+	// MySQL_PASS     string
+	// MySQL_DB       string
+	MySQLURL       string
 	MongoURL       string
 	RedisHost      string
 	RedisPort      string
@@ -167,7 +168,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	// if err != nil {
 	// 	logger.Fatalf("Connect Error: %v", err)
 	// }
-	dbStr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
+	dbStr := app.Cf.Main.MySQLURL //  fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
 	logger.Debugf("Get mysql db url: %s", dbStr)
 
 	rdsClient := redis.NewClient(&redis.Options{
