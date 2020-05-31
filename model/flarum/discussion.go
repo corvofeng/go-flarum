@@ -4,6 +4,12 @@ package flarum
  * 与topic行为一致
  *	refer to:
  *		view/flarum/src/Api/Serializer/DiscussionSerializer.php
+ *
+ * Flarum 中为什么称这个变量为Discussion, 这是根据数据库的内容定义来的:
+ *   数据库中:
+ *      Discussion 为一个议题
+ * 		Post 为议题下放的评论
+ * 	用户创建时, 可以
  */
 
 import "time"
@@ -12,6 +18,7 @@ import "time"
 type BaseDiscussion struct {
 	Type string `json:"type"`
 
+	ID    uint64 `json:"id"`
 	Title string `json:"title"`
 	Slug  string `json:"slug"`
 }
@@ -20,7 +27,7 @@ type BaseDiscussion struct {
 type Discussion struct {
 	BaseDiscussion
 
-	CommentCount     int       `json:"commentCount "`
+	CommentCount     uint64    `json:"commentCount"`
 	ParticipantCount int       `json:"participantCount"`
 	CreatedAt        time.Time `json:"createdAt"`
 
@@ -54,7 +61,23 @@ type DiscussionRelations struct {
 	OldRecipientGroups RelationArray `json:"oldRecipientGroups"`
 }
 
-// Init 初始化一篇帖子
-func (d *BaseDiscussion) Init() {
+// DoInit 初始化一篇帖子
+func (d *BaseDiscussion) DoInit() {
 	d.Type = "discussions"
+}
+
+// GetDefaultAttributes 获取属性
+func (d *BaseDiscussion) GetDefaultAttributes(obj interface{}) {
+	// uObj := obj.(model.User)
+	// fmt.Println(uObj)
+}
+
+// GetType 获取类型
+func (d *BaseDiscussion) GetType() string {
+	return d.Type
+}
+
+// GetID 获取ID信息
+func (d *BaseDiscussion) GetID() uint64 {
+	return d.ID
 }

@@ -50,9 +50,14 @@ type ForumRelations struct {
 
 // DoInit 初始化forum
 func (f *Forum) DoInit() {
-	f.Type = "forum"
+	f.Type = "forums"
 }
 
 // GetDefaultAttributes 获取属性
 func (f Forum) GetDefaultAttributes(obj interface{}) {
+}
+
+// GetType 获取类型
+func (f *Forum) GetType() string {
+	return f.Type
 }

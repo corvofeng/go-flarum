@@ -27,7 +27,7 @@ type (
 
 	// PageData 每个页面中的基础信息
 	PageData struct {
-		SiteCf        *system.SiteConf
+		SiteCf        *model.SiteConf
 		Title         string
 		Keywords      string
 		Description   string
@@ -38,7 +38,7 @@ type (
 		ShowPostBotAd bool
 		ShowSideAd    bool
 		HotNodes      []model.CategoryMini
-		NewestNodes   []model.CategoryMini
+		NewestNodes   []model.Category
 		SiteInfo      model.SiteInfo
 		PrimaryColor  string
 	}
@@ -62,7 +62,12 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	w.Header().Set("Server", h.App.Cf.Main.ServerName)
 
 	tplDir := path.Join(h.App.Cf.Main.ViewDir, tpl)
-	tmpl := template.New(h.App.Cf.Main.ServerStyle)
+	tmpl := template.New(h.App.Cf.Main.ServerStyle).Funcs(template.FuncMap{
+		"marshal": func(v interface{}) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
+	})
 	for _, tpath := range tplPath {
 		tmpl = template.Must(tmpl.ParseFiles(
 			path.Join(tplDir, tpath),

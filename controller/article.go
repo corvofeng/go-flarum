@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"goyoubbs/model"
+	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
@@ -64,7 +65,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 		Cobj model.Category
 
 		// 可能是想获取当前节点的父节点下的所有子节点
-		MainNodes []model.CategoryMini
+		MainNodes []model.Category
 	}
 
 	tpl := h.CurrentTpl(r)
@@ -275,7 +276,6 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 
 	var err error
-	db := h.App.Db
 	scf := h.App.Cf.Site
 	redisDB := h.App.RedisDB
 	logger := h.App.Logger
@@ -323,7 +323,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	}()
 	logger.Debug("Get Article List", articleList)
 
-	pageInfo := model.SQLArticleGetByList(sqlDB, db, redisDB, articleList, scf.TimeZone)
+	pageInfo := model.SQLArticleGetByList(sqlDB, redisDB, articleList, scf.TimeZone)
 	categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
@@ -782,4 +782,27 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 		rsp.Html = template.HTML(util.ContentFmt(rec.Content))
 	}
 	json.NewEncoder(w).Encode(rsp)
+}
+
+// FlarumArticleDetail 获取flarum中的某篇帖子
+func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
+	rsp := response{}
+	apiDoc := flarum.NewAPIDoc()
+
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
+	if err != nil {
+		rsp = response{400, "aid type err"}
+		h.Jsonify(w, rsp)
+		return
+	}
+
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	// model.SQLCommentList(sqlDB, redisDB)
+
+	fmt.Println(article, aid, err)
+
+	h.Jsonify(w, apiDoc)
 }

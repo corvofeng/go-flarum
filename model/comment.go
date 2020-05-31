@@ -14,10 +14,12 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
+// Comment 评论信息
 type Comment struct {
 	ID       uint64 `json:"id"`
 	Aid      uint64 `json:"aid"`
 	UID      uint64 `json:"uid"`
+	Number   uint64 `json:"number"`
 	Content  string `json:"content"`
 	ClientIp string `json:"clientip"`
 	AddTime  uint64 `json:"addtime"`

@@ -283,7 +283,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
+func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
@@ -351,7 +351,7 @@ func SQLArticleGetByList(db *sql.DB, cacheDB *youdb.DB, redisDB *redis.Client, a
 }
 
 // SQLCIDArticleListByPage 根据页码获取某个分类的列表
-func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
+func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	if len(articleList) == 0 {
@@ -365,14 +365,13 @@ func SQLCIDArticleListByPage(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client,
 			items = append(items, ArticleRankItem{
 				AID:     a.ID,
 				SQLDB:   db,
-				CacheDB: cntDB,
 				RedisDB: redisDB,
 				Weight:  a.ClickCnt,
 			})
 		}
 		AddNewArticleList(nodeID, items)
 	} else {
-		pageInfo = SQLArticleGetByList(db, cntDB, redisDB, articleList, tz)
+		pageInfo = SQLArticleGetByList(db, redisDB, articleList, tz)
 	}
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1

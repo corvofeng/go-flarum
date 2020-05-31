@@ -3,8 +3,10 @@ package router
 import (
 	"net/http"
 	"os"
+
 	// "fmt"
 	"goyoubbs/controller"
+	"goyoubbs/model"
 	"goyoubbs/system"
 
 	// "github.com/dchest/captcha"
@@ -16,6 +18,29 @@ import (
 // NewRouter create the router
 func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
+	if app.IsFlarum() {
+		NewFlarumAPIRouter(app, sp)
+		NewFlarumRouter(app, sp)
+	} else {
+		NewGoYouBBSRouter(app, sp)
+	}
+	return sp
+}
+
+// NewAPIRouter create api router
+func NewAPIRouter(app *system.Application) *goji.Mux {
+	sp := goji.SubMux()
+	h := controller.BaseHandler{App: app, InAPI: true}
+
+	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
+	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
+	sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
+
+	return sp
+}
+
+// NewGoYouBBSRouter goyoubbs的router
+func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := controller.BaseHandler{App: app}
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
@@ -76,14 +101,31 @@ func NewRouter(app *system.Application) *goji.Mux {
 	return sp
 }
 
-// NewAPIRouter create api router
-func NewAPIRouter(app *system.Application) *goji.Mux {
-	sp := goji.SubMux()
+// NewFlarumRouter flarum的router
+func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	app.Logger.Notice("Init flarum router")
+	h := controller.BaseHandler{App: app}
+
+	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
+
+	//	discussion
+	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
+	sp.HandleFunc(pat.Get("/d/:aid"), h.ArticleDetail)
+	sp.HandleFunc(pat.Post("/d/:aid"), h.ArticleDetailPost)
+
+	// user
+	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
+
+	return sp
+}
+
+// NewFlarumAPIRouter flarum的API
+func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	app.Logger.Notice("Init flarum api router")
 	h := controller.BaseHandler{App: app, InAPI: true}
 
-	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
-	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), h.FlarumAPIDiscussions)
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), h.FlarumArticleDetail)
 
 	return sp
 }

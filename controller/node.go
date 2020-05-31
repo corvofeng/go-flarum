@@ -20,7 +20,6 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	var page uint64
 	var pageInfo model.ArticlePageInfo
 
-	db := h.App.Db
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	logger := h.App.Logger
@@ -61,7 +60,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	}
 
 	si := model.GetSiteInfo(redisDB)
-	pageInfo = model.SQLCIDArticleListByPage(sqlDB, db, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	pageInfo.HasNext = true
 	if pageInfo.PagePrev != 0 {
 		pageInfo.HasPrev = true
