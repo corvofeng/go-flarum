@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"strconv"
+	"time"
 
 	"goyoubbs/util"
 
@@ -77,7 +78,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 	var rows *sql.Rows
 	var err error
 	rows, err = db.Query(
-		("SELECT id, user_id, topic_id, content, created_at " +
+		("SELECT id, user_id, topic_id, number, content, created_at " +
 			" FROM  reply WHERE topic_id = ?"),
 		topicID,
 	)
@@ -89,7 +90,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 
 	for rows.Next() {
 		item := CommentListItem{}
-		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
+		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Number, &item.Content, &item.AddTime)
 		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
 		item.UserName = GetUserNameByID(db, redisDB, item.UID)
 
@@ -98,7 +99,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 			continue
 		}
 
-		item.AddTimeFmt = util.TimeFmt(item.AddTime, "2006-01-02 15:04", tz)
+		item.AddTimeFmt = util.TimeFmt(item.AddTime, time.RFC3339, tz)
 
 		// 预防XSS漏洞
 		item.ContentFmt = template.HTML(

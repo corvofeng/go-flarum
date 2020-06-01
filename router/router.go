@@ -126,6 +126,7 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), h.FlarumAPIDiscussions)
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), h.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/posts"), h.FlarumPosts)
 
 	return sp
 }

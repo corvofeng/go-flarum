@@ -151,6 +151,7 @@ func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, 
 			&obj.FatherTopicID,
 			&obj.ClientIP,
 		)
+
 		if util.CheckError(err, fmt.Sprintf("scan %d", aid)) {
 			return obj, errors.New("No result")
 		}

@@ -12,13 +12,10 @@ package flarum
  * 	用户创建时, 可以
  */
 
-import "time"
-
 // BaseDiscussion 基础类
 type BaseDiscussion struct {
-	Type string `json:"type"`
+	BaseResources
 
-	ID    uint64 `json:"id"`
 	Title string `json:"title"`
 	Slug  string `json:"slug"`
 }
@@ -27,9 +24,9 @@ type BaseDiscussion struct {
 type Discussion struct {
 	BaseDiscussion
 
-	CommentCount     uint64    `json:"commentCount"`
-	ParticipantCount int       `json:"participantCount"`
-	CreatedAt        time.Time `json:"createdAt"`
+	CommentCount     uint64 `json:"commentCount"`
+	ParticipantCount int    `json:"participantCount"`
+	CreatedAt        string `json:"createdAt"`
 
 	LastPostedAt   string `json:"lastPostedAt"`
 	LastPostNumber int    `json:"lastPostNumber"`
@@ -38,32 +35,38 @@ type Discussion struct {
 	CanRename bool `json:"canRename"`
 	CanDelete bool `json:"canDelete"`
 	CanHide   bool `json:"canHide"`
+	CanLock   bool `json:"canLock"`
 
-	IsHidden bool   `json:"isHidden"`
-	HiddenAt string `json:"hiddenAt"`
+	IsHidden bool `json:"isHidden"`
+	// HiddenAt     string `json:"hiddenAt"`
+	// Subscription bool `json:"subscription"`
+	IsApproved bool `json:"isApproved"`
+	IsLocked   bool `json:"isLocked"`
+	IsSticky   bool `json:"isSticky"`
 
-	LastReadAt         string `json:"lastReadAt"`
-	LastReadPostNumber int    `json:"lastReadPostNumber"`
+	// LastReadAt         string `json:"lastReadAt"`
+	// LastReadPostNumber int    `json:"lastReadPostNumber"`
 }
 
 // DiscussionRelations 帖子具有的关系
 type DiscussionRelations struct {
-	User           RelationDict `json:"user"` // 创建帖子的用户
-	LastPostedUser RelationDict `json:"lastPostedUser"`
-	FirstPost      RelationDict `json:"firstPost"`
+	User RelationDict `json:"user"` // 创建帖子的用户
+	// LastPostedUser RelationDict `json:"lastPostedUser"`
+	// FirstPost      RelationDict `json:"firstPost"`
 
-	Tags           RelationArray `json:"tags"`
-	LatestViews    RelationArray `json:"latestViews"`
-	RecipientUsers RelationArray `json:"recipientUsers"`
+	Tags  RelationArray `json:"tags"`
+	Posts RelationArray `json:"posts"`
+	// LatestViews    RelationArray `json:"latestViews"`
+	// RecipientUsers RelationArray `json:"recipientUsers"`
 
-	OldRecipientUsers  RelationArray `json:"oldRecipientUsers"`
-	RecipientGroups    RelationArray `json:"recipientGroups"`
-	OldRecipientGroups RelationArray `json:"oldRecipientGroups"`
+	// OldRecipientUsers  RelationArray `json:"oldRecipientUsers"`
+	// RecipientGroups    RelationArray `json:"recipientGroups"`
+	// OldRecipientGroups RelationArray `json:"oldRecipientGroups"`
 }
 
 // DoInit 初始化一篇帖子
 func (d *BaseDiscussion) DoInit() {
-	d.Type = "discussions"
+	d.SetType("discussions")
 }
 
 // GetDefaultAttributes 获取属性
@@ -79,5 +82,5 @@ func (d *BaseDiscussion) GetType() string {
 
 // GetID 获取ID信息
 func (d *BaseDiscussion) GetID() uint64 {
-	return d.ID
+	return d.id
 }

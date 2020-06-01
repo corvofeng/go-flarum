@@ -1,5 +1,10 @@
 package flarum
 
+import (
+	"reflect"
+	"strconv"
+)
+
 // EResourceType flarum中的资源类型
 // E是enum的意思
 type EResourceType string
@@ -25,6 +30,9 @@ const (
 
 	// EPost 评论信息
 	EPost EResourceType = "post"
+
+	// EGroup 信息
+	EGroup EResourceType = "group"
 )
 
 // IDataBase flarum数据
@@ -38,8 +46,22 @@ type IDataBase interface {
 
 // BaseRelation flarum中的基础资源关系
 type BaseRelation struct {
+	BaseResources
+}
+
+// BaseResources 基础的资源结构
+type BaseResources struct {
+	// Issue-5: flarum needs id as string
+	id uint64
+	ID string `json:"id"`
+
 	Type string `json:"type"`
-	ID   uint64 `json:"id"`
+}
+
+// IRelation 具有的一些函数
+type IRelation interface {
+	// field, data
+	// BindRelation(string, interface{})
 }
 
 // RelationDict 字典形式的关系
@@ -54,10 +76,9 @@ type RelationArray struct {
 
 // Resource flarum资源
 type Resource struct {
-	ID            uint64      `json:"id"`
-	Type          string      `json:"type"`
-	Attributes    *IDataBase  `json:"attributes"`
-	Relationships interface{} `json:"relationships"`
+	BaseResources
+	Attributes    IDataBase `json:"attributes"`
+	Relationships IRelation `json:"relationships"`
 }
 
 // Session flarum session数据
@@ -101,15 +122,21 @@ type CoreData struct {
 func NewResource(resourceType EResourceType) Resource {
 	var obj Resource
 	var data IDataBase
+
+	var defaultRelation IRelation
+
 	switch resourceType {
 	case EBaseUser:
 		data = &BaseUser{}
+		defaultRelation = &UserRelations{}
 		break
 	case ECurrentUser:
 		data = &CurrentUser{}
+		defaultRelation = &UserRelations{}
 		break
 	case EDiscussion:
 		data = &Discussion{}
+		defaultRelation = &DiscussionRelations{}
 		break
 	case EForum:
 		data = &Forum{}
@@ -119,13 +146,18 @@ func NewResource(resourceType EResourceType) Resource {
 		break
 	case EPost:
 		data = &Post{}
+		defaultRelation = &PostRelations{}
+		break
+	case EGroup:
+		data = &Group{}
 		break
 	}
 	data.DoInit()
 	obj = Resource{
-		Type:       data.GetType(),
-		Attributes: &data,
+		Attributes:    data,
+		Relationships: defaultRelation,
 	}
+	obj.BaseResources.SetType(data.GetType())
 	return obj
 }
 
@@ -139,4 +171,38 @@ func NewAPIDoc() APIDoc {
 // SetData 设置为字典类型的数据
 func (apiDoc *APIDoc) SetData(data interface{}) {
 	apiDoc.Data = data
+}
+
+// BindRelations 绑定关系
+func (r *Resource) BindRelations(field string, data IRelation) {
+	reflect.ValueOf(r.Relationships).Elem().FieldByName(field).Set(reflect.ValueOf(data))
+}
+
+// SetID 绑定ID
+func (r *BaseResources) SetID(id uint64) {
+	r.id = id
+	r.ID = strconv.FormatUint(id, 10)
+}
+
+// SetType 绑定类型
+func (r *BaseResources) SetType(t string) {
+	r.Type = t
+}
+
+// GetID 获取ID
+func (r *BaseResources) GetID() uint64 {
+	return r.id
+}
+
+// GetType 绑定类型
+func (r *BaseResources) GetType() string {
+	return r.Type
+}
+
+// InitBaseResources 初始化一个基础资源
+func InitBaseResources(id uint64, t string) BaseRelation {
+	br := BaseRelation{}
+	br.SetID(id)
+	br.SetType(t)
+	return br
 }

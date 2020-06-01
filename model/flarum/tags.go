@@ -4,8 +4,7 @@ import "time"
 
 // Tag flarum tag信息
 type Tag struct {
-	Type string `json:"type"`
-	ID   uint64 `json:"id"`
+	BaseResources
 
 	Name               string      `json:"name"`
 	Description        string      `json:"description"`
