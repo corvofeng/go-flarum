@@ -69,6 +69,25 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	return obj
 }
 
+// FlarumCreateDiscussionFromArticle 创建帖子资源
+func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
+	obj := flarum.NewResource(flarum.EDiscussion)
+	data := (*obj.Attributes).(*flarum.Discussion)
+	data.ID = article.ID
+	data.Title = article.Title
+	data.CommentCount = article.Comments
+	obj.ID = data.ID
+	obj.Relationships = flarum.DiscussionRelations{
+		User: flarum.RelationDict{
+			Data: flarum.BaseRelation{
+				ID:   article.CID,
+				Type: "users",
+			}},
+	}
+
+	return obj
+}
+
 // FlarumCreateUser 创建用户资源
 func FlarumCreateUser(article ArticleListItem) flarum.Resource {
 	obj := flarum.NewResource(flarum.EBaseUser)
@@ -82,13 +101,13 @@ func FlarumCreateUser(article ArticleListItem) flarum.Resource {
 }
 
 // FlarumCreatPost 创建评论
-func FlarumCreatPost(comment *Comment) flarum.Resource {
+func FlarumCreatPost(comment CommentListItem) flarum.Resource {
 	obj := flarum.NewResource(flarum.EPost)
 	data := (*obj.Attributes).(*flarum.Post)
 	data.ID = comment.ID
 	obj.ID = data.ID
 
-	data.IPAddress = comment.ClientIp
+	// data.IPAddress = comment.Client
 	data.Type = "comment"
 	data.Number = comment.Number
 	data.Content = comment.Content

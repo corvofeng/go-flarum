@@ -796,10 +796,22 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 		h.Jsonify(w, rsp)
 		return
 	}
+	scf := h.App.Cf.Site
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	apiDoc.SetData(model.FlarumCreateDiscussionFromArticle(article))
+
+	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, scf.TimeZone)
+	for _, comment := range pageInfo.Items {
+		post := model.FlarumCreatPost(comment)
+		apiDoc.Included = append(
+			apiDoc.Included,
+			post,
+		)
+	}
+
 	// model.SQLCommentList(sqlDB, redisDB)
 
 	fmt.Println(article, aid, err)
