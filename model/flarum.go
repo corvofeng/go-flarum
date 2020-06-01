@@ -23,7 +23,7 @@ func FlarumCreateForumInfo(
 	siteInfo SiteInfo,
 ) flarum.Resource {
 	obj := flarum.NewResource(flarum.EForum)
-	data := (*obj.Attributes).(*flarum.Forum)
+	data := (obj.Attributes).(*flarum.Forum)
 	data.DefaultRoute = "/all"
 	data.Title = siteConf.Name
 	data.Description = siteConf.Desc
@@ -33,7 +33,7 @@ func FlarumCreateForumInfo(
 	data.BaseURL = "/"
 
 	obj.Relationships = flarum.ForumRelations{}
-	obj.ID = 1
+	obj.SetID(1)
 
 	return obj
 }
@@ -41,29 +41,35 @@ func FlarumCreateForumInfo(
 // FlarumCreateTag 创建tag资源
 func FlarumCreateTag(cat Category) flarum.Resource {
 	obj := flarum.NewResource(flarum.ETAG)
-	data := (*obj.Attributes).(*flarum.Tag)
+	data := obj.Attributes.(*flarum.Tag)
 	data.Name = cat.Name
-	data.ID = cat.ID
+	data.SetID(cat.ID)
 	data.DiscussionCount = cat.Articles
 	data.IsHidden = cat.Hidden
-	obj.ID = data.ID
+
+	// data.Candd
+	data.Color = "#B72A2A"
+	data.Icon = "fas fa-wrench"
+
+	obj.SetID(data.GetID())
 	return obj
 }
 
 // FlarumCreateDiscussion 创建帖子资源
 func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	obj := flarum.NewResource(flarum.EDiscussion)
-	data := (*obj.Attributes).(*flarum.Discussion)
-	data.ID = article.ID
+	data := obj.Attributes.(*flarum.Discussion)
+	data.SetID(article.ID)
 	data.Title = article.Title
-	data.CommentCount = article.Comments
+	// data.CommentCount = article.Comments
+	data.CommentCount = 10
+	data.ParticipantCount = 5
+	data.LastPostNumber = 1
 	obj.ID = data.ID
 	obj.Relationships = flarum.DiscussionRelations{
 		User: flarum.RelationDict{
-			Data: flarum.BaseRelation{
-				ID:   article.CID,
-				Type: "users",
-			}},
+			Data: flarum.InitBaseResources(article.CID, "users"),
+		},
 	}
 
 	return obj
@@ -72,18 +78,23 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 // FlarumCreateDiscussionFromArticle 创建帖子资源
 func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	obj := flarum.NewResource(flarum.EDiscussion)
-	data := (*obj.Attributes).(*flarum.Discussion)
-	data.ID = article.ID
+	data := obj.Attributes.(*flarum.Discussion)
+	data.SetID(article.ID)
 	data.Title = article.Title
-	data.CommentCount = article.Comments
+	// data.CommentCount = article.Comments
+	data.CommentCount = 1
+	data.ParticipantCount = 1
+	data.LastPostNumber = 1
+	data.CreatedAt = "2019-05-30T14:26:02+00:00"
+	// data.LastReadAt = "2020-05-31T14:26:02+00:00"
+	// data.LastPostedAt = "2019-06-29T11:20:01Z"
+	data.LastPostedAt = "2020-05-31T12:49:51+00:00"
+	// data.CanRename = true
+	// data.CanReply = true
+	data.IsApproved = true
+	data.IsSticky = true
+
 	obj.ID = data.ID
-	obj.Relationships = flarum.DiscussionRelations{
-		User: flarum.RelationDict{
-			Data: flarum.BaseRelation{
-				ID:   article.CID,
-				Type: "users",
-			}},
-	}
 
 	return obj
 }
@@ -91,34 +102,135 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 // FlarumCreateUser 创建用户资源
 func FlarumCreateUser(article ArticleListItem) flarum.Resource {
 	obj := flarum.NewResource(flarum.EBaseUser)
-	data := (*obj.Attributes).(*flarum.BaseUser)
-	data.ID = article.CID
+	data := obj.Attributes.(*flarum.BaseUser)
+	data.SetID(article.UID)
 	data.Username = article.Cname
 	data.AvatarURL = article.Avatar
 
-	obj.ID = data.ID
+	obj.SetID(article.UID)
 	return obj
 }
 
-// FlarumCreatPost 创建评论
-func FlarumCreatPost(comment CommentListItem) flarum.Resource {
-	obj := flarum.NewResource(flarum.EPost)
-	data := (*obj.Attributes).(*flarum.Post)
-	data.ID = comment.ID
-	obj.ID = data.ID
+// FlarumCreateUserFromComments 通过评论信息创建用户资源
+func FlarumCreateUserFromComments(comment CommentListItem) flarum.Resource {
 
-	// data.IPAddress = comment.Client
-	data.Type = "comment"
-	data.Number = comment.Number
-	data.Content = comment.Content
+	obj := flarum.NewResource(flarum.ECurrentUser)
+	data := obj.Attributes.(*flarum.CurrentUser)
+	data.SetID(comment.UID)
+	data.Displayname = comment.UserName
+	data.Username = comment.UserName
+	data.AvatarURL = comment.Avatar
 
-	obj.Relationships = flarum.PostRelations{
-		User: flarum.RelationDict{
-			Data: flarum.BaseRelation{
-				Type: "user",
-				ID:   comment.UID,
-			},
+	data.LastSeenAt = "2020-06-02T04:56:23+00:00"
+
+	data.CommentCount = 20
+	data.DiscussionCount = 3
+
+	obj.BindRelations(
+		"Groups",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
 		},
+	)
+
+	obj.SetID(data.GetID())
+	return obj
+}
+
+// FlarumCreateGroup 创建组信息
+func FlarumCreateGroup() flarum.Resource {
+	obj := flarum.NewResource(flarum.EGroup)
+	data := obj.Attributes.(*flarum.Group)
+	// 	color: "#B72A2A"
+	// icon:
+	// isHidden: 0
+	// namePlural: "Admins"
+	// nameSingular: "Admin"
+	data.SetID(1)
+	data.Color = "#B72A2A"
+	data.Icon = "fas fa-wrench"
+	data.NamePlural = "Admins"
+	data.NameSingular = "Admin"
+	obj.SetID(data.GetID())
+	return obj
+}
+
+// FlarumCreatePost 创建评论
+func FlarumCreatePost(comment CommentListItem) flarum.Resource {
+	obj := flarum.NewResource(flarum.EPost)
+	obj.Attributes = &flarum.SimplePost{}
+	// data := obj.Attributes.(*flarum.Post)
+	data := obj.Attributes.(*flarum.SimplePost)
+
+	obj.SetID(comment.ID)
+
+	data.Number = comment.Number
+	data.ContentType = "comment"
+	// data.Content = comment.Content
+	data.ContentHTML = "<p>" + comment.Content + "</p>"
+	// data.CreatedAt = comment.AddTimeFmt
+	data.CreatedAt = "2020-05-31T12:49:51+00:00"
+	// data.CanLike = true
+	// data.IPAddress = "1.2.3.4"
+	// data.CanHide = true
+	// data.IsApproved = true
+	// data.ID = 0
+
+	obj.BindRelations(
+		"User",
+		flarum.RelationDict{
+			Data: flarum.InitBaseResources(comment.UID, "users"),
+		},
+	)
+	obj.BindRelations(
+		"Discussion",
+		flarum.RelationDict{
+			Data: flarum.InitBaseResources(comment.Aid, "discussions"),
+		},
+	)
+	obj.BindRelations(
+		"Likes",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+	obj.BindRelations(
+		"Flags",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+	obj.BindRelations(
+		"MentionedBy",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+
+	return obj
+}
+
+// FlarumCreatePostRelations 创建关系结构
+func FlarumCreatePostRelations(postArr []flarum.Resource) flarum.IRelation {
+	var obj flarum.RelationArray
+	for _, p := range postArr {
+		obj.Data = append(
+			obj.Data,
+			flarum.InitBaseResources(p.GetID(), p.Type),
+		)
+	}
+
+	return obj
+}
+
+// FlarumCreateTagRelations 创建关系结构
+func FlarumCreateTagRelations(tagArr []flarum.Resource) flarum.IRelation {
+	var obj flarum.RelationArray
+	for _, p := range tagArr {
+		obj.Data = append(
+			obj.Data,
+			flarum.InitBaseResources(p.GetID(), p.Type),
+		)
 	}
 
 	return obj

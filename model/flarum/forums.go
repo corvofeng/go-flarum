@@ -7,7 +7,7 @@ package flarum
 
 // Forum 论坛的基础信息
 type Forum struct {
-	Type string `json:"type"`
+	BaseResources
 
 	Title                string      `json:"title"`
 	Description          string      `json:"description"`

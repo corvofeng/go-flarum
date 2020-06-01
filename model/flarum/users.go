@@ -6,11 +6,19 @@ import (
 
 // BaseUser 基础的用户类
 type BaseUser struct {
-	Type        string `json:"type"`
-	ID          uint64 `json:"id"`
+	BaseResources
+
 	Username    string `json:"username"`
 	Displayname string `json:"displayName"`
 	AvatarURL   string `json:"avatarUrl"`
+
+	JoinTime        string `json:"joinTime"`
+	DiscussionCount int    `json:"discussionCount"`
+	CommentCount    int    `json:"commentCount"`
+	CanEdit         bool   `json:"canEdit"`
+	CanDelete       bool   `json:"canDelete"`
+	LastSeenAt      string `json:"lastSeenAt"`
+	CanSuspend      bool   `json:"canSuspend"`
 }
 
 // CurrentUser 当前用户信息
@@ -25,6 +33,11 @@ type CurrentUser struct {
 	Preferences             []string  `json:"preferences"`
 }
 
+// UserRelations 用户所具有的关系
+type UserRelations struct {
+	Groups RelationArray `json:"groups"`
+}
+
 // DoInit 初始化用户类
 func (u *BaseUser) DoInit() {
 	u.Type = "users"
@@ -37,7 +50,7 @@ func (u *BaseUser) GetType() string {
 
 // GetID 获取ID信息
 func (u *BaseUser) GetID() uint64 {
-	return u.ID
+	return u.id
 }
 
 // GetDefaultAttributes 获取属性
