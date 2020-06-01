@@ -25,10 +25,12 @@ type Comment struct {
 	AddTime  uint64 `json:"addtime"`
 }
 
+// CommentListItem 页面中的评论
 type CommentListItem struct {
 	ID         uint64 `json:"id"`
 	Aid        uint64 `json:"aid"`
 	UID        uint64 `json:"uid"`
+	Number     uint64 `json:"number"`
 	Name       string `json:"name"`
 	UserName   string `json:"username"`
 	Avatar     string `json:"avatar"`
@@ -65,6 +67,53 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 	}
 	cid, err := rows.LastInsertId()
 	comment.ID = uint64(cid)
+}
+
+// SQLCommentListByPage 获取帖子的所有评论
+func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) CommentPageInfo {
+	var items []CommentListItem
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+	var rows *sql.Rows
+	var err error
+	rows, err = db.Query(
+		("SELECT id, user_id, topic_id, content, created_at " +
+			" FROM  reply WHERE topic_id = ?"),
+		topicID,
+	)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+
+	for rows.Next() {
+		item := CommentListItem{}
+		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
+		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
+		item.UserName = GetUserNameByID(db, redisDB, item.UID)
+
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			continue
+		}
+
+		item.AddTimeFmt = util.TimeFmt(item.AddTime, "2006-01-02 15:04", tz)
+
+		// 预防XSS漏洞
+		item.ContentFmt = template.HTML(
+			util.ContentFmt(item.Content))
+
+		items = append(items, item)
+	}
+
+	return CommentPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
 }
 
 // SQLCommentList 获取在数据库中存储的评论

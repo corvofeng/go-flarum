@@ -84,15 +84,18 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 			coreData.Resources = append(coreData.Resources,
 				model.FlarumCreateTag(category))
 		}
+		var res []flarum.Resource
 		for _, article := range pageInfo.Items {
 			diss := model.FlarumCreateDiscussion(article)
 			coreData.Resources = append(
 				coreData.Resources,
 				diss)
-			coreData.APIDocument.Data = append(
-				coreData.APIDocument.Data,
-				diss)
+			res = append(res, diss)
+			// coreData.APIDocument.Data = append(
+			// 	coreData.APIDocument.Data,
+			// 	diss)
 		}
+		coreData.APIDocument.SetData(res)
 
 		for _, article := range pageInfo.Items {
 			user := model.FlarumCreateUser(article)
@@ -156,12 +159,13 @@ func (h *BaseHandler) FlarumAPIDiscussions(w http.ResponseWriter, r *http.Reques
 	// 	coreData.Resources = append(coreData.Resources,
 	// 		model.FlarumCreateTag(category))
 	// }
+
+	var dissArr []flarum.Resource
 	for _, article := range pageInfo.Items {
 		diss := model.FlarumCreateDiscussion(article)
-		apiDoc.Data = append(
-			apiDoc.Data,
-			diss)
+		dissArr = append(dissArr, diss)
 	}
+	apiDoc.SetData(dissArr)
 
 	for _, article := range pageInfo.Items {
 		user := model.FlarumCreateUser(article)

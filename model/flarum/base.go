@@ -76,7 +76,15 @@ type APIDoc struct {
 	 */
 	Links map[string]string `json:"links"`
 
-	Data     []Resource `json:"data"`
+	/**
+	 * Data API返回是的主要数据, 有一点很坑:
+	 *    在disscussion帖子信息时 此变量是数组类型, 是要展示的主题合集
+	 *    但是在请求post评论信息是 此变量是字典类型, 当前的评论所对应的一个主题
+	 *
+	 *  ALERT: 这里必须使用interface{}类型, 并且赋值时只能使用SetData函数
+	 */
+	Data interface{} `json:"data"`
+
 	Included []Resource `json:"included"`
 }
 
@@ -126,4 +134,9 @@ func NewAPIDoc() APIDoc {
 	apiDoc := APIDoc{}
 	apiDoc.Links = make(map[string]string)
 	return apiDoc
+}
+
+// SetData 设置为字典类型的数据
+func (apiDoc *APIDoc) SetData(data interface{}) {
+	apiDoc.Data = data
 }
