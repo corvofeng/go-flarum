@@ -1,3 +1,6 @@
 [submodule "view/flarum"]
 	path = view/flarum
 	url = https://github.com/flarum/core.git
+[submodule "view/locale/en"]
+	path = view/locale/en
+	url = https://github.com/flarum/lang-english.git

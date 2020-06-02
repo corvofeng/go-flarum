@@ -107,6 +107,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := controller.BaseHandler{App: app}
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
+	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
 
 	//	discussion
 	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
