@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 
-	// "database/sql"
 	"flag"
-	// "fmt"
 	"log"
 	"net/http"
 	"os"
