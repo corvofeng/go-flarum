@@ -16,4 +16,5 @@ webbundle:
 		${FLARUM_DIR}/less/admin.less > /tmp/admin.less
 	@${LESSC} \
 		--include-path=node_modules/components-font-awesome/less/:node_modules/bootstrap/less:${FLARUM_DIR}/less:${FLARUM_DIR}less/common /tmp/admin.less static/css/flaurm/admin.css
+	@cp view/flarum/js/dist/* static/js/flarum/
 
