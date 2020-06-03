@@ -37,14 +37,14 @@ type Discussion struct {
 	CanHide   bool `json:"canHide"`
 	CanLock   bool `json:"canLock"`
 
-	IsHidden bool `json:"isHidden"`
-	// HiddenAt     string `json:"hiddenAt"`
-	// Subscription bool `json:"subscription"`
+	IsHidden   bool `json:"isHidden"`
 	IsApproved bool `json:"isApproved"`
 	IsLocked   bool `json:"isLocked"`
 	IsSticky   bool `json:"isSticky"`
 
-	// LastReadAt         string `json:"lastReadAt"`
+	HiddenAt   string `json:"hiddenAt"`
+	LastReadAt string `json:"lastReadAt"`
+	// Subscription bool `json:"subscription"`
 	// LastReadPostNumber int    `json:"lastReadPostNumber"`
 }
 

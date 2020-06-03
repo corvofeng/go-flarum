@@ -22,7 +22,7 @@ func FlarumCreateForumInfo(
 	siteConf SiteConf,
 	siteInfo SiteInfo,
 ) flarum.Resource {
-	obj := flarum.NewResource(flarum.EForum)
+	obj := flarum.NewResource(flarum.EForum, 1)
 	data := (obj.Attributes).(*flarum.Forum)
 	data.DefaultRoute = "/all"
 	data.Title = siteConf.Name
@@ -33,17 +33,15 @@ func FlarumCreateForumInfo(
 	data.BaseURL = "/"
 
 	obj.Relationships = flarum.ForumRelations{}
-	obj.SetID(1)
 
 	return obj
 }
 
 // FlarumCreateTag 创建tag资源
 func FlarumCreateTag(cat Category) flarum.Resource {
-	obj := flarum.NewResource(flarum.ETAG)
+	obj := flarum.NewResource(flarum.ETAG, cat.ID)
 	data := obj.Attributes.(*flarum.Tag)
 	data.Name = cat.Name
-	data.SetID(cat.ID)
 	data.DiscussionCount = cat.Articles
 	data.IsHidden = cat.Hidden
 
@@ -51,21 +49,18 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 	data.Color = "#B72A2A"
 	data.Icon = "fas fa-wrench"
 
-	obj.SetID(data.GetID())
 	return obj
 }
 
 // FlarumCreateDiscussion 创建帖子资源
 func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
-	obj := flarum.NewResource(flarum.EDiscussion)
+	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
 	data := obj.Attributes.(*flarum.Discussion)
-	data.SetID(article.ID)
 	data.Title = article.Title
 	// data.CommentCount = article.Comments
 	data.CommentCount = 10
 	data.ParticipantCount = 5
 	data.LastPostNumber = 1
-	obj.ID = data.ID
 	obj.Relationships = flarum.DiscussionRelations{
 		User: flarum.RelationDict{
 			Data: flarum.InitBaseResources(article.CID, "users"),
@@ -77,9 +72,8 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 
 // FlarumCreateDiscussionFromArticle 创建帖子资源
 func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
-	obj := flarum.NewResource(flarum.EDiscussion)
+	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
 	data := obj.Attributes.(*flarum.Discussion)
-	data.SetID(article.ID)
 	data.Title = article.Title
 	// data.CommentCount = article.Comments
 	data.CommentCount = 1
@@ -94,29 +88,24 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	data.IsApproved = true
 	data.IsSticky = true
 
-	obj.ID = data.ID
-
 	return obj
 }
 
 // FlarumCreateUser 创建用户资源
 func FlarumCreateUser(article ArticleListItem) flarum.Resource {
-	obj := flarum.NewResource(flarum.EBaseUser)
+	obj := flarum.NewResource(flarum.EBaseUser, article.UID)
 	data := obj.Attributes.(*flarum.BaseUser)
-	data.SetID(article.UID)
 	data.Username = article.Cname
 	data.AvatarURL = article.Avatar
 
-	obj.SetID(article.UID)
 	return obj
 }
 
 // FlarumCreateUserFromComments 通过评论信息创建用户资源
 func FlarumCreateUserFromComments(comment CommentListItem) flarum.Resource {
 
-	obj := flarum.NewResource(flarum.ECurrentUser)
+	obj := flarum.NewResource(flarum.ECurrentUser, comment.UID)
 	data := obj.Attributes.(*flarum.CurrentUser)
-	data.SetID(comment.UID)
 	data.Displayname = comment.UserName
 	data.Username = comment.UserName
 	data.AvatarURL = comment.Avatar
@@ -133,48 +122,39 @@ func FlarumCreateUserFromComments(comment CommentListItem) flarum.Resource {
 		},
 	)
 
-	obj.SetID(data.GetID())
 	return obj
 }
 
 // FlarumCreateGroup 创建组信息
 func FlarumCreateGroup() flarum.Resource {
-	obj := flarum.NewResource(flarum.EGroup)
+	obj := flarum.NewResource(flarum.EGroup, 1)
 	data := obj.Attributes.(*flarum.Group)
 	// 	color: "#B72A2A"
 	// icon:
 	// isHidden: 0
 	// namePlural: "Admins"
 	// nameSingular: "Admin"
-	data.SetID(1)
 	data.Color = "#B72A2A"
 	data.Icon = "fas fa-wrench"
 	data.NamePlural = "Admins"
 	data.NameSingular = "Admin"
-	obj.SetID(data.GetID())
 	return obj
 }
 
 // FlarumCreatePost 创建评论
 func FlarumCreatePost(comment CommentListItem) flarum.Resource {
-	obj := flarum.NewResource(flarum.EPost)
-	obj.Attributes = &flarum.SimplePost{}
-	// data := obj.Attributes.(*flarum.Post)
-	data := obj.Attributes.(*flarum.SimplePost)
-
-	obj.SetID(comment.ID)
+	obj := flarum.NewResource(flarum.EPost, comment.ID)
+	data := obj.Attributes.(*flarum.Post)
 
 	data.Number = comment.Number
 	data.ContentType = "comment"
-	// data.Content = comment.Content
-	data.ContentHTML = "<p>" + comment.Content + "</p>"
-	// data.CreatedAt = comment.AddTimeFmt
-	data.CreatedAt = "2020-05-31T12:49:51+00:00"
-	// data.CanLike = true
-	// data.IPAddress = "1.2.3.4"
-	// data.CanHide = true
-	// data.IsApproved = true
-	// data.ID = 0
+	data.Content = comment.Content
+	data.ContentHTML = comment.Content
+	data.CreatedAt = comment.AddTimeFmt
+	data.CanLike = true
+	data.IPAddress = "1.2.3.4"
+	data.CanHide = true
+	data.IsApproved = true
 
 	obj.BindRelations(
 		"User",

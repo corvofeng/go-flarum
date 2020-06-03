@@ -49,14 +49,43 @@ type BaseRelation struct {
 	BaseResources
 }
 
+// -------------  BaseResources ---------------
+
 // BaseResources 基础的资源结构
+/**
+ * 请不要直接修改结构体中的变量
+ */
 type BaseResources struct {
 	// Issue-5: flarum needs id as string
 	id uint64
+
 	ID string `json:"id"`
 
 	Type string `json:"type"`
 }
+
+// setID 绑定ID
+func (r *BaseResources) setID(id uint64) {
+	r.id = id
+	r.ID = strconv.FormatUint(id, 10)
+}
+
+// SetType 绑定类型
+func (r *BaseResources) SetType(t string) {
+	r.Type = t
+}
+
+// GetID 获取ID
+func (r *BaseResources) GetID() uint64 {
+	return r.id
+}
+
+// GetType 绑定类型
+func (r *BaseResources) GetType() string {
+	return r.Type
+}
+
+// -------------  BaseResources ---------------
 
 // IRelation 具有的一些函数
 type IRelation interface {
@@ -119,7 +148,7 @@ type CoreData struct {
 }
 
 // NewResource 根据类型初始化一个资源
-func NewResource(resourceType EResourceType) Resource {
+func NewResource(resourceType EResourceType, id uint64) Resource {
 	var obj Resource
 	var data IDataBase
 
@@ -157,6 +186,8 @@ func NewResource(resourceType EResourceType) Resource {
 		Attributes:    data,
 		Relationships: defaultRelation,
 	}
+	obj.setID(id)
+	obj.BaseResources.setID(id)
 	obj.BaseResources.SetType(data.GetType())
 	return obj
 }
@@ -178,31 +209,10 @@ func (r *Resource) BindRelations(field string, data IRelation) {
 	reflect.ValueOf(r.Relationships).Elem().FieldByName(field).Set(reflect.ValueOf(data))
 }
 
-// SetID 绑定ID
-func (r *BaseResources) SetID(id uint64) {
-	r.id = id
-	r.ID = strconv.FormatUint(id, 10)
-}
-
-// SetType 绑定类型
-func (r *BaseResources) SetType(t string) {
-	r.Type = t
-}
-
-// GetID 获取ID
-func (r *BaseResources) GetID() uint64 {
-	return r.id
-}
-
-// GetType 绑定类型
-func (r *BaseResources) GetType() string {
-	return r.Type
-}
-
 // InitBaseResources 初始化一个基础资源
 func InitBaseResources(id uint64, t string) BaseRelation {
 	br := BaseRelation{}
-	br.SetID(id)
+	br.setID(id)
 	br.SetType(t)
 	return br
 }

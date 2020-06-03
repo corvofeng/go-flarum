@@ -12,7 +12,8 @@ func assertEqual(t *testing.T, a, b interface{}) {
 }
 
 func TestCreateResources(t *testing.T) {
-	curUser := NewResource(ECurrentUser)
+	testID := uint64(993)
+	curUser := NewResource(ECurrentUser, testID)
 	if curUser.Attributes.GetType() != "users" {
 		t.Errorf("Get wrong type CurrentUser")
 	}
@@ -22,9 +23,9 @@ func TestCreateResources(t *testing.T) {
 }
 
 func TestBindRelation(t *testing.T) {
-	diss := NewResource(EDiscussion)
-	testType := "simple type"
 	testID := uint64(993)
+	diss := NewResource(EDiscussion, testID)
+	testType := "simple type"
 
 	posts := RelationArray{
 		Data: []BaseRelation{
