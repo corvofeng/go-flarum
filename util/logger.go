@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	lean "github.com/johnzeng/leancloud-go-sdk"
 	"github.com/op/go-logging"
 )
 
@@ -18,10 +17,6 @@ var (
 	format = logging.MustStringFormatter(
 		`%{color}%{time:2006-01-02 15:04:05} ▶ %{level:.1s} [%{shortfile}] %{message}%{color:reset}`,
 	)
-	leanClient = lean.NewClient(
-		"k1CmAIbaqtreQSJHWEDcEeNS-gzGzoHsz",
-		"HheYmnCuNLtIIRFvTRMuNHqk",
-		"LYqVOTAztu4yiOLAh4yYKAm6")
 )
 
 // InitLogger 初始化Logger, 未来可以使用文件进行初始化.
