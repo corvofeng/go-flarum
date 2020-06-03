@@ -36,7 +36,6 @@ require (
 	golang.org/x/sys v0.0.0-20200602100848-8d3cce7afc34 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	gopkg.in/yaml.v2 v2.3.0
-	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200602174320-3e3e88ca92fa
 	qiniupkg.com/x v7.0.8+incompatible // indirect
 )
