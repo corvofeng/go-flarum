@@ -88,6 +88,11 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	data.IsApproved = true
 	data.IsSticky = true
 
+	obj.BindRelations(
+		"User",
+		flarum.RelationDict{Data: flarum.InitBaseResources(article.UID, "users")},
+	)
+
 	return obj
 }
 
@@ -149,7 +154,7 @@ func FlarumCreatePost(comment CommentListItem) flarum.Resource {
 	data.Number = comment.Number
 	data.ContentType = "comment"
 	data.Content = comment.Content
-	data.ContentHTML = comment.Content
+	data.ContentHTML = comment.ContentFmt
 	data.CreatedAt = comment.AddTimeFmt
 	data.CanLike = true
 	data.IPAddress = "1.2.3.4"

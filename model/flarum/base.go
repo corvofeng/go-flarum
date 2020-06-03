@@ -138,7 +138,7 @@ type APIDoc struct {
 	Included []Resource `json:"included"`
 }
 
-// CoreData flarum需要返回的数据
+// CoreData flarum页面需要返回的数据
 type CoreData struct {
 	Resources   []Resource        `json:"resources"`
 	Sessions    Session           `json:"session"`
@@ -202,6 +202,11 @@ func NewAPIDoc() APIDoc {
 // SetData 设置为字典类型的数据
 func (apiDoc *APIDoc) SetData(data interface{}) {
 	apiDoc.Data = data
+}
+
+// AppendResourcs 添加资源
+func (apiDoc *APIDoc) AppendResourcs(res Resource) {
+	apiDoc.Included = append(apiDoc.Included, res)
 }
 
 // BindRelations 绑定关系

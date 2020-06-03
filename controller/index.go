@@ -111,10 +111,10 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		coreData.Locales = make(map[string]string)
 		coreData.Locales["en"] = "English"
 		coreData.Locale = "en"
-		// coreData.Sessions = flarum.Session{
-		// 	UserID:    1,
-		// 	CsrfToken: "hello world",
-		// }
+		coreData.Sessions = flarum.Session{
+			UserID:    1,
+			CsrfToken: "hello world",
+		}
 
 		evn.FlarumInfo = coreData
 	}
