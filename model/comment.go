@@ -102,8 +102,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 		item.AddTimeFmt = util.TimeFmt(item.AddTime, time.RFC3339, tz)
 
 		// 预防XSS漏洞
-		item.ContentFmt = template.HTML(
-			util.ContentFmt(item.Content))
+		item.ContentFmt = template.HTML(util.ContentFmt(item.Content))
 
 		items = append(items, item)
 	}

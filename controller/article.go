@@ -455,7 +455,6 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// 	start = start - uint64(scf.HomeShowNum) - 1
 	// }
 
-	// cobj.Articles = db.Zget("category_article_num", youdb.I2b(cobj.ID)).Uint64()
 	pageInfo := model.SQLCommentList(
 		sqlDB,
 		redisDB,
@@ -480,13 +479,14 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	type pageData struct {
 		PageData
-		Aobj     articleForDetail
-		Author   model.User
-		Cobj     model.Category
-		Relative model.ArticleRelative
-		PageInfo model.CommentPageInfo
-		Views    uint64
-		SiteInfo model.SiteInfo
+		Aobj       articleForDetail
+		Author     model.User
+		Cobj       model.Category
+		Relative   model.ArticleRelative
+		PageInfo   model.CommentPageInfo
+		Views      uint64
+		SiteInfo   model.SiteInfo
+		FlarumInfo interface{}
 	}
 
 	tpl := h.CurrentTpl(r)
@@ -784,18 +784,10 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func (h *BaseHandler) FlarumPosts(w http.ResponseWriter, r *http.Request) {
-	// key := "filter[discussion]"
-	// r.FormValue(key),
-
-	h.Jsonify(w, map[string][]string{
-		"data": {},
-	})
-}
-
 // FlarumArticleDetail 获取flarum中的某篇帖子
 func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	rsp := response{}
+	logger := h.App.Logger
 
 	// _filter := r.URL.Query()["filter"]
 	// _filter)
@@ -804,6 +796,7 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 	apiDoc := flarum.NewAPIDoc()
 	_aid := pat.Param(r, "aid")
 	aid, err := strconv.ParseUint(_aid, 10, 64)
+
 	if err != nil {
 		rsp = response{400, "aid type err"}
 		h.Jsonify(w, rsp)
@@ -814,66 +807,63 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+
 	diss := model.FlarumCreateDiscussionFromArticle(article)
-
-	// diss.BindRelations(
-	// 	"User",
-	// 	flarum.RelationDict{
-	// 		Data: flarum.BaseRelation{
-	// 			ID:   article.UID,
-	// 			Type: "users",
-	// 		}},
-	// )
-
 	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, scf.TimeZone)
-	postArr := []flarum.Resource{}
 
+	// 获取该文章下面所有的评论信息
+	postArr := []flarum.Resource{}
 	for _, comment := range pageInfo.Items {
 		post := model.FlarumCreatePost(comment)
-		apiDoc.Included = append(
-			apiDoc.Included,
-			post,
-		)
+		apiDoc.AppendResourcs(post)
 		postArr = append(postArr, post)
 	}
 
+	// 获取文章的作者
 	user := model.FlarumCreateUserFromComments(pageInfo.Items[0])
-	apiDoc.Included = append(apiDoc.Included, user)
+	apiDoc.AppendResourcs(user)
 
-	// category, err := model.SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", article.CID))
-	// tagRes := model.FlarumCreateTag(category)
-	// tagArr := model.FlarumCreateTagRelations([]flarum.Resource{tagRes})
-
-	// apiDoc.Included = append(apiDoc.Included, tagRes)
-	// diss.BindRelations(
-	// 	"Tags",
-	// 	tagArr,
-	// )
+	// 文章当前的分类
+	category, err := model.SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", article.CID))
+	tagRes := model.FlarumCreateTag(category)
+	tagArr := model.FlarumCreateTagRelations([]flarum.Resource{tagRes})
+	apiDoc.AppendResourcs(tagRes)
+	diss.BindRelations("Tags", tagArr)
 
 	postRelation := model.FlarumCreatePostRelations(postArr)
-	// diss.BindRelations(
-	// 	"Posts",
-	// 	postRelation,
-	// )
-	diss.Relationships = map[string]interface{}{
-		"posts": postRelation,
-	}
-
+	diss.BindRelations("Posts", postRelation)
 	apiDoc.SetData(diss)
 
 	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-	// model.SQLCommentList(sqlDB, redisDB)
-	apiDoc.Included = append(apiDoc.Included, model.FlarumCreateGroup())
 
-	// 多个评论
-	// w.Write([]byte(`{"data":{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":5,"participantCount":2,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-31T14:25:55+00:00","lastPostNumber":5,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-31T14:26:02+00:00","lastReadPostNumber":5,"isLocked":false,"canLock":true,"subscription":false},"relationships":{"posts":{"data":[{"type":"posts","id":"1"},{"type":"posts","id":"2"},{"type":"posts","id":"3"},{"type":"posts","id":"4"},{"type":"posts","id":"6"}]}}},"included":[{"type":"posts","id":"1","attributes":{"number":1,"createdAt":"2020-05-28T02:01:41+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9\u003C\/p\u003E","content":"\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9","ipAddress":"","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"3"}]}}},{"type":"posts","id":"3","attributes":{"number":3,"createdAt":"2020-05-31T12:44:12+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/1\u0022 class=\u0022PostMention\u0022 data-id=\u00221\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f\u003C\/p\u003E","content":"@corvofeng#1 \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"4"}]}}},{"type":"posts","id":"2","attributes":{"number":2,"createdAt":"2020-05-31T12:33:20+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b\u003C\/p\u003E","content":"\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"posts","id":"4","attributes":{"number":4,"createdAt":"2020-05-31T12:46:00+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/3\u0022 class=\u0022PostMention\u0022 data-id=\u00223\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684\u003C\/p\u003E","content":"@corvofeng#3 \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[{"type":"users","id":"1"}]},"mentionedBy":{"data":[{"type":"posts","id":"6"}]}}},{"type":"posts","id":"6","attributes":{"number":5,"createdAt":"2020-05-31T14:25:55+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/4\u0022 class=\u0022PostMention\u0022 data-id=\u00224\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50\u003C\/p\u003E","content":"@corvofeng#4 \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":true,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"2"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-06-02T03:46:54+00:00","isEmailConfirmed":true,"email":"corvofeng@gmail.com","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"users","id":"2","attributes":{"username":"corvo2","displayName":"corvo2","avatarUrl":null,"joinTime":"2020-05-31T14:20:57+00:00","discussionCount":0,"commentCount":1,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-05-31T14:25:55+00:00","isEmailConfirmed":true,"email":"corvofeng@163.com","suspendedUntil":null,"canSuspend":true},"relationships":{"groups":{"data":[]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
-	// 单个评论
-	// w.Write([]byte(`{"data":{"type":"discussions","id":"2","attributes":{"title":"\u8fd9\u662f\u7b2c\u4e8c\u4e2a\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-31T12:49:51+00:00","lastPostedAt":"2020-05-31T12:49:51+00:00","lastPostNumber":1,"canReply":false,"canRename":false,"canDelete":false,"canHide":false,"isLocked":false,"canLock":false},"relationships":{"posts":{"data":[{"type":"posts","id":"5"}]}}},"included":[{"type":"posts","id":"5","attributes":{"number":1,"createdAt":"2020-05-31T12:49:51+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u60f3\u770b\u770b\u8fd9\u4e2a\u662f\u4ec0\u4e48\u6837\u7684\u5185\u5bb9\u003C\/p\u003E","canEdit":false,"canDelete":false,"canHide":false,"canFlag":false,"canLike":false},"relationships":{"discussion":{"data":{"type":"discussions","id":"2"}},"user":{"data":{"type":"users","id":"1"}},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":false,"canDelete":false,"lastSeenAt":"2020-06-02T04:56:23+00:00","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
+	// 如果是API直接进行返回
+	if h.InAPI {
+		// 多个评论
+		// w.Write([]byte(`{"data":{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":5,"participantCount":2,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-31T14:25:55+00:00","lastPostNumber":5,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-31T14:26:02+00:00","lastReadPostNumber":5,"isLocked":false,"canLock":true,"subscription":false},"relationships":{"posts":{"data":[{"type":"posts","id":"1"},{"type":"posts","id":"2"},{"type":"posts","id":"3"},{"type":"posts","id":"4"},{"type":"posts","id":"6"}]}}},"included":[{"type":"posts","id":"1","attributes":{"number":1,"createdAt":"2020-05-28T02:01:41+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9\u003C\/p\u003E","content":"\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9","ipAddress":"","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"3"}]}}},{"type":"posts","id":"3","attributes":{"number":3,"createdAt":"2020-05-31T12:44:12+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/1\u0022 class=\u0022PostMention\u0022 data-id=\u00221\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f\u003C\/p\u003E","content":"@corvofeng#1 \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"4"}]}}},{"type":"posts","id":"2","attributes":{"number":2,"createdAt":"2020-05-31T12:33:20+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b\u003C\/p\u003E","content":"\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"posts","id":"4","attributes":{"number":4,"createdAt":"2020-05-31T12:46:00+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/3\u0022 class=\u0022PostMention\u0022 data-id=\u00223\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684\u003C\/p\u003E","content":"@corvofeng#3 \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[{"type":"users","id":"1"}]},"mentionedBy":{"data":[{"type":"posts","id":"6"}]}}},{"type":"posts","id":"6","attributes":{"number":5,"createdAt":"2020-05-31T14:25:55+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/4\u0022 class=\u0022PostMention\u0022 data-id=\u00224\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50\u003C\/p\u003E","content":"@corvofeng#4 \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":true,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"2"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-06-02T03:46:54+00:00","isEmailConfirmed":true,"email":"corvofeng@gmail.com","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"users","id":"2","attributes":{"username":"corvo2","displayName":"corvo2","avatarUrl":null,"joinTime":"2020-05-31T14:20:57+00:00","discussionCount":0,"commentCount":1,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-05-31T14:25:55+00:00","isEmailConfirmed":true,"email":"corvofeng@163.com","suspendedUntil":null,"canSuspend":true},"relationships":{"groups":{"data":[]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
+		// 单个评论
+		// w.Write([]byte(`{"data":{"type":"discussions","id":"2","attributes":{"title":"\u8fd9\u662f\u7b2c\u4e8c\u4e2a\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-31T12:49:51+00:00","lastPostedAt":"2020-05-31T12:49:51+00:00","lastPostNumber":1,"canReply":false,"canRename":false,"canDelete":false,"canHide":false,"isLocked":false,"canLock":false},"relationships":{"posts":{"data":[{"type":"posts","id":"5"}]}}},"included":[{"type":"posts","id":"5","attributes":{"number":1,"createdAt":"2020-05-31T12:49:51+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u60f3\u770b\u770b\u8fd9\u4e2a\u662f\u4ec0\u4e48\u6837\u7684\u5185\u5bb9\u003C\/p\u003E","canEdit":false,"canDelete":false,"canHide":false,"canFlag":false,"canLike":false},"relationships":{"discussion":{"data":{"type":"discussions","id":"2"}},"user":{"data":{"type":"users","id":"1"}},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":false,"canDelete":false,"lastSeenAt":"2020-06-02T04:56:23+00:00","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
+		logger.Debug("flarum api return")
+		h.Jsonify(w, apiDoc)
+		return
+	}
 
-	h.Jsonify(w, map[string]interface{}{
-		"data":     apiDoc.Data,
-		"included": apiDoc.Included,
-	})
-	// h.Jsonify(w, apiDoc)
+	tpl := h.CurrentTpl(r)
+	type pageData struct {
+		PageData
+		FlarumInfo interface{}
+	}
+
+	evn := &pageData{}
+	evn.SiteCf = scf
+	coreData := flarum.CoreData{}
+	coreData.APIDocument = apiDoc
+
+	coreData.Resources = append(
+		coreData.Resources,
+		model.FlarumCreateForumInfo(*h.App.Cf.Site, model.GetSiteInfo(redisDB)),
+	)
+
+	evn.FlarumInfo = coreData
+	h.Render(w, tpl, evn, "layout.html", "article.html")
 }

@@ -1,15 +1,17 @@
 package flarum
 
+import "html/template"
+
 // Post flarum 评论信息
 type Post struct {
 	Type string `json:"type"`
 	ID   uint64 `json:"id"`
 
-	Number      uint64 `json:"number"`
-	CreatedAt   string `json:"createdAt"`
-	ContentType string `json:"contentType"`
-	ContentHTML string `json:"contentHtml"`
-	Content     string // `json:"content"`
+	Number      uint64        `json:"number"`
+	CreatedAt   string        `json:"createdAt"`
+	ContentType string        `json:"contentType"`
+	ContentHTML template.HTML `json:"contentHtml"`
+	Content     string        // `json:"content"`
 
 	IPAddress string `json:"ipAddress"`
 	CanEdit   bool   `json:"canEdit"`

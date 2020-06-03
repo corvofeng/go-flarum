@@ -111,8 +111,8 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	//	discussion
 	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	sp.HandleFunc(pat.Get("/d/:aid"), h.ArticleDetail)
-	sp.HandleFunc(pat.Post("/d/:aid"), h.ArticleDetailPost)
+	sp.HandleFunc(pat.Get("/d/:aid"), h.FlarumArticleDetail)
+	sp.HandleFunc(pat.Post("/d/:aid"), h.FlarumArticleDetail)
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
@@ -127,7 +127,6 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), h.FlarumAPIDiscussions)
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), h.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/posts"), h.FlarumPosts)
 
 	return sp
 }
