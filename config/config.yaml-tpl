@@ -12,6 +12,7 @@ Main:
     PubDir: "static"
     ViewDir: "view/default"
     Youdb: "mydata.db"
+    LocaleDir: "view/locale"
     ServerStyle: "youbbs"  # "flarum" | "youbbs"
     ServerName: "GoYouBBS"
     CookieSecure: false

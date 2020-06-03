@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 )
 
 func recursiveRead(localeData map[interface{}]interface{}, prefix string, localeDataArr *map[string]string) {
+	logger := GetLogger()
 	// 递归的获取信息
 	for key, element := range localeData {
 
@@ -28,8 +28,7 @@ func recursiveRead(localeData map[interface{}]interface{}, prefix string, locale
 		case map[interface{}]interface{}:
 			recursiveRead(v, fmt.Sprintf("%s.%s", prefix, key), localeDataArr)
 		default:
-			// And here I'm feeling dumb. ;)
-			fmt.Printf("I don't know, ask stackoverflow. %+v", v)
+			logger.Error("Can't parse type %+v", v)
 		}
 	}
 }
@@ -52,11 +51,13 @@ func readLocaleData(localeData map[interface{}]interface{}, localeDataArr *map[s
 
 // FlarumReadLocale 读取Flarum的语言包
 func FlarumReadLocale(localeDir, locale string) map[string]string {
+	logger := GetLogger()
 	localeDataArr := make(map[string]string)
 
 	dirPath := path.Join(localeDir, locale, "locale")
 	dir, err := ioutil.ReadDir(dirPath)
 	if err != nil {
+		logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
 		return localeDataArr
 	}
 
@@ -64,13 +65,13 @@ func FlarumReadLocale(localeDir, locale string) map[string]string {
 
 		yamlFile, err := ioutil.ReadFile(fn)
 		if err != nil {
-			log.Printf("yamlFile.Get err   #%v ", err)
+			logger.Errorf("yamlFile.Get err %v ", err)
 		}
 		localeData := make(map[interface{}]interface{})
 
 		err = yaml.Unmarshal(yamlFile, &localeData)
 		if err != nil {
-			log.Fatalf("Unmarshal: %v", err)
+			logger.Fatalf("Unmarshal: %v", err)
 			return
 		}
 		readLocaleData(localeData, &localeDataArr)
@@ -82,9 +83,5 @@ func FlarumReadLocale(localeDir, locale string) map[string]string {
 			doParseFile(path.Join(dirPath, fi.Name()))
 		}
 	}
-
-	// fmt.Println(localeData)
-	// fmt.Println(reflect.TypeOf(localeData))
-
 	return localeDataArr
 }

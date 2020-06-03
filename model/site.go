@@ -25,6 +25,7 @@ type MainConf struct {
 	RedisPass      string
 	RedisDB        int
 	PubDir         string
+	LocaleDir      string
 	ViewDir        string
 	Youdb          string // TODO: 废弃
 	ServerStyle    string // 选择使用的样式
