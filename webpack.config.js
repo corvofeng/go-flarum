@@ -1,94 +1,54 @@
-const config = require('flarum-webpack-config');
 const webpack = require('webpack');
 const fs = require('fs');
 const path = require('path');
-const merge = require('webpack-merge');
+const config = require('flarum-webpack-config')();
 
-module.exports = {
-  entry: function () {
-    const entries = {};
-
-    for (const app of ['forum', 'admin']) {
-      const file = path.resolve(process.cwd(), "view", "flarum", app + '.js');
-      if (fs.existsSync(file)) {
-        entries[app] = file;
-      }
-    }
-
-    return entries;
-  }(),
-
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: [
-              ['@babel/preset-env', { modules: false, loose: true }],
-              ['@babel/preset-react']
-            ],
-            plugins: [
-              ['@babel/plugin-transform-runtime', { useESModules: true }],
-              ['@babel/plugin-proposal-class-properties'],
-              ['@babel/plugin-transform-react-jsx', { pragma: 'm' }],
-              ['@babel/plugin-transform-object-assign']
-            ]
-          }
+module.exports = [
+  // flarum.core配置
+  {
+    entry: function () {
+      const entries = {};
+      for (const app of ['forum', 'admin']) {
+        const file = path.resolve(process.cwd(), "view", "flarum", "js", app + '.js');
+        if (fs.existsSync(file)) {
+          entries[app] = file;
         }
       }
-    ]
-  },
-
-  /*
-  output: {
-    path: path.resolve(process.cwd(), 'dist'),
-    library: 'module.exports',
-    libraryTarget: 'assign',
-    devtoolNamespace: require(path.resolve(process.cwd(), 'package.json')).name
-  },
-  */
- 
-
-  externals: [
-    {
-      '@flarum/core/forum': 'flarum.core',
-      '@flarum/core/admin': 'flarum.core',
-      'jquery': 'jQuery',
-    },
-
-    function () {
-      const externals = {};
-
-      if (options.useExtensions) {
-        for (const extension of options.useExtensions) {
-          externals['@' + extension] =
-            externals['@' + extension + '/forum'] =
-            externals['@' + extension + '/admin'] = "flarum.extensions['" + extension + "']";
-        }
-      }
-
-      return externals;
+      return entries;
     }(),
 
-    // Support importing old-style core modules.
-    function (context, request, callback) {
-      let matches;
-      if ((matches = /^flarum\/(.+)$/.exec(request))) {
-        return callback(null, 'root flarum.core.compat[\'' + matches[1] + '\']');
-      }
-      callback();
-    }
-  ],
-
-  devtool: 'source-map',
-
-  output: {
-    library: 'flarum.core'
+    output: {
+      path: path.resolve(process.cwd(), 'dist'),
+      // library: 'module.exports',
+      library: 'flarum.core',
+      libraryTarget: 'assign',
+      devtoolNamespace: require(path.resolve(process.cwd(), 'package.json')).name
+    },
+    module: config.module,
+    devtool: config.devtool,
+    devServer: {
+      contentBase: path.join(__dirname, 'dist'),
+      compress: true,
+      host: '0.0.0.0',
+      port: 9000
+    },
   },
-  plugins: [
-    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
-  ]
-}
+  // flarum的一些扩展功能
+  {
+    entry: function () {
+      const entries = {};
+      for (const app of ['forum', 'admin']) {
+        const extDir = path.resolve(process.cwd(), "view", "extensions");
+        const files = fs.readdirSync(extDir)
+        files.forEach((f) => {
+          entries[`${f}_${app}`] = path.resolve(extDir, f, "js", app + ".js");
+        });
+      }
+      return entries;
+    }(),
+
+    module: config.module,
+    externals: config.externals,
+    devtool: config.devtool,
+  },
+];
