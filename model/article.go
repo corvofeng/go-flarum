@@ -164,6 +164,48 @@ func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, 
 	return obj, nil
 }
 
+// FlarumArticleGetByID 获取主题
+func FlarumArticleGetByID(db *sql.DB, aid uint64) {
+	rows, err := db.Query(
+		"SELECT id, node_id, user_id, title, content, created_at, updated_at, father_topic_id, client_ip FROM topic WHERE id = ? and active !=0",
+		aid,
+	)
+	defer func() {
+		if rows != nil {
+			rows.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+	util.CheckError(err, fmt.Sprintf("Query %d failed", aid))
+	fmt.Println(DataGetByRows(rows))
+}
+
+// DataGetByRows 从数据库返回结果中获取数据, 解析成为dict的形式
+func DataGetByRows(rows *sql.Rows) ([]map[string]interface{}, error) {
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	size := len(columns)
+	var obj []map[string]interface{}
+
+	for rows.Next() {
+		colData := make([]interface{}, size)
+
+		err := rows.Scan(colData...)
+		if err != nil {
+			return nil, err
+		}
+		var r = make(map[string]interface{}, size)
+		for i, column := range columns {
+			r[column] = colData[i]
+		}
+
+		obj = append(obj, r)
+	}
+
+	return obj, nil
+}
+
 // GetCommentsSize 获取评论
 /*
  * db (*sql.DB): TODO
