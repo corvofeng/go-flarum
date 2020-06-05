@@ -1,22 +1,20 @@
 {
-
   "scripts": {
-    "dev": "cd view/flarum/js/ && webpack-dev-server --mode development --watch",
+    "dev": "webpack-dev-server --mode development --watch",
     "build": "webpack --mode production",
     "format": "prettier --write src",
     "format-check": "prettier --check src"
   },
-
   "dependencies": {
     "bootstrap": "3.4.1",
-    "components-font-awesome": "^5.9.0",
-    "less": "^3.11.1",
     "classnames": "^2.2.5",
     "color-thief-browser": "^2.0.2",
+    "components-font-awesome": "^5.9.0",
     "expose-loader": "^0.7.5",
     "flarum-webpack-config": "0.1.0-beta.10",
     "jquery": "^3.4.1",
     "jquery.hotkeys": "^0.1.0",
+    "less": "^3.11.1",
     "lodash-es": "^4.17.14",
     "m.attrs.bidi": "github:tobscure/m.attrs.bidi",
     "mithril": "^0.2.8",
