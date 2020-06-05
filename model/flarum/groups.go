@@ -10,7 +10,7 @@ type Group struct {
 	Icon         string `json:"icon"`
 	IsHidden     bool   `json:"isHidden"`
 
-	FlarumExtensions []IExtensions
+	// FlarumExtensions []IExtensions
 }
 
 // DoInit 初始化Group

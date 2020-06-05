@@ -837,6 +837,8 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 
+	// model.FlarumArticleGetByID(sqlDB, diss.GetID())
+
 	// 如果是API直接进行返回
 	if h.InAPI {
 		// 多个评论
