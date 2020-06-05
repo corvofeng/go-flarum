@@ -35,8 +35,9 @@ func (t *Tag) DoInit() {
 	t.Type = "tags"
 }
 
-// GetDefaultAttributes 获取属性
-func (t *Tag) GetDefaultAttributes(obj interface{}) {
+// GetAttributes 获取属性
+func (t *Tag) GetAttributes() map[string]interface{} {
+	return nil
 }
 
 // GetType 获取类型

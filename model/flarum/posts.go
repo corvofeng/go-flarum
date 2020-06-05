@@ -43,8 +43,9 @@ func (p *Post) GetType() string {
 	return p.Type
 }
 
-// GetDefaultAttributes 获取属性
-func (p *Post) GetDefaultAttributes(obj interface{}) {
+// GetAttributes 获取属性
+func (p *Post) GetAttributes() map[string]interface{} {
 	// uObj := obj.(model.User)
 	// fmt.Println(uObj)
+	return nil
 }

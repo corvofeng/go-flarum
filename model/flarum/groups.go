@@ -9,6 +9,8 @@ type Group struct {
 	Color        string `json:"color"`
 	Icon         string `json:"icon"`
 	IsHidden     bool   `json:"isHidden"`
+
+	FlarumExtensions []IExtensions
 }
 
 // DoInit 初始化Group
@@ -21,6 +23,7 @@ func (g *Group) GetType() string {
 	return g.Type
 }
 
-// GetDefaultAttributes 获取属性
-func (g *Group) GetDefaultAttributes(obj interface{}) {
+// GetAttributes 获取属性
+func (g *Group) GetAttributes() map[string]interface{} {
+	return nil
 }

@@ -21,29 +21,37 @@ type BaseDiscussion struct {
 }
 
 // Discussion 帖子或是讨论
+// view/flarum/migrations/2015_02_24_000000_create_discussions_table.php
 type Discussion struct {
 	BaseDiscussion
 
 	CommentCount     uint64 `json:"commentCount"`
 	ParticipantCount int    `json:"participantCount"`
-	CreatedAt        string `json:"createdAt"`
+	LastPostNumber   int    `json:"lastPostNumber"`
 
-	LastPostedAt   string `json:"lastPostedAt"`
-	LastPostNumber int    `json:"lastPostNumber"`
+	// 第一个评论的信息, 通常由作者创建
+	CreatedAt   string `json:"createdAt"`
+	StartPostID string
+	StartUserID string
 
-	CanReply  bool `json:"canReply"`
-	CanRename bool `json:"canRename"`
-	CanDelete bool `json:"canDelete"`
-	CanHide   bool `json:"canHide"`
-	CanLock   bool `json:"canLock"`
+	// 最后一次评论的信息
+	LastPostedAt string `json:"lastPostedAt"`
+	LastPostedID string
+	LastUserID   string
 
-	IsHidden   bool `json:"isHidden"`
-	IsApproved bool `json:"isApproved"`
-	IsLocked   bool `json:"isLocked"`
-	IsSticky   bool `json:"isSticky"`
+	// CanReply  bool `json:"canReply"`
+	// CanRename bool `json:"canRename"`
+	// CanDelete bool `json:"canDelete"`
+	// CanHide   bool `json:"canHide"`
+	// CanLock   bool `json:"canLock"`
 
-	HiddenAt   string `json:"hiddenAt"`
-	LastReadAt string `json:"lastReadAt"`
+	// IsHidden   bool `json:"isHidden"`
+	// IsApproved bool `json:"isApproved"`
+	// IsLocked   bool `json:"isLocked"`
+	// IsSticky   bool `json:"isSticky"`
+
+	// HiddenAt   string `json:"hiddenAt"`
+	// LastReadAt string `json:"lastReadAt"`
 	// Subscription bool `json:"subscription"`
 	// LastReadPostNumber int    `json:"lastReadPostNumber"`
 }
@@ -69,10 +77,11 @@ func (d *BaseDiscussion) DoInit() {
 	d.SetType("discussions")
 }
 
-// GetDefaultAttributes 获取属性
-func (d *BaseDiscussion) GetDefaultAttributes(obj interface{}) {
+// GetAttributes 获取属性
+func (d *BaseDiscussion) GetAttributes() map[string]interface{} {
 	// uObj := obj.(model.User)
 	// fmt.Println(uObj)
+	return nil
 }
 
 // GetType 获取类型

@@ -53,11 +53,12 @@ func (f *Forum) DoInit() {
 	f.Type = "forums"
 }
 
-// GetDefaultAttributes 获取属性
-func (f Forum) GetDefaultAttributes(obj interface{}) {
-}
-
 // GetType 获取类型
 func (f *Forum) GetType() string {
 	return f.Type
+}
+
+// GetAttributes 获取属性
+func (f *Forum) GetAttributes() map[string]interface{} {
+	return nil
 }
