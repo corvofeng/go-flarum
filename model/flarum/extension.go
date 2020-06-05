@@ -1,6 +1,7 @@
 package flarum
 
-// IExtensions flarum的扩展
-type IExtensions interface {
+// IExtensionsV1 flarum的扩展
+type IExtensionsV1 interface {
 	Register()
+	SetAttributes(map[string]interface{})
 }
