@@ -85,8 +85,8 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	data.LastPostedAt = "2020-05-31T12:49:51+00:00"
 	// data.CanRename = true
 	// data.CanReply = true
-	data.IsApproved = true
-	data.IsSticky = true
+	// data.IsApproved = true
+	// data.IsSticky = true
 
 	obj.BindRelations(
 		"User",

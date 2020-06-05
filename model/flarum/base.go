@@ -41,7 +41,7 @@ type IDataBase interface {
 	DoInit()
 	GetType() string
 	// GetID() uint64
-	GetDefaultAttributes(obj interface{})
+	GetAttributes() map[string]interface{}
 }
 
 // BaseRelation flarum中的基础资源关系
