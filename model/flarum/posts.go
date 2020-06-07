@@ -4,8 +4,7 @@ import "html/template"
 
 // Post flarum 评论信息
 type Post struct {
-	Type string `json:"type"`
-	ID   uint64 `json:"id"`
+	BaseResources
 
 	Number      uint64        `json:"number"`
 	CreatedAt   string        `json:"createdAt"`
@@ -38,14 +37,14 @@ func (p *Post) DoInit() {
 	p.Type = "posts"
 }
 
-// GetType 获取类型
-func (p *Post) GetType() string {
-	return p.Type
-}
+// // GetType 获取类型
+// func (p *Post) GetType() string {
+// 	return p.Type
+// }
 
-// GetAttributes 获取属性
-func (p *Post) GetAttributes() map[string]interface{} {
-	// uObj := obj.(model.User)
-	// fmt.Println(uObj)
-	return nil
-}
+// // GetAttributes 获取属性
+// func (p *Post) GetAttributes() map[string]interface{} {
+// 	// uObj := obj.(model.User)
+// 	// fmt.Println(uObj)
+// 	return nil
+// }

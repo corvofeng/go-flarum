@@ -1,6 +1,7 @@
 package flarum
 
 import (
+	"encoding/json"
 	"reflect"
 	"strconv"
 )
@@ -41,12 +42,26 @@ type IDataBase interface {
 	DoInit()
 	GetType() string
 	// GetID() uint64
-	GetAttributes() map[string]interface{}
+	GetAttributes() (map[string]interface{}, error)
 }
 
 // BaseRelation flarum中的基础资源关系
 type BaseRelation struct {
 	BaseResources
+}
+
+// Struct2Map 将结构体转换为json
+/**
+ * From https://stackoverflow.com/a/42849112 也许这样的方式并不快, 但一定是bug最少的
+ * 如果成为了瓶颈再考虑优化吧
+ */
+func Struct2Map(obj interface{}) (newMap map[string]interface{}, err error) {
+	data, err := json.Marshal(obj) // Convert to a json string
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(data, &newMap) // Convert to a map
+	return
 }
 
 // -------------  BaseResources ---------------
@@ -63,6 +78,9 @@ type BaseResources struct {
 
 	Type string `json:"type"`
 }
+
+// DoInit 空函数, 占位使用
+func (r *BaseResources) DoInit() {}
 
 // setID 绑定ID
 func (r *BaseResources) setID(id uint64) {
@@ -83,6 +101,14 @@ func (r *BaseResources) GetID() uint64 {
 // GetType 绑定类型
 func (r *BaseResources) GetType() string {
 	return r.Type
+}
+
+// GetAttributes 获取结构体的属性值
+/**
+ * 基类将会默认拥有这一函数, 但是理论上讲该函数不该被调用, 就和base resources不该被使用一样
+ */
+func (r *BaseResources) GetAttributes() (map[string]interface{}, error) {
+	panic("Please write your own get attributes")
 }
 
 // -------------  BaseResources ---------------
@@ -108,6 +134,11 @@ type Resource struct {
 	BaseResources
 	Attributes    IDataBase `json:"attributes"`
 	Relationships IRelation `json:"relationships"`
+}
+
+// GetAttributes 获取结构体的属性值, 基类将会继承这一函数
+func (r *Resource) GetAttributes() (map[string]interface{}, error) {
+	return Struct2Map(r)
 }
 
 // Session flarum session数据
@@ -151,7 +182,6 @@ type CoreData struct {
 func NewResource(resourceType EResourceType, id uint64) Resource {
 	var obj Resource
 	var data IDataBase
-
 	var defaultRelation IRelation
 
 	switch resourceType {

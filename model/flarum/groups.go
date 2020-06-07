@@ -23,7 +23,7 @@ func (g *Group) GetType() string {
 	return g.Type
 }
 
-// GetAttributes 获取属性
-func (g *Group) GetAttributes() map[string]interface{} {
-	return nil
-}
+// // GetAttributes 获取属性
+// func (g *Group) GetAttributes() map[string]interface{} {
+// 	return nil
+// }

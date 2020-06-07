@@ -77,13 +77,6 @@ func (d *BaseDiscussion) DoInit() {
 	d.SetType("discussions")
 }
 
-// GetAttributes 获取属性
-func (d *BaseDiscussion) GetAttributes() map[string]interface{} {
-	// uObj := obj.(model.User)
-	// fmt.Println(uObj)
-	return nil
-}
-
 // GetType 获取类型
 func (d *BaseDiscussion) GetType() string {
 	return d.Type
@@ -93,3 +86,10 @@ func (d *BaseDiscussion) GetType() string {
 func (d *BaseDiscussion) GetID() uint64 {
 	return d.id
 }
+
+// // GetAttributes 获取属性
+// func (d *BaseDiscussion) GetAttributes() map[string]interface{} {
+// 	// uObj := obj.(model.User)
+// 	// fmt.Println(uObj)
+// 	return nil
+// }
