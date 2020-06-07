@@ -35,12 +35,12 @@ func (t *Tag) DoInit() {
 	t.Type = "tags"
 }
 
-// GetAttributes 获取属性
-func (t *Tag) GetAttributes() map[string]interface{} {
-	return nil
-}
-
 // GetType 获取类型
 func (t *Tag) GetType() string {
 	return t.Type
 }
+
+// // GetAttributes 获取属性
+// func (t *Tag) GetAttributes() map[string]interface{} {
+// 	return nil
+// }

@@ -58,7 +58,7 @@ func (f *Forum) GetType() string {
 	return f.Type
 }
 
-// GetAttributes 获取属性
-func (f *Forum) GetAttributes() map[string]interface{} {
-	return nil
-}
+// // GetAttributes 获取属性
+// func (f *Forum) GetAttributes() map[string]interface{} {
+// 	return nil
+// }

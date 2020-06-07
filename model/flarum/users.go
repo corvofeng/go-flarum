@@ -53,9 +53,9 @@ func (u *BaseUser) GetID() uint64 {
 	return u.id
 }
 
-// GetAttributes 获取属性
-func (u *BaseUser) GetAttributes() map[string]interface{} {
-	// uObj := obj.(model.User)
-	// fmt.Println(uObj)
-	return nil
-}
+// // GetAttributes 获取属性
+// func (u *BaseUser) GetAttributes() map[string]interface{} {
+// 	// uObj := obj.(model.User)
+// 	// fmt.Println(uObj)
+// 	return nil
+// }

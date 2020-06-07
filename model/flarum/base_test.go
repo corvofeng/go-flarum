@@ -14,11 +14,24 @@ func assertEqual(t *testing.T, a, b interface{}) {
 func TestCreateResources(t *testing.T) {
 	testID := uint64(993)
 	curUser := NewResource(ECurrentUser, testID)
+	testEmail := "hello@flarum"
+	data := (curUser.Attributes).(*CurrentUser)
+	data.Email = testEmail
+
 	if curUser.Attributes.GetType() != "users" {
 		t.Errorf("Get wrong type CurrentUser")
 	}
 	if curUser.GetType() != "users" {
 		t.Errorf("Get wrong type CurrentUser")
+	}
+	// attr, err := curUser.Attributes.GetAttributes()
+	attr, err := curUser.GetAttributes()
+	v := attr["attributes"].(map[string]interface{})
+	if err != nil {
+		t.Error(err)
+	}
+	if v["email"] != testEmail {
+		t.Errorf("Get wrong attributes")
 	}
 }
 
