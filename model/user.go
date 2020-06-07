@@ -389,3 +389,19 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 	logger.Debugf("username not found for %d %s but we refresh!", user.ID, user.Name)
 	return username
 }
+
+// RefreshCSRF 刷新CSRF token
+func (user *User) RefreshCSRF(redisDB *redis.Client) string {
+	t := util.GetNewToken()
+	redisDB.HSet("csrf", fmt.Sprintf("%d", user.ID), t)
+	return t
+}
+
+// VerifyCSRFToken 确认用户CSRF token
+func (user *User) VerifyCSRFToken(redisDB *redis.Client, token string) bool {
+	rep, err := redisDB.HGet("username", fmt.Sprintf("%d", user.ID)).Result()
+	if err != redis.Nil {
+		return false
+	}
+	return util.VerifyToken(token, rep)
+}

@@ -144,6 +144,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		jb, _ := json.Marshal(uobj)
 		redisDB.HSet("user", fmt.Sprintf("%d", uobj.ID), jb)
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
+
 	} else {
 		// register
 		siteCf := h.App.Cf.Site
@@ -398,5 +399,73 @@ func (h *BaseHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
 	rsp.Retcode = 200
 	rsp.Retmsg = "注册成功"
 
+	h.Jsonify(w, rsp)
+}
+
+// FlarumUserLogin flarum用户登录
+func (h *BaseHandler) FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
+
+	rsp := response{}
+	type recForm struct {
+		Identification  string `json:"identification"`
+		Password        string `json:"password"`
+		CaptchaID       string `json:"captcha-id"`
+		CaptchaSolution string `json:"captcha-solution"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	var rec recForm
+	err := decoder.Decode(&rec)
+	if err != nil || rec.Identification == "" || rec.Password == "" {
+		rsp = normalRsp{400, "数据填写错误:" + err.Error()}
+		h.Jsonify(w, rsp)
+		return
+	}
+	defer r.Body.Close()
+
+	// 返回并且携带新的验证码
+	type captchaData struct {
+		response
+		NewCaptchaID string `json:"newCaptchaID"`
+	}
+	var respCaptcha captchaData
+	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
+		respCaptcha = captchaData{
+			response{405, "验证码错误"},
+			model.NewCaptcha(),
+		}
+		h.Jsonify(w, respCaptcha)
+		return
+	}
+
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	timeStamp := uint64(time.Now().UTC().Unix())
+
+	uobj, err := model.SQLUserGetByName(sqlDB, rec.Identification)
+	if err != nil {
+		respCaptcha = captchaData{
+			response{405, "登录失败, 请检查用户名与密码"},
+			model.NewCaptcha(),
+		}
+		h.Jsonify(w, respCaptcha)
+		return
+	}
+	if uobj.Password != rec.Password {
+		respCaptcha = captchaData{
+			response{405, "登录失败, 请检查用户名与密码"},
+			model.NewCaptcha(),
+		}
+		h.Jsonify(w, respCaptcha)
+		return
+	}
+	sessionid := xid.New().String()
+	uobj.LastLoginTime = timeStamp
+	uobj.Session = sessionid
+	jb, _ := json.Marshal(uobj)
+	redisDB.HSet("user", fmt.Sprintf("%d", uobj.ID), jb)
+	h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
+
+	rsp.Retcode = 200
+	rsp.Retmsg = "登录成功"
 	h.Jsonify(w, rsp)
 }
