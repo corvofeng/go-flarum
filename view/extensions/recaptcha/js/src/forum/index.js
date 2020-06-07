@@ -164,19 +164,35 @@ app.initializers.add('recaptcha', () => {
         const identification = this.identification();
         const password = this.password();
         const remember = this.remember();
-        console.log(password, remember, identification, recaptcha.getCaptchaID());
 
+        console.log(password, remember, identification, recaptcha.getCaptchaID());
+        const that = this;
         app.session
           .login({
             identification,
-            password,
+            'password': md5(password),
             remember,
             'captcha-solution': recaptcha.getSolution(),
             'captcha-id': recaptcha.getCaptchaID(),
           }, { errorHandler: this.onerror.bind(this) })
           .then((data) => {
-            window.location.reload();
-            this.loaded.bind(this);
+            if (data.retcode !== 200) {
+              recaptcha.setCaptchaID(data.newCaptchaID);
+              that.alert = new Alert({
+                type: 'error',
+                children: data.retmsg,
+              });
+            } else {
+              that.alert = new Alert({
+                type: 'success',
+                children: data.retmsg + "3秒后刷新页面",
+              });
+              setTimeout(() => {
+                window.location.reload();
+              }, 3000);
+            }
+            this.loading = false;
+            m.redraw();
           });
       });
     }
