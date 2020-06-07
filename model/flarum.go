@@ -29,8 +29,12 @@ func FlarumCreateForumInfo(
 	data.Description = siteConf.Desc
 	data.APIURL = FlarumAPIPath
 	data.AdminURL = "/admin"
+	// data.BasePath = "http://192.168.101.35:8082"
+	data.BaseURL = "http://192.168.101.35:8082"
+	data.AllowSignUp = true
+
 	data.BasePath = ""
-	data.BaseURL = "/"
+	// data.BaseURL = "/"
 
 	obj.Relationships = flarum.ForumRelations{}
 
@@ -103,6 +107,17 @@ func FlarumCreateUser(article ArticleListItem) flarum.Resource {
 	data.Username = article.Cname
 	data.AvatarURL = article.Avatar
 
+	return obj
+}
+
+// FlarumCreateCurrentUser 创建用户资源
+func FlarumCreateCurrentUser(user User) flarum.Resource {
+	obj := flarum.NewResource(flarum.ECurrentUser, user.ID)
+	data := obj.Attributes.(*flarum.CurrentUser)
+	data.Username = user.Name
+	data.Displayname = user.Name
+	data.AvatarURL = user.Avatar
+	data.IsEmailConfirmed = true
 	return obj
 }
 

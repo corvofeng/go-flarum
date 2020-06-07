@@ -111,9 +111,17 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		coreData.Locales = make(map[string]string)
 		coreData.Locales["en"] = "English"
 		coreData.Locale = "en"
-		coreData.Sessions = flarum.Session{
-			UserID:    1,
-			CsrfToken: "hello world",
+
+		if currentUser.ID != 0 {
+			user := model.FlarumCreateCurrentUser(currentUser)
+			coreData.APIDocument.AppendResourcs(user)
+			coreData.Resources = append(coreData.Resources, user)
+
+			coreData.Sessions = flarum.Session{
+				UserID:    user.GetID(),
+				CsrfToken: currentUser.RefreshCSRF(redisDB),
+			}
+
 		}
 
 		evn.FlarumInfo = coreData

@@ -143,7 +143,7 @@ func (r *Resource) GetAttributes() (map[string]interface{}, error) {
 
 // Session flarum session数据
 type Session struct {
-	UserID    int    `json:"userId"`
+	UserID    uint64 `json:"userId"`
 	CsrfToken string `json:"csrfToken"`
 }
 
