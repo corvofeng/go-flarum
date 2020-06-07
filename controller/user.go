@@ -341,3 +341,62 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 
 	h.Render(w, tpl, evn, "layout.html", "user.html")
 }
+
+// NewCaptcha 获取新的验证码
+func (h *BaseHandler) NewCaptcha(w http.ResponseWriter, r *http.Request) {
+	// 返回并且携带新的验证码
+	type captchaData struct {
+		response
+		NewCaptchaID string `json:"newCaptchaID"`
+	}
+	respCaptcha := captchaData{
+		response{200, "success"},
+		model.NewCaptcha(),
+	}
+	h.Jsonify(w, respCaptcha)
+}
+
+// UserRegister 用户注册
+func (h *BaseHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
+	rsp := response{}
+	type recForm struct {
+		Name            string `json:"username"`
+		Password        string `json:"password"`
+		CaptchaID       string `json:"captcha-id"`
+		CaptchaSolution string `json:"captcha-solution"`
+		Email           string `json:"email"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	var rec recForm
+	err := decoder.Decode(&rec)
+	if err != nil {
+		rsp = normalRsp{
+			400,
+			"表单解析错误:" + err.Error(),
+		}
+		h.Jsonify(w, rsp)
+		return
+	}
+	defer r.Body.Close()
+
+	// 返回并且携带新的验证码
+	type captchaData struct {
+		response
+		NewCaptchaID string `json:"newCaptchaID"`
+	}
+
+	var respCaptcha captchaData
+
+	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
+		respCaptcha = captchaData{
+			response{405, "验证码错误"},
+			model.NewCaptcha(),
+		}
+		h.Jsonify(w, respCaptcha)
+		return
+	}
+	rsp.Retcode = 200
+	rsp.Retmsg = "注册成功"
+
+	h.Jsonify(w, rsp)
+}
