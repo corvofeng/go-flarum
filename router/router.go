@@ -4,12 +4,9 @@ import (
 	"net/http"
 	"os"
 
-	// "fmt"
 	"goyoubbs/controller"
 	"goyoubbs/model"
 	"goyoubbs/system"
-
-	// "github.com/dchest/captcha"
 
 	"goji.io"
 	"goji.io/pat"
@@ -107,7 +104,11 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := controller.BaseHandler{App: app}
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
+	sp.HandleFunc(pat.Post("/register"), h.UserRegister)
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
+
+	fs := http.FileServer(http.Dir("static/captcha"))
+	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
 	//	discussion
 	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
@@ -127,6 +128,7 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := controller.BaseHandler{App: app, InAPI: true}
 
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), h.FlarumAPIDiscussions)
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), h.NewCaptcha)
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), h.FlarumArticleDetail)
 
 	return sp
