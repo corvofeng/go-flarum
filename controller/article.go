@@ -863,7 +863,7 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 
 	coreData.Resources = append(
 		coreData.Resources,
-		model.FlarumCreateForumInfo(*h.App.Cf.Site, model.GetSiteInfo(redisDB)),
+		model.FlarumCreateForumInfo(*h.App.Cf, model.GetSiteInfo(redisDB)),
 	)
 
 	evn.FlarumInfo = coreData

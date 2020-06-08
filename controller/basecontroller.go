@@ -116,7 +116,7 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 		return user, err
 	}
 
-	return user, errors.New("user not found")
+	return user, nil
 }
 
 // SetCookie 浏览器设置cookie

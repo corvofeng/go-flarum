@@ -19,18 +19,22 @@ import (
 
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo
 func FlarumCreateForumInfo(
-	siteConf SiteConf,
+	appConf AppConf,
 	siteInfo SiteInfo,
 ) flarum.Resource {
 	obj := flarum.NewResource(flarum.EForum, 1)
 	data := (obj.Attributes).(*flarum.Forum)
+
+	mainConf := appConf.Main
+	siteConf := appConf.Site
+
 	data.DefaultRoute = "/all"
 	data.Title = siteConf.Name
 	data.Description = siteConf.Desc
 	data.APIURL = FlarumAPIPath
 	data.AdminURL = "/admin"
 	// data.BasePath = "http://192.168.101.35:8082"
-	data.BaseURL = "http://192.168.101.35:8082"
+	data.BaseURL = mainConf.BaseURL
 	data.AllowSignUp = true
 
 	data.BasePath = ""
