@@ -114,7 +114,9 @@ func b64decode(data string) []byte {
 
 // GetNewToken 获取新的csrf token
 func GetNewToken() string {
-	return b64encode(generateToken())
+	// golang会将参数中的+替换为空格, 这里生成token时就直接替换
+	// 	http://weakyon.com/2017/05/04/something-of-golang-url-encoding.html
+	return strings.Replace(b64encode(generateToken()), "+", "", -1)
 }
 
 // VerifyToken verifies the sent token equals the real one

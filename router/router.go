@@ -106,6 +106,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
 	sp.HandleFunc(pat.Post("/register"), h.UserRegister)
 	sp.HandleFunc(pat.Post("/login"), h.FlarumUserLogin)
+	sp.HandleFunc(pat.Get("/logout"), h.FlarumUserLogout)
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
 
 	fs := http.FileServer(http.Dir("static/captcha"))
