@@ -1,7 +1,6 @@
 package system
 
 import (
-	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
@@ -82,18 +81,13 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	scf.UploadMaxSizeByte = int64(scf.UploadMaxSize) << 20
 
 	app.Cf = &model.AppConf{mcf, scf}
-	// db, err := youdb.Open(mcf.Youdb)
-	// if err != nil {
-	// 	logger.Fatalf("Connect Error: %v", err)
-	// }
-	dbStr := app.Cf.Main.MySQLURL //  fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", mcf.MySQL_USER, mcf.MySQL_PASS, mcf.MySQL_HOST, mcf.MySQL_PORT, mcf.MySQL_DB)
-	logger.Debugf("Get mysql db url: %s", dbStr)
 
-	rdsClient := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", mcf.RedisHost, mcf.RedisPort),
-		Password: mcf.RedisPass,
-		DB:       mcf.RedisDB,
-	})
+	logger.Debugf("Get redis db url: %s", mcf.RedisURL)
+	opt, err := redis.ParseURL(mcf.RedisURL)
+	if err != nil {
+		panic(err)
+	}
+	rdsClient := redis.NewClient(opt)
 	pong, err := rdsClient.Ping().Result()
 	if err != nil {
 		logger.Errorf("Connect redis error, %s", err)
@@ -101,19 +95,21 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	}
 	logger.Debug(pong, err)
 
-	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
 	logger.Debugf("Get mongo db url: %s", mcf.MongoURL)
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
 	if err != nil {
 		logger.Errorf("Connect mongo error, %s", err)
 		return
 	}
 
-	sqlDb, err := sql.Open("mysql", dbStr)
+	logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
+	sqlDb, err := sql.Open("mysql", mcf.MySQLURL)
 	sqlDb.SetConnMaxLifetime(time.Minute * 10)
 	if err != nil {
 		logger.Errorf("Connect mysql error, %s", err)
 		return
 	}
+
 	app.Db = nil
 	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient

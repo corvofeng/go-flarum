@@ -29,7 +29,9 @@
 </script>
 
 {{/* {{ template "js" . }} */}}
-<script src="/static/js/flarum/forum.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/forum.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/recaptcha_forum.js"></script>
+<script src="/static/js/md5.min.js"></script>
 <script src="/locale/en/flarum-lang.js"></script>
 
 <script>
