@@ -4,19 +4,6 @@ import (
 	"goyoubbs/model/flarum"
 )
 
-// import "goyoubbs/model/flarum"
-
-// // For flarum adapter
-
-// // FlarumBaseAttributes flarum资源的属性
-// type FlarumBaseAttributes struct {
-// }
-
-// // FlarumLocales flarum 语言信息
-// type FlarumLocales struct {
-// 	EN string `json:"en"`
-// }
-
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo
 func FlarumCreateForumInfo(
 	appConf AppConf,
@@ -122,6 +109,12 @@ func FlarumCreateCurrentUser(user User) flarum.Resource {
 	data.Displayname = user.Name
 	data.AvatarURL = user.Avatar
 	data.IsEmailConfirmed = true
+	obj.BindRelations(
+		"Groups",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
 	return obj
 }
 

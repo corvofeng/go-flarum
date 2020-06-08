@@ -239,6 +239,21 @@ func (apiDoc *APIDoc) AppendResourcs(res Resource) {
 	apiDoc.Included = append(apiDoc.Included, res)
 }
 
+// AppendResourcs 添加资源
+func (coreData *CoreData) AppendResourcs(res Resource) {
+	coreData.APIDocument.AppendResourcs(res)
+	coreData.Resources = append(coreData.Resources, res)
+}
+
+// AddSessionData 添加用户会话信息
+func (coreData *CoreData) AddSessionData(user Resource, csrf string) {
+	coreData.AppendResourcs(user)
+	coreData.Sessions = Session{
+		UserID:    user.GetID(),
+		CsrfToken: csrf,
+	}
+}
+
 // BindRelations 绑定关系
 func (r *Resource) BindRelations(field string, data IRelation) {
 	reflect.ValueOf(r.Relationships).Elem().FieldByName(field).Set(reflect.ValueOf(data))

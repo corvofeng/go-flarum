@@ -819,9 +819,13 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 		postArr = append(postArr, post)
 	}
 
-	// 获取文章的作者
-	user := model.FlarumCreateUserFromComments(pageInfo.Items[0])
-	apiDoc.AppendResourcs(user)
+	// 获取评论的作者
+	if len(pageInfo.Items) > 0 {
+		user := model.FlarumCreateUserFromComments(pageInfo.Items[0])
+		apiDoc.AppendResourcs(user)
+	} else {
+		logger.Errorf("Can't get any comment for %d", article.ID)
+	}
 
 	// 文章当前的分类
 	category, err := model.SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", article.CID))
@@ -860,11 +864,17 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 	evn.SiteCf = scf
 	coreData := flarum.CoreData{}
 	coreData.APIDocument = apiDoc
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
-	coreData.Resources = append(
-		coreData.Resources,
-		model.FlarumCreateForumInfo(*h.App.Cf, model.GetSiteInfo(redisDB)),
-	)
+	// 添加主站点信息
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo))
+
+	// 添加当前用户的session信息
+	currentUser, err := h.CurrentUser(w, r)
+	if err == nil {
+		user := model.FlarumCreateCurrentUser(currentUser)
+		coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+	}
 
 	evn.FlarumInfo = coreData
 	h.Render(w, tpl, evn, "layout.html", "article.html")
