@@ -78,7 +78,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		coreData := flarum.CoreData{}
 
 		coreData.Resources = append(coreData.Resources,
-			model.FlarumCreateForumInfo(*h.App.Cf.Site, evn.SiteInfo))
+			model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo))
 
 		for _, category := range categories {
 			coreData.Resources = append(coreData.Resources,
