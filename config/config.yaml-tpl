@@ -1,18 +1,16 @@
 Main:
     HTTPPort: 8082
+    HttpsPort: 443
     HttpsOn: false
     Domain: ""
     MySQLURL: "user:pass@tcp(127.0.0.1:3306)/db"
-    HttpsPort: 443
     MongoURL: "mongodb://localhost"
-    RedisHost: "127.0.0.1"
-    RedisPort: "6379"
-    RedisPass: ""
-    RedisDB: 0
+    RedisURL: "redis://:@localhost:6379"
     PubDir: "static"
     ViewDir: "view/default"
     Youdb: "mydata.db"
     LocaleDir: "view/locale"
+    BaseURL:"http://127.0.0.1:8082"
     ServerStyle: "youbbs"  # "flarum" | "youbbs"
     ServerName: "GoYouBBS"
     CookieSecure: false
@@ -27,6 +25,7 @@ Site:
     Desc: "Yet another bbs in go"
     AdminEmail: ""
     MainDomain: "http://127.0.0.1:8082"
+    CDNBaseURL: "http://127.0.0.1:9000"
     MainNodeIds: "1,2,3,4,5,6,7,8,9,10"
     TimeZone: 8
     HomeShowNum: 20

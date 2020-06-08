@@ -13,17 +13,18 @@ const (
 
 // MainConf 主配置
 type MainConf struct {
-	HTTPPort       int
-	HttpsOn        bool   // TODO: 废弃
-	HttpsPort      int    // TODO: 废弃
-	Domain         string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
-	BaseURL        string
-	MySQLURL       string
-	MongoURL       string
-	RedisHost      string
-	RedisPort      string
-	RedisPass      string
-	RedisDB        int
+	HTTPPort  int
+	HttpsOn   bool   // TODO: 废弃
+	HttpsPort int    // TODO: 废弃
+	Domain    string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
+
+	BaseURL string
+
+	// 数据库地址
+	MySQLURL string
+	MongoURL string
+	RedisURL string
+
 	PubDir         string
 	LocaleDir      string
 	ViewDir        string
@@ -43,12 +44,15 @@ type MainConf struct {
 
 // SiteConf 站点配置
 type SiteConf struct {
-	GoVersion         string
-	MD5Sums           string
-	Name              string
-	Desc              string
-	AdminEmail        string
-	MainDomain        string // 上传图片后添加网址前缀, eg: http://domian.com 、http://234.21.35.89:8082
+	GoVersion  string
+	MD5Sums    string
+	Name       string
+	Desc       string
+	AdminEmail string
+	MainDomain string // 上传图片后添加网址前缀, eg: http://domian.com 、http://234.21.35.89:8082
+
+	CDNBaseURL string // 静态文件cdn地址
+
 	MainNodeIDs       string
 	TimeZone          int
 	HomeShowNum       int
