@@ -89,12 +89,12 @@ func (h *BaseHandler) Jsonify(w http.ResponseWriter, data interface{}) error {
 
 // CurrentUser 当前用户
 // 原有的策略是保存用户到文件中, 现在经过重新改写, 将从数据库中获取用户,
-// 但session的使用与原来一致, 仍然从文件中加载, 为了减轻数据库的负担.
 func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model.User, error) {
-	var user model.User
-	var uid uint64
-	var err error
-
+	var (
+		user model.User
+		uid  uint64
+		err  error
+	)
 	sqlDB := h.App.MySQLdb
 
 	ssValue := h.GetCookie(r, "SessionID")
@@ -110,7 +110,7 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 			return user, nil
 		}
 	}
-	// TODO: 直接通过数据库获取当前用户， 性能瓶颈了再说
+	// TODO: 直接通过数据库获取当前用户, 性能瓶颈了再说
 	user, err = model.SQLUserGetByID(sqlDB, uid)
 	if util.CheckError(err, "获取用户") {
 		return user, err
