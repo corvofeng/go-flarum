@@ -39,7 +39,7 @@ type Discussion struct {
 	LastPostedID string
 	LastUserID   string
 
-	// CanReply  bool `json:"canReply"`
+	CanReply bool `json:"canReply"`
 	// CanRename bool `json:"canRename"`
 	// CanDelete bool `json:"canDelete"`
 	// CanHide   bool `json:"canHide"`
