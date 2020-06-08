@@ -238,6 +238,7 @@ func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		h.DelCookie(w, k)
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+
 }
 
 // UserDetail 用户详情页
@@ -468,4 +469,42 @@ func (h *BaseHandler) FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	rsp.Retcode = 200
 	rsp.Retmsg = "登录成功"
 	h.Jsonify(w, rsp)
+}
+
+// FlarumUserLogout flarum用户注销
+func (h *BaseHandler) FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
+
+	rsp := response{}
+
+	redisDB := h.App.RedisDB
+
+	token := r.FormValue("token")
+	if token == "" {
+		rsp = normalRsp{400, "表单参数解析错误"}
+		h.Jsonify(w, rsp)
+		return
+	}
+	user, err := h.CurrentUser(w, r)
+	if err != nil {
+		rsp = normalRsp{400, "用户未登录:" + err.Error()}
+		h.Jsonify(w, rsp)
+		return
+	}
+
+	if !user.VerifyCSRFToken(redisDB, token) {
+		rsp = normalRsp{400, "csrf错误"}
+		h.Jsonify(w, rsp)
+		return
+	}
+
+	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
+	for _, k := range cks {
+		h.DelCookie(w, k)
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	rsp.Retcode = 200
+	rsp.Retmsg = "登出成功"
+	h.Jsonify(w, rsp)
+	return
 }

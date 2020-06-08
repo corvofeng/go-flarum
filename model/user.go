@@ -399,8 +399,9 @@ func (user *User) RefreshCSRF(redisDB *redis.Client) string {
 
 // VerifyCSRFToken 确认用户CSRF token
 func (user *User) VerifyCSRFToken(redisDB *redis.Client, token string) bool {
-	rep, err := redisDB.HGet("username", fmt.Sprintf("%d", user.ID)).Result()
-	if err != redis.Nil {
+	rep, err := redisDB.HGet("csrf", fmt.Sprintf("%d", user.ID)).Result()
+	if err != nil {
+		util.GetLogger().Warningf("Can't get csrf token for user(%s): %s", user.ID, err)
 		return false
 	}
 	return util.VerifyToken(token, rep)
