@@ -7,7 +7,7 @@
   <meta charset="utf-8">
   <title>{{.SiteCf.Name}}</title>
   <link rel="stylesheet" href="/static/css/flaurm/forum.css">
-  <link rel="canonical" href="https://flarum.yjzq.fun">
+  <link rel="canonical" href="{{.SiteCf.MainDomain}}">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
   <meta name="description" content="">
   <meta name="theme-color" content="#4D698E">
@@ -67,7 +67,7 @@
       <div id="header-navigation" class="Header-navigation"></div>
       <div class="container">
         <h1 class="Header-title">
-          <a href="https://flarum.yjzq.fun" id="home-link">MyFlarum</a>
+          <a href="{{.SiteCf.MainDomain}}" id="home-link">MyFlarum</a>
           {{/*
             <a href="{{ array_get($forum, 'baseUrl') }}" id="home-link">
               @if ($logo = array_get($forum, 'logoUrl'))
