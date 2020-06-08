@@ -5,6 +5,7 @@ import LogInModal from 'flarum/components/LogInModal';
 import LogInButtons from 'flarum/components/LogInButtons';
 import LogInButton from 'flarum/components/LogInButton';
 import Alert from 'flarum/components/Alert';
+import md5 from 'md5';
 
 app.initializers.add('flarum-auth-github', () => {
   extend(LogInButtons.prototype, 'items', function (items) {
