@@ -10,6 +10,7 @@ let devServer = {
   host: '0.0.0.0',
   port: 9000
 };
+let outputPath = path.resolve(process.cwd(), 'static', 'js', 'flarum');
 
 module.exports = [
   // flarum.core配置
@@ -26,7 +27,7 @@ module.exports = [
     }(),
 
     output: {
-      path: path.resolve(process.cwd(), 'dist'),
+      path: outputPath,
       // library: 'module.exports',
       library: 'flarum.core',
       libraryTarget: 'assign',
@@ -53,5 +54,9 @@ module.exports = [
     module: config.module,
     externals: config.externals,
     devtool: config.devtool,
+
+    output: {
+      path: outputPath,
+    }
   },
 ];
