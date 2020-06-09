@@ -10,3 +10,6 @@
 [submodule "view/extensions/mentions"]
 	path = view/extensions/mentions
 	url = https://github.com/flarum/mentions
+[submodule "view/extensions/tags"]
+	path = view/extensions/tags
+	url = https://github.com/flarum/tags
