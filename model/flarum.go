@@ -56,11 +56,20 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	data.CommentCount = 10
 	data.ParticipantCount = 5
 	data.LastPostNumber = 1
-	obj.Relationships = flarum.DiscussionRelations{
-		User: flarum.RelationDict{
-			Data: flarum.InitBaseResources(article.CID, "users"),
+	// obj.Relationships = flarum.DiscussionRelations{
+	// 	User:
+	// 	},
+	// }
+	obj.BindRelations(
+		"User",
+		flarum.RelationDict{Data: flarum.InitBaseResources(article.CID, "users")},
+	)
+	obj.BindRelations(
+		"Tags",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
 		},
-	}
+	)
 
 	return obj
 }
