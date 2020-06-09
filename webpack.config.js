@@ -3,6 +3,14 @@ const fs = require('fs');
 const path = require('path');
 const config = require('flarum-webpack-config')();
 
+let devServer = {
+  publicPath: '/webpack/static/js/flarum/',
+  // contentBase: path.join(__dirname, 'dist'),
+  // compress: true,
+  host: '0.0.0.0',
+  port: 9000
+};
+
 module.exports = [
   // flarum.core配置
   {
@@ -26,12 +34,7 @@ module.exports = [
     },
     module: config.module,
     devtool: config.devtool,
-    devServer: {
-      contentBase: path.join(__dirname, 'dist'),
-      compress: true,
-      host: '0.0.0.0',
-      port: 9000
-    },
+    devServer: devServer
   },
   // flarum的一些扩展功能
   {
