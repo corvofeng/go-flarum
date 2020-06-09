@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8">
   <title>{{.SiteCf.Name}}</title>
-  <link rel="stylesheet" href="/static/css/flaurm/forum.css">
+  <link rel="stylesheet" href="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.css">
   <link rel="canonical" href="{{.SiteCf.MainDomain}}">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
   <meta name="description" content="">
@@ -29,8 +29,8 @@
 </script>
 
 {{/* {{ template "js" . }} */}}
-<script src="{{.SiteCf.CDNBaseURL}}/static/js/flarum/forum.js"></script>
-<script src="{{.SiteCf.CDNBaseURL}}/static/js/flarum/recaptcha_forum.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/recaptcha_forum.js"></script>
 <script src="/locale/en/flarum-lang.js"></script>
 
 <script>
