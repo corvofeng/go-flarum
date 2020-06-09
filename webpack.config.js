@@ -69,7 +69,7 @@ module.exports = [
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
-        const file = path.resolve(FLARUM_DIR, "less", app + '.less');
+        const file = path.resolve(EXT_DIR, app + '.less');
         if (fs.existsSync(file)) {
           entries[app] = file;
         }
@@ -86,29 +86,6 @@ module.exports = [
           {
             loader: 'less-loader',
             options: {
-              prependData: (loaderContext) => {
-                const variable_data = fs.readFileSync(path.resolve(FLARUM_DIR, 'less', 'common', 'variables.less'), 'utf-8')
-                const mixin_data = fs.readFileSync(path.resolve(FLARUM_DIR, 'less', 'common', 'mixins.less'), 'utf-8')
-
-                return variable_data + mixin_data;
-              },
-              appendData: (loaderContext) => {
-                let less_append = '@fa-font-path: "../webfonts";';
-
-                // 寻找forum.less 或是 admin.less
-                const { resourcePath, rootContext } = loaderContext;
-                let app = path.parse(resourcePath);
-                const files = fs.readdirSync(EXT_DIR);
-                files.forEach((f) => {
-                  const file = path.resolve(EXT_DIR, f, "less", app.base);
-                  if (fs.existsSync(file)) {
-                     less_append = less_append + '\n' + fs.readFileSync(file, 'utf-8');
-                  }
-                })
-
-                return less_append;
-              },
-
               sourceMap: true,
               lessOptions: {
                 paths: [
@@ -126,14 +103,7 @@ module.exports = [
         test: /\.(eot|svg|ttf|woff|woff2|png)\w*/,
         loader: 'file-loader',
         options: {
-          // limit: 50000,
-          // mimetype: 'application/font-woff',
-
-          // // Output below the fonts directory
           name: './fonts/[name].[ext]',
-          // Tweak publicPath to fix CSS lookups to take
-          // the directory into account.
-          // publicPath: 'fonts',
         },
       },
       ]
