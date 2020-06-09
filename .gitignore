@@ -4,6 +4,7 @@ index/
 venv/
 goyoubbs
 
+static/flarum
 static/avatar
 static/captcha
 config/
