@@ -7,3 +7,6 @@
 [submodule "view/extensions/emoji"]
 	path = view/extensions/emoji
 	url = https://github.com/flarum/emoji.git
+[submodule "view/extensions/mentions"]
+	path = view/extensions/mentions
+	url = https://github.com/flarum/mentions
