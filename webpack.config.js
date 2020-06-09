@@ -18,6 +18,7 @@ let devServer = {
 };
 let OUTPUT_PATH = path.resolve(process.cwd(), 'static', 'flarum');
 let FLARUM_DIR = path.resolve(process.cwd(), 'view', 'flarum');
+let EXT_DIR = path.resolve(process.cwd(), "view", "extensions");
 
 module.exports = [
   // flarum.core配置
@@ -48,11 +49,10 @@ module.exports = [
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
-        const extDir = path.resolve(process.cwd(), "view", "extensions");
-        const files = fs.readdirSync(extDir)
-        files.forEach((f) => {
-          entries[`${f}_${app}`] = path.resolve(extDir, f, "js", app + ".js");
-        });
+        ;
+
+        const file = path.resolve(EXT_DIR, app + ".js");
+        entries[`${app}_ext`] = file;
       }
       return entries;
     }(),
@@ -87,18 +87,26 @@ module.exports = [
             loader: 'less-loader',
             options: {
               prependData: (loaderContext) => {
-                const { resourcePath, rootContext } = loaderContext;
-                const relativePath = path.relative(rootContext, resourcePath);
-
                 const variable_data = fs.readFileSync(path.resolve(FLARUM_DIR, 'less', 'common', 'variables.less'), 'utf-8')
                 const mixin_data = fs.readFileSync(path.resolve(FLARUM_DIR, 'less', 'common', 'mixins.less'), 'utf-8')
 
                 return variable_data + mixin_data;
               },
               appendData: (loaderContext) => {
-                const webfont = path.resolve(FLARUM_DIR, 'node_modules/components-font-awesome/webfonts')
-                // return `@fa-font-path: "${webfont}";`;
-                return `@fa-font-path: "../webfonts";`;
+                let less_append = '@fa-font-path: "../webfonts";';
+
+                // 寻找forum.less 或是 admin.less
+                const { resourcePath, rootContext } = loaderContext;
+                let app = path.parse(resourcePath);
+                const files = fs.readdirSync(EXT_DIR);
+                files.forEach((f) => {
+                  const file = path.resolve(EXT_DIR, f, "less", app.base);
+                  if (fs.existsSync(file)) {
+                     less_append = less_append + '\n' + fs.readFileSync(file, 'utf-8');
+                  }
+                })
+
+                return less_append;
               },
 
               sourceMap: true,
