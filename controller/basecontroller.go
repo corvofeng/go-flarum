@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"goyoubbs/util"
 	"html/template"
 	"net/http"
@@ -47,7 +49,29 @@ type (
 		Retmsg  string `json:"retmsg"`
 	}
 	normalRsp = response // .. deprecated: 2020-05-29 Please don't use it
+
+	// ContextKey 记录context的value
+	ContextKey int64
 )
+
+const (
+	keyCurrentUser ContextKey = iota
+)
+
+// AuthMiddleware 校验用户
+func AuthMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Context())
+		r = r.WithContext(
+			context.WithValue(r.Context(), keyCurrentUser, "world"),
+		)
+		// TODO: add user
+		fmt.Println("hello")
+		inner.ServeHTTP(w, r)
+		fmt.Println("world")
+	}
+	return http.HandlerFunc(mw)
+}
 
 // Render 渲染html
 /**
