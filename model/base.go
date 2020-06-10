@@ -35,6 +35,13 @@ func executeQuery(db *sql.DB, query string, args ...interface{}) []map[string]in
 	return dictData
 }
 
+// rowsClose scan没有结束或是没有进行scan操作时, 需要手动释放连接
+func rowsClose(rows *sql.Rows) {
+	if rows != nil {
+		rows.Close()
+	}
+}
+
 // dataGetByRows 从数据库返回结果中获取数据, 解析成为dict的形式
 func dataGetByRows(rows *sql.Rows) ([]map[string]interface{}, error) {
 	columns, err := rows.Columns()
