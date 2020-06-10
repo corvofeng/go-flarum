@@ -39,8 +39,9 @@ type UserRelations struct {
 }
 
 // DoInit 初始化用户类
-func (u *BaseUser) DoInit() {
-	u.Type = "users"
+func (u *BaseUser) DoInit(id uint64) {
+	u.setID(id)
+	u.setType("users")
 }
 
 // GetType 获取类型

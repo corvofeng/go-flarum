@@ -49,7 +49,8 @@ type ForumRelations struct {
 }
 
 // DoInit 初始化forum
-func (f *Forum) DoInit() {
+func (f *Forum) DoInit(id uint64) {
+	f.setID(id)
 	f.Type = "forums"
 }
 

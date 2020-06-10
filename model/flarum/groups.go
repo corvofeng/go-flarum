@@ -14,8 +14,9 @@ type Group struct {
 }
 
 // DoInit 初始化Group
-func (g *Group) DoInit() {
-	g.Type = "groups"
+func (g *Group) DoInit(id uint64) {
+	g.setID(id)
+	g.setType("groups")
 }
 
 // GetType 获取类型

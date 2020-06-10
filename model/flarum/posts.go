@@ -33,8 +33,9 @@ type PostRelations struct {
 }
 
 // DoInit 初始化评论数据
-func (p *Post) DoInit() {
-	p.Type = "posts"
+func (p *Post) DoInit(id uint64) {
+	p.setID(id)
+	p.setType("posts")
 }
 
 // // GetType 获取类型

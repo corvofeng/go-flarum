@@ -73,8 +73,9 @@ type DiscussionRelations struct {
 }
 
 // DoInit 初始化一篇帖子
-func (d *BaseDiscussion) DoInit() {
-	d.SetType("discussions")
+func (d *BaseDiscussion) DoInit(id uint64) {
+	d.setType("discussions")
+	d.setID(id)
 }
 
 // GetType 获取类型

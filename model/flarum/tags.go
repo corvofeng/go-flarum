@@ -31,8 +31,9 @@ type TagRelations struct {
 }
 
 // DoInit 初始化tags
-func (t *Tag) DoInit() {
-	t.Type = "tags"
+func (t *Tag) DoInit(id uint64) {
+	t.setID(id)
+	t.setType("tags")
 }
 
 // GetType 获取类型

@@ -13,6 +13,7 @@ import (
 type Category struct {
 	ID       uint64 `json:"id"`
 	Name     string `json:"name"`
+	URLName  string `json:"urlname"`
 	Articles uint64 `json:"articles"`
 	About    string `json:"about"`
 	Hidden   bool   `json:"hidden"`
@@ -34,7 +35,7 @@ type CategoryPageInfo struct {
 // SQLGetAllCategory 获取所有分类
 func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	var categories []Category
-	rows, err := db.Query("SELECT id, name FROM node order by topic_count desc limit 30")
+	rows, err := db.Query("SELECT id, name, urlname FROM node order by topic_count desc limit 30")
 	defer func() {
 		if rows != nil {
 			rows.Close() // 可以关闭掉未scan连接一直占用
@@ -45,7 +46,7 @@ func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	}
 	for rows.Next() {
 		obj := Category{}
-		err = rows.Scan(&obj.ID, &obj.Name) // 不scan会导致连接不释放
+		err = rows.Scan(&obj.ID, &obj.Name, &obj.URLName) // 不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
@@ -59,15 +60,15 @@ func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 
 // SQLCategoryGetByID 通过id获取节点
 func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
-	return sqlCategoryGet(db, cid, "")
+	return sqlCategoryGet(db, cid, "", "")
 }
 
 // SQLCategoryGetByName 通过name获取节点
 func SQLCategoryGetByName(db *sql.DB, name string) (Category, error) {
-	return sqlCategoryGet(db, "", name)
+	return sqlCategoryGet(db, "", name, "")
 }
 
-func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
+func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Category, error) {
 	obj := Category{}
 	var rows *sql.Rows
 	var err error
@@ -76,6 +77,8 @@ func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
 		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE id =  ?", cid)
 	} else if name != "" {
 		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE name =  ?", name)
+	} else if urlname != "" {
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE urlname =  ?", urlname)
 	} else {
 		return obj, errors.New("Did not give any category")
 	}
@@ -88,6 +91,7 @@ func sqlCategoryGet(db *sql.DB, cid string, name string) (Category, error) {
 	if err != nil {
 		fmt.Printf("Query failed,err:%v", err)
 	}
+
 	for rows.Next() {
 		err = rows.Scan(&obj.ID, &obj.Name, &obj.About, &obj.Articles) //不scan会导致连接不释放
 

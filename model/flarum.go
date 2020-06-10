@@ -39,6 +39,7 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 	data.Name = cat.Name
 	data.DiscussionCount = cat.Articles
 	data.IsHidden = cat.Hidden
+	data.Slug = cat.URLName
 
 	// data.Candd
 	data.Color = "#B72A2A"

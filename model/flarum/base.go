@@ -39,7 +39,7 @@ const (
 // IDataBase flarum数据
 type IDataBase interface {
 	// GetAttributes()
-	DoInit()
+	DoInit(uint64)
 	GetType() string
 	// GetID() uint64
 	GetAttributes() (map[string]interface{}, error)
@@ -89,7 +89,7 @@ func (r *BaseResources) setID(id uint64) {
 }
 
 // SetType 绑定类型
-func (r *BaseResources) SetType(t string) {
+func (r *BaseResources) setType(t string) {
 	r.Type = t
 }
 
@@ -202,6 +202,7 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 		break
 	case ETAG:
 		data = &Tag{}
+		defaultRelation = &TagRelations{}
 		break
 	case EPost:
 		data = &Post{}
@@ -211,14 +212,15 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 		data = &Group{}
 		break
 	}
-	data.DoInit()
+	data.DoInit(id)
 	obj = Resource{
 		Attributes:    data,
 		Relationships: defaultRelation,
 	}
 	obj.setID(id)
-	obj.BaseResources.setID(id)
-	obj.BaseResources.SetType(data.GetType())
+	obj.setType(data.GetType())
+	// obj.BaseResources.setID(id)
+	// obj.BaseResources.SetType(data.GetType())
 	return obj
 }
 
@@ -263,6 +265,6 @@ func (r *Resource) BindRelations(field string, data IRelation) {
 func InitBaseResources(id uint64, t string) BaseRelation {
 	br := BaseRelation{}
 	br.setID(id)
-	br.SetType(t)
+	br.setType(t)
 	return br
 }
