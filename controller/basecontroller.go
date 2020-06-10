@@ -59,14 +59,14 @@ const (
 )
 
 // AuthMiddleware 校验用户
-func AuthMiddleware(inner http.Handler) http.Handler {
+func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.Context())
 		r = r.WithContext(
 			context.WithValue(r.Context(), keyCurrentUser, "world"),
 		)
 		// TODO: add user
-		fmt.Println("hello")
+		fmt.Println("hello", h.InAPI, h.App.Cf.Main)
 		inner.ServeHTTP(w, r)
 		fmt.Println("world")
 	}
