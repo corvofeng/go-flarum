@@ -52,25 +52,74 @@ type (
 
 	// ContextKey 记录context的value
 	ContextKey int64
+
+	// ReqContext 请求时将会携带的contex信息
+	ReqContext struct {
+		currentUser model.User
+		inAPI       bool
+		h           *BaseHandler
+	}
 )
 
 const (
-	keyCurrentUser ContextKey = iota
+	ckRequest ContextKey = iota
 )
+
+// InitMiddleware 初始化的中间件
+func (h *BaseHandler) InitMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := &ReqContext{}
+		reqCtx.h = h
+		r = r.WithContext(
+			context.WithValue(r.Context(), ckRequest, reqCtx),
+		)
+		inner.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(mw)
+}
 
 // AuthMiddleware 校验用户
 func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.Context())
-		r = r.WithContext(
-			context.WithValue(r.Context(), keyCurrentUser, "world"),
-		)
+		// r = r.WithContext(
+		// 	context.WithValue(r.Context(), ckCurrentUser, "world"),
+		// )
 		// TODO: add user
 		fmt.Println("hello", h.InAPI, h.App.Cf.Main)
 		inner.ServeHTTP(w, r)
 		fmt.Println("world")
 	}
 	return http.HandlerFunc(mw)
+}
+
+type ReqProcess func(w http.ResponseWriter, r *http.Request)
+type ReqMiddle func(inner ReqProcess) ReqProcess
+
+func TestMiddleware(inner ReqProcess) ReqProcess {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("In md 1")
+		inner(w, r)
+	}
+}
+func TestMiddleware2(inner ReqProcess) ReqProcess {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("In md 2")
+		inner(w, r)
+	}
+}
+
+func NewIndex(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("hello world")
+}
+
+func ArrayToChains(reqProcessFuncs []ReqMiddle, req ReqProcess) (rp ReqProcess) {
+	rp = req
+	rpfs := reqProcessFuncs
+	for i := len(rpfs) - 1; i >= 0; i-- {
+		rp = rpfs[i](rp)
+	}
+	return
 }
 
 // Render 渲染html

@@ -103,8 +103,17 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	app.Logger.Notice("Init flarum router")
 	h := controller.BaseHandler{App: app}
 
+	sp.Use(h.InitMiddleware)
 	sp.Use(h.AuthMiddleware)
-	sp.HandleFunc(pat.Get("/"), h.FlarumIndex)
+
+	sp.HandleFunc(pat.Get("/"), controller.ArrayToChains(
+		[]controller.ReqMiddle{
+			controller.TestMiddleware,
+			controller.TestMiddleware2,
+		},
+		h.FlarumIndex,
+	),
+	)
 	sp.HandleFunc(pat.Post("/register"), h.UserRegister)
 	sp.HandleFunc(pat.Post("/login"), h.FlarumUserLogin)
 	sp.HandleFunc(pat.Get("/logout"), h.FlarumUserLogout)
