@@ -13,6 +13,8 @@ import (
 
 // CategoryDetailNew 新版的使用sql的页面
 func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	inAPI := ctx.inAPI
 
 	// var start uint64
 	var err error
@@ -84,7 +86,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	evn.NewestNodes = categories
 	evn.SiteInfo = si
-	if h.InAPI {
+	if inAPI {
 		type NodeData struct {
 			model.RestfulAPIBase
 			Data []model.RestfulTopic `json:"data"`

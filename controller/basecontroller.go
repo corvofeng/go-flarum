@@ -1,10 +1,8 @@
 package controller
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"goyoubbs/util"
 	"html/template"
 	"net/http"
@@ -22,9 +20,8 @@ var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|
 
 type (
 	// BaseHandler 基础handler
-	BaseHandler struct {
-		App   *system.Application
-		InAPI bool
+	BaseHandler struct { // .. deprecated: 2020-06-11 Please don't use it
+		App *system.Application
 	}
 
 	// PageData 每个页面中的基础信息
@@ -45,8 +42,9 @@ type (
 		PrimaryColor  string
 	}
 	response struct {
-		Retcode int    `json:"retcode"`
-		Retmsg  string `json:"retmsg"`
+		Retcode int `json:"retcode"`
+
+		Retmsg string `json:"retmsg"`
 	}
 	normalRsp = response // .. deprecated: 2020-05-29 Please don't use it
 
@@ -65,61 +63,9 @@ const (
 	ckRequest ContextKey = iota
 )
 
-// InitMiddleware 初始化的中间件
-func (h *BaseHandler) InitMiddleware(inner http.Handler) http.Handler {
-	mw := func(w http.ResponseWriter, r *http.Request) {
-		reqCtx := &ReqContext{}
-		reqCtx.h = h
-		r = r.WithContext(
-			context.WithValue(r.Context(), ckRequest, reqCtx),
-		)
-		inner.ServeHTTP(w, r)
-	}
-	return http.HandlerFunc(mw)
-}
-
-// AuthMiddleware 校验用户
-func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
-	mw := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Context())
-		// r = r.WithContext(
-		// 	context.WithValue(r.Context(), ckCurrentUser, "world"),
-		// )
-		// TODO: add user
-		fmt.Println("hello", h.InAPI, h.App.Cf.Main)
-		inner.ServeHTTP(w, r)
-		fmt.Println("world")
-	}
-	return http.HandlerFunc(mw)
-}
-
-type ReqProcess func(w http.ResponseWriter, r *http.Request)
-type ReqMiddle func(inner ReqProcess) ReqProcess
-
-func TestMiddleware(inner ReqProcess) ReqProcess {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("In md 1")
-		inner(w, r)
-	}
-}
-func TestMiddleware2(inner ReqProcess) ReqProcess {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("In md 2")
-		inner(w, r)
-	}
-}
-
-func NewIndex(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("hello world")
-}
-
-func ArrayToChains(reqProcessFuncs []ReqMiddle, req ReqProcess) (rp ReqProcess) {
-	rp = req
-	rpfs := reqProcessFuncs
-	for i := len(rpfs) - 1; i >= 0; i-- {
-		rp = rpfs[i](rp)
-	}
-	return
+// GetRetContext 获取当前上线信息中的自有的context
+func GetRetContext(r *http.Request) *ReqContext {
+	return r.Context().Value(ckRequest).(*ReqContext)
 }
 
 // Render 渲染html

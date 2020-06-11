@@ -354,6 +354,9 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	var start uint64
 	var err error
 
+	ctx := GetRetContext(r)
+	inAPI := ctx.inAPI
+
 	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
 	if len(key) > 0 {
 		start, err = strconv.ParseUint(key, 10, 64)
@@ -550,7 +553,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		h.SetCookie(w, "token", token, 1)
 	}
 
-	if h.InAPI {
+	if inAPI {
 		type TopicData struct {
 			model.RestfulAPIBase
 			Data model.RestfulTopic `json:"data"`
@@ -739,7 +742,11 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 }
 
 // FlarumArticleDetail 获取flarum中的某篇帖子
-func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
+func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	inAPI := ctx.inAPI
+
 	rsp := response{}
 	logger := h.App.Logger
 
@@ -798,7 +805,7 @@ func (h *BaseHandler) FlarumArticleDetail(w http.ResponseWriter, r *http.Request
 	model.FlarumArticleGetByID(sqlDB, diss.GetID())
 
 	// 如果是API直接进行返回
-	if h.InAPI {
+	if inAPI {
 		// 多个评论
 		// w.Write([]byte(`{"data":{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":5,"participantCount":2,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-31T14:25:55+00:00","lastPostNumber":5,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-31T14:26:02+00:00","lastReadPostNumber":5,"isLocked":false,"canLock":true,"subscription":false},"relationships":{"posts":{"data":[{"type":"posts","id":"1"},{"type":"posts","id":"2"},{"type":"posts","id":"3"},{"type":"posts","id":"4"},{"type":"posts","id":"6"}]}}},"included":[{"type":"posts","id":"1","attributes":{"number":1,"createdAt":"2020-05-28T02:01:41+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9\u003C\/p\u003E","content":"\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9","ipAddress":"","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"3"}]}}},{"type":"posts","id":"3","attributes":{"number":3,"createdAt":"2020-05-31T12:44:12+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/1\u0022 class=\u0022PostMention\u0022 data-id=\u00221\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f\u003C\/p\u003E","content":"@corvofeng#1 \u8fd9\u662f\u5bf9\u4e00\u697c\u7684\u56de\u590d\uff0c \u662f\u5426\u53ef\u89c1\u5462\uff1f","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[{"type":"posts","id":"4"}]}}},{"type":"posts","id":"2","attributes":{"number":2,"createdAt":"2020-05-31T12:33:20+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b\u003C\/p\u003E","content":"\u8fd9\u662f\u7b2c\u4e00\u4e2a\u56de\u590d\uff0c\u8bf7\u67e5\u770b","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"discussion":{"data":{"type":"discussions","id":"1"}},"user":{"data":{"type":"users","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"posts","id":"4","attributes":{"number":4,"createdAt":"2020-05-31T12:46:00+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/3\u0022 class=\u0022PostMention\u0022 data-id=\u00223\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684\u003C\/p\u003E","content":"@corvofeng#3 \u8fd9\u662f\u5bf93\u697c\u7684\u56de\u590d\uff0c \u6211\u60f3\u770b\u770b\u5728\u6570\u636e\u5e93\u91cc\u9762\u662f\u5982\u4f55\u8fdb\u884c\u5b58\u50a8\u7684","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":false,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[{"type":"users","id":"1"}]},"mentionedBy":{"data":[{"type":"posts","id":"6"}]}}},{"type":"posts","id":"6","attributes":{"number":5,"createdAt":"2020-05-31T14:25:55+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u003Ca href=\u0022https:\/\/flarum.yjzq.fun\/d\/1\/4\u0022 class=\u0022PostMention\u0022 data-id=\u00224\u0022\u003Ecorvofeng\u003C\/a\u003E \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50\u003C\/p\u003E","content":"@corvofeng#4 \u8fd9\u662f\u7b2c\u4e00\u7bc7\u7b2c\u4e8c\u4e2a\u6ce8\u518c\u7528\u6237\u6240\u53d1\u8868\u7684\u5e16\u5b50","ipAddress":"116.21.181.227","canEdit":true,"canDelete":true,"canHide":true,"canFlag":true,"canLike":true},"relationships":{"user":{"data":{"type":"users","id":"2"}},"discussion":{"data":{"type":"discussions","id":"1"}},"flags":{"data":[]},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-06-02T03:46:54+00:00","isEmailConfirmed":true,"email":"corvofeng@gmail.com","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"users","id":"2","attributes":{"username":"corvo2","displayName":"corvo2","avatarUrl":null,"joinTime":"2020-05-31T14:20:57+00:00","discussionCount":0,"commentCount":1,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-05-31T14:25:55+00:00","isEmailConfirmed":true,"email":"corvofeng@163.com","suspendedUntil":null,"canSuspend":true},"relationships":{"groups":{"data":[]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
 		// 单个评论

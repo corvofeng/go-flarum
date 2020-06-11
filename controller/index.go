@@ -108,6 +108,10 @@ func (h *BaseHandler) FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	ctx := r.Context()
+	// ctx = context.WithValue(ctx, keyPrincipalID, "world")
+	fmt.Println(ctx, ctx.Value("hello"))
+
 	scf := h.App.Cf.Site
 
 	type pageData struct {

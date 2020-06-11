@@ -20,6 +20,7 @@ import (
 	"github.com/ego008/youdb"
 )
 
+// ArticleBase 基础的文档类
 type ArticleBase struct {
 	ID  uint64 `json:"id"`
 	UID uint64 `json:"uid"`
@@ -106,6 +107,7 @@ type ArticleRelative struct {
 	Tags     []string
 }
 
+// ArticleFeedListItem rss资源
 type ArticleFeedListItem struct {
 	ID          uint64
 	UID         uint64
@@ -117,7 +119,8 @@ type ArticleFeedListItem struct {
 	Des         string
 }
 
-// 文章添加、编辑后传给后台任务的信息
+// ArticleTag 文章添加、编辑后传给后台任务的信息
+// TODO: delete
 type ArticleTag struct {
 	ID      uint64
 	OldTags string
@@ -175,7 +178,13 @@ func FlarumArticleGetByID(db *sql.DB, aid uint64) map[string]interface{} {
 	if len(dictData) == 0 {
 		return nil
 	}
+
 	return dictData[0]
+}
+
+// LoadDictData 从dict cursor的结果中获取数据
+func (article *Article) LoadDictData(map[string]interface{}) {
+
 }
 
 // GetCommentsSize 获取评论

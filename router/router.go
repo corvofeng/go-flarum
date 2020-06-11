@@ -16,7 +16,6 @@ import (
 func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
 	if app.IsFlarum() {
-		NewFlarumAPIRouter(app, sp)
 		NewFlarumRouter(app, sp)
 	} else {
 		NewGoYouBBSRouter(app, sp)
@@ -27,11 +26,10 @@ func NewRouter(app *system.Application) *goji.Mux {
 // NewAPIRouter create api router
 func NewAPIRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
-	h := controller.BaseHandler{App: app, InAPI: true}
-
-	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
-	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
+	// h := controller.BaseHandler{App: app, InAPI: true}
+	// sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
+	// sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
+	// sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
 
 	return sp
 }
@@ -39,6 +37,8 @@ func NewAPIRouter(app *system.Application) *goji.Mux {
 // NewGoYouBBSRouter goyoubbs的router
 func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := controller.BaseHandler{App: app}
+	sp.Use(h.InitMiddlewareContext)
+	sp.Use(h.AuthMiddleware)
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
 	sp.HandleFunc(pat.Get("/luck"), h.IFeelLucky)
@@ -103,17 +103,16 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	app.Logger.Notice("Init flarum router")
 	h := controller.BaseHandler{App: app}
 
-	sp.Use(h.InitMiddleware)
+	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)
 
-	sp.HandleFunc(pat.Get("/"), controller.ArrayToChains(
-		[]controller.ReqMiddle{
+	sp.HandleFunc(pat.Get("/"), controller.MiddlewareArrayToChains(
+		[]controller.HTTPMiddleWareFunc{
 			controller.TestMiddleware,
 			controller.TestMiddleware2,
 		},
 		h.FlarumIndex,
-	),
-	)
+	))
 	sp.HandleFunc(pat.Post("/register"), h.UserRegister)
 	sp.HandleFunc(pat.Post("/login"), h.FlarumUserLogin)
 	sp.HandleFunc(pat.Get("/logout"), h.FlarumUserLogout)
@@ -124,25 +123,26 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	//	discussion
 	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	sp.HandleFunc(pat.Get("/d/:aid"), h.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get("/d/:aid/:cid"), h.FlarumArticleDetail)
-	sp.HandleFunc(pat.Post("/d/:aid"), h.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid"), controller.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid/:cid"), controller.FlarumArticleDetail)
+	sp.HandleFunc(pat.Post("/d/:aid"), controller.FlarumArticleDetail)
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
+
+	// API handler
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), controller.InAPIMiddleware(h.FlarumAPIDiscussions))
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), controller.InAPIMiddleware(h.NewCaptcha))
+	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), controller.InAPIMiddleware(h.FlarumAPICreatePost))
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), controller.InAPIMiddleware(controller.FlarumArticleDetail))
 
 	return sp
 }
 
 // NewFlarumAPIRouter flarum的API
-func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
-	app.Logger.Notice("Init flarum api router")
-	h := controller.BaseHandler{App: app, InAPI: true}
+// func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+// 	app.Logger.Notice("Init flarum api router")
+// 	h := controller.BaseHandler{App: app, InAPI: true}
 
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), h.FlarumAPIDiscussions)
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), h.NewCaptcha)
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), h.FlarumAPICreatePost)
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), h.FlarumArticleDetail)
-
-	return sp
-}
+// 	return sp
+// }

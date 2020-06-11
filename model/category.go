@@ -4,38 +4,44 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 
 	"github.com/go-redis/redis/v7"
 )
 
-// Category 帖子分类
-type Category struct {
-	ID       uint64 `json:"id"`
-	Name     string `json:"name"`
-	URLName  string `json:"urlname"`
-	Articles uint64 `json:"articles"`
-	About    string `json:"about"`
-	Hidden   bool   `json:"hidden"`
-}
+type (
+	// Category 帖子分类
+	Category = struct {
+		ID          uint64 `json:"id"`
+		Name        string `json:"name"`
+		URLName     string `json:"urlname"`
+		Articles    uint64 `json:"articles"`
+		About       string `json:"about"`
+		Description string `json:"description"`
+		Hidden      bool   `json:"hidden"`
+	}
 
-type CategoryMini struct {
-	ID   uint64 `json:"id"`
-	Name string `json:"name"`
-}
+	// CategoryMini 帖子分类
+	CategoryMini struct {
+		ID   uint64 `json:"id"`
+		Name string `json:"name"`
+	}
 
-type CategoryPageInfo struct {
-	Items    []Category `json:"items"`
-	HasPrev  bool       `json:"hasprev"`
-	HasNext  bool       `json:"hasnext"`
-	FirstKey uint64     `json:"firstkey"`
-	LastKey  uint64     `json:"lastkey"`
-}
+	// CategoryPageInfo 显示所有的帖子信息
+	CategoryPageInfo struct {
+		Items    []Category `json:"items"`
+		HasPrev  bool       `json:"hasprev"`
+		HasNext  bool       `json:"hasnext"`
+		FirstKey uint64     `json:"firstkey"`
+		LastKey  uint64     `json:"lastkey"`
+	}
+)
 
 // SQLGetAllCategory 获取所有分类
 func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	var categories []Category
-	rows, err := db.Query("SELECT id, name, urlname FROM node order by topic_count desc limit 30")
+	rows, err := db.Query("SELECT id, name, urlname, description FROM node order by topic_count desc limit 30")
 	defer func() {
 		if rows != nil {
 			rows.Close() // 可以关闭掉未scan连接一直占用
@@ -46,7 +52,7 @@ func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	}
 	for rows.Next() {
 		obj := Category{}
-		err = rows.Scan(&obj.ID, &obj.Name, &obj.URLName) // 不scan会导致连接不释放
+		err = rows.Scan(&obj.ID, &obj.Name, &obj.URLName, &obj.Description) // 不scan会导致连接不释放
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)

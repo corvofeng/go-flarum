@@ -6,6 +6,11 @@ import (
 	"goyoubbs/util"
 )
 
+// ISQLLoader dict结果的loader
+type ISQLLoader interface {
+	LoadDictData(map[string]interface{})
+}
+
 // executeQuery 执行SQL语句, 以dictCursor的形式返回数据
 /*
  * 使用时要注意:
