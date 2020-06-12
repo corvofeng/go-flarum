@@ -345,7 +345,9 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewCaptcha 获取新的验证码
-func (h *BaseHandler) NewCaptcha(w http.ResponseWriter, r *http.Request) {
+func NewCaptcha(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 	// 返回并且携带新的验证码
 	type captchaData struct {
 		response
@@ -358,9 +360,12 @@ func (h *BaseHandler) NewCaptcha(w http.ResponseWriter, r *http.Request) {
 	h.Jsonify(w, respCaptcha)
 }
 
-// UserRegister 用户注册
-func (h *BaseHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
+// FlarumUserRegister 用户注册
+func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 	rsp := response{}
+
 	type recForm struct {
 		Name            string `json:"username"`
 		Password        string `json:"password"`
@@ -404,8 +409,9 @@ func (h *BaseHandler) UserRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 // FlarumUserLogin flarum用户登录
-func (h *BaseHandler) FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
-
+func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 	rsp := response{}
 	type recForm struct {
 		Identification  string `json:"identification"`
@@ -472,10 +478,10 @@ func (h *BaseHandler) FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // FlarumUserLogout flarum用户注销
-func (h *BaseHandler) FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
-
+func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 	rsp := response{}
-
 	redisDB := h.App.RedisDB
 
 	token := r.FormValue("token")

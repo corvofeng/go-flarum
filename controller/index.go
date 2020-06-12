@@ -84,7 +84,10 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 }
 
 // FlarumIndex flarum主页
-func (h *BaseHandler) FlarumIndex(w http.ResponseWriter, r *http.Request) {
+func FlarumIndex(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+
 	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
 	var start uint64
 	var err error
@@ -107,10 +110,6 @@ func (h *BaseHandler) FlarumIndex(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	ctx := r.Context()
-	// ctx = context.WithValue(ctx, keyPrincipalID, "world")
-	fmt.Println(ctx, ctx.Value("hello"))
 
 	scf := h.App.Cf.Site
 
@@ -203,7 +202,9 @@ func (h *BaseHandler) FlarumIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 // FlarumAPIDiscussions flarum文章api
-func (h *BaseHandler) FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
+func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 	apiDoc := flarum.NewAPIDoc()
 	var err error
 	var page uint64

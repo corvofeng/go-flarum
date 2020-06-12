@@ -56,7 +56,9 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 }
 
 // FlarumAPICreatePost flarum进行评论的接口
-func (h *BaseHandler) FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
+func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
 
 	rsp := response{}
 	// token := h.GetCookie(r, "token")

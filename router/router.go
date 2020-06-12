@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	"goyoubbs/controller"
+	ct "goyoubbs/controller"
 	"goyoubbs/model"
 	"goyoubbs/system"
 
@@ -23,20 +23,9 @@ func NewRouter(app *system.Application) *goji.Mux {
 	return sp
 }
 
-// NewAPIRouter create api router
-func NewAPIRouter(app *system.Application) *goji.Mux {
-	sp := goji.SubMux()
-	// h := controller.BaseHandler{App: app, InAPI: true}
-	// sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
-	// sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	// sp.HandleFunc(pat.Get("/topics"), h.CategoryDetailNew)
-
-	return sp
-}
-
 // NewGoYouBBSRouter goyoubbs的router
 func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
-	h := controller.BaseHandler{App: app}
+	h := ct.BaseHandler{App: app}
 	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)
 
@@ -101,48 +90,38 @@ func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 // NewFlarumRouter flarum的router
 func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	app.Logger.Notice("Init flarum router")
-	h := controller.BaseHandler{App: app}
+	h := ct.BaseHandler{App: app}
 
 	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)
 
-	sp.HandleFunc(pat.Get("/"), controller.MiddlewareArrayToChains(
-		[]controller.HTTPMiddleWareFunc{
-			controller.TestMiddleware,
-			controller.TestMiddleware2,
+	sp.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.TestMiddleware,
+			ct.TestMiddleware2,
 		},
-		h.FlarumIndex,
+		ct.FlarumIndex,
 	))
-	sp.HandleFunc(pat.Post("/register"), h.UserRegister)
-	sp.HandleFunc(pat.Post("/login"), h.FlarumUserLogin)
-	sp.HandleFunc(pat.Get("/logout"), h.FlarumUserLogout)
+	sp.HandleFunc(pat.Post("/register"), ct.FlarumUserRegister)
+	sp.HandleFunc(pat.Post("/login"), ct.FlarumUserLogin)
+	sp.HandleFunc(pat.Get("/logout"), ct.FlarumUserLogout)
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
 
 	fs := http.FileServer(http.Dir("static/captcha"))
 	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
 	//	discussion
-	// sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	sp.HandleFunc(pat.Get("/d/:aid"), controller.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get("/d/:aid/:cid"), controller.FlarumArticleDetail)
-	sp.HandleFunc(pat.Post("/d/:aid"), controller.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid/:cid"), ct.FlarumArticleDetail)
+	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumArticleDetail)
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
 
 	// API handler
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), controller.InAPIMiddleware(h.FlarumAPIDiscussions))
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), controller.InAPIMiddleware(h.NewCaptcha))
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), controller.InAPIMiddleware(h.FlarumAPICreatePost))
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), controller.InAPIMiddleware(controller.FlarumArticleDetail))
-
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), ct.InAPIMiddleware(ct.NewCaptcha))
+	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), ct.InAPIMiddleware(ct.FlarumAPICreatePost))
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
 	return sp
 }
-
-// NewFlarumAPIRouter flarum的API
-// func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
-// 	app.Logger.Notice("Init flarum api router")
-// 	h := controller.BaseHandler{App: app, InAPI: true}
-
-// 	return sp
-// }
