@@ -3,17 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"goyoubbs/util"
 	"html/template"
 	"net/http"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"goyoubbs/model"
 	"goyoubbs/system"
+	"goyoubbs/util"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
@@ -111,10 +110,11 @@ func (h *BaseHandler) Jsonify(w http.ResponseWriter, data interface{}) error {
 func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model.User, error) {
 	var (
 		user model.User
-		uid  uint64
-		err  error
+		// uid  uint64
+		err error
 	)
-	sqlDB := h.App.MySQLdb
+	// sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
@@ -123,14 +123,7 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	z := strings.Split(ssValue, ":")
 	rawUID := z[0]
 
-	if len(rawUID) > 0 {
-		uid, err = strconv.ParseUint(rawUID, 10, 64)
-		if err != nil {
-			return user, nil
-		}
-	}
-	// TODO: 直接通过数据库获取当前用户, 性能瓶颈了再说
-	user, err = model.SQLUserGetByID(sqlDB, uid)
+	user, err = model.RedisGetUserByID(redisDB, rawUID)
 	if util.CheckError(err, "获取用户") {
 		return user, err
 	}

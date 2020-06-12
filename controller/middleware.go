@@ -60,7 +60,6 @@ func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		reqCtx := GetRetContext(r)
 		reqCtx.currentUser, _ = h.CurrentUser(w, r)
-		fmt.Println("Get user", reqCtx.currentUser.Name)
 		inner.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(mw)

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -141,8 +140,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		sessionid := xid.New().String()
 		uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
-		jb, _ := json.Marshal(uobj)
-		redisDB.HSet("user", fmt.Sprintf("%d", uobj.ID), jb)
+		uobj.CachedToRedis(redisDB)
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 
 	} else {
@@ -238,7 +236,6 @@ func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		h.DelCookie(w, k)
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-
 }
 
 // UserDetail 用户详情页
@@ -468,13 +465,22 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	sessionid := xid.New().String()
 	uobj.LastLoginTime = timeStamp
 	uobj.Session = sessionid
-	jb, _ := json.Marshal(uobj)
-	redisDB.HSet("user", fmt.Sprintf("%d", uobj.ID), jb)
+
+	uobj.CachedToRedis(redisDB)
 	h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 
 	rsp.Retcode = 200
 	rsp.Retmsg = "登录成功"
 	h.Jsonify(w, rsp)
+}
+
+func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.Request) {
+	redisDB := h.App.RedisDB
+	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
+	for _, k := range cks {
+		h.DelCookie(w, k)
+	}
+	user.CleareRedisCache(redisDB)
 }
 
 // FlarumUserLogout flarum用户注销
@@ -503,12 +509,8 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
-	for _, k := range cks {
-		h.DelCookie(w, k)
-	}
+	userLogout(user, h, w, r)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-
 	rsp.Retcode = 200
 	rsp.Retmsg = "登出成功"
 	h.Jsonify(w, rsp)

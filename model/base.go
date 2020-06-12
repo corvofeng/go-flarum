@@ -2,8 +2,11 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"goyoubbs/util"
+
+	"github.com/go-redis/redis/v7"
 )
 
 // ISQLLoader dict结果的loader
@@ -76,4 +79,23 @@ func dataGetByRows(rows *sql.Rows) ([]map[string]interface{}, error) {
 	}
 
 	return obj, nil
+}
+
+func rSet(redisDB *redis.Client, bucket string, key string, value interface{}) error {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return redisDB.HSet(bucket, key, p).Err()
+}
+func rDel(redisDB *redis.Client, bucket, key string) error {
+	return redisDB.HDel(bucket, key).Err()
+}
+
+func rGet(redisDB *redis.Client, bucket string, key string, dest interface{}) error {
+	p, err := redisDB.HGet(bucket, key).Result()
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(p), dest)
 }

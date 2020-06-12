@@ -243,6 +243,11 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	return obj, errors.New("No result")
 }
 
+// StrID 返回string类型的ID值
+func (user *User) StrID() string {
+	return fmt.Sprintf("%d", user.ID)
+}
+
 // SQLUserUpdate 更新用户信息
 func (user *User) SQLUserUpdate(db *sql.DB) bool {
 	_, err := db.Exec(
@@ -405,4 +410,21 @@ func (user *User) VerifyCSRFToken(redisDB *redis.Client, token string) bool {
 		return false
 	}
 	return util.VerifyToken(token, rep)
+}
+
+// CachedToRedis 缓存当前用户的信息至Redis
+func (user *User) CachedToRedis(redisDB *redis.Client) error {
+	return rSet(redisDB, "user", user.StrID(), user)
+}
+
+// CleareRedisCache 缓存当前用户的信息至Redis
+func (user *User) CleareRedisCache(redisDB *redis.Client) error {
+	return rDel(redisDB, "user", user.StrID())
+}
+
+// RedisGetUserByID 从Redis中获取缓存的用户
+func RedisGetUserByID(redisDB *redis.Client, uid string) (User, error) {
+	user := User{}
+	err := rGet(redisDB, "user", uid, &user)
+	return user, err
 }
