@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ego008/youdb"
-	"github.com/weint/httpclient"
 	"goyoubbs/model"
 	"goyoubbs/system"
 	"goyoubbs/util"
+
+	"github.com/ego008/youdb"
+	"github.com/weint/httpclient"
 )
 
 type BaseHandler struct {
@@ -139,17 +140,17 @@ func (h *BaseHandler) GetLocal() error {
 
 						obj := model.Article{
 							ArticleBase: model.ArticleBase{
-								ID:  youdb.DS2i(t.ID),
-								UID: youdb.DS2i(t.UID),
-								CID: youdb.DS2i(t.CID),
+								ID:       youdb.DS2i(t.ID),
+								UID:      youdb.DS2i(t.UID),
+								CID:      youdb.DS2i(t.CID),
+								Title:    t.Title,
+								Content:  t.Content,
+								AddTime:  youdb.DS2i(t.AddTime),
+								EditTime: youdb.DS2i(t.EditTime),
+								Comments: youdb.DS2i(t.Comments),
 							},
 							RUID:         youdb.DS2i(t.RUID),
-							Title:        t.Title,
-							Content:      t.Content,
 							Tags:         t.Tags,
-							AddTime:      youdb.DS2i(t.AddTime),
-							EditTime:     youdb.DS2i(t.EditTime),
-							Comments:     youdb.DS2i(t.Comments),
 							CloseComment: false,
 							Hidden:       false,
 						}

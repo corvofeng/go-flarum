@@ -185,15 +185,15 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	newAid, _ := db.HnextSequence("article")
 	aobj := model.Article{
 		ArticleBase: model.ArticleBase{
-			ID:  newAid,
-			UID: currentUser.ID,
-			CID: rec.CID,
+			ID:       newAid,
+			UID:      currentUser.ID,
+			CID:      rec.CID,
+			Title:    rec.Title,
+			Content:  rec.Content,
+			AddTime:  now,
+			EditTime: now,
+			ClientIP: r.Header.Get("X-REAL-IP"),
 		},
-		Title:    rec.Title,
-		Content:  rec.Content,
-		AddTime:  now,
-		EditTime: now,
-		ClientIP: r.Header.Get("X-REAL-IP"),
 
 		Active:        1, // 帖子为激活状态
 		FatherTopicID: 0, // 没有原始主题
@@ -801,8 +801,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-
-	model.FlarumArticleGetByID(sqlDB, diss.GetID())
 
 	// 如果是API直接进行返回
 	if inAPI {

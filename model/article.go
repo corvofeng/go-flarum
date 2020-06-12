@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 	"html/template"
 
@@ -20,25 +21,32 @@ import (
 	"github.com/ego008/youdb"
 )
 
-// ArticleBase 基础的文档类
+// ArticleBase 基础的文档类, 在数据库表中的字段
 type ArticleBase struct {
 	ID  uint64 `json:"id"`
 	UID uint64 `json:"uid"`
 	CID uint64 `json:"cid"`
+
+	Title   string `json:"title"`
+	Content string `json:"content"`
+
+	FirstPostID uint64
+	LastPostID  uint64
+
+	ClickCnt uint64 `json:"clickcnt"` // 不保证精确性
+	Comments uint64 `json:"comments"`
+
+	AddTime  uint64 `json:"addtime"`
+	EditTime uint64 `json:"edittime"`
+
+	ClientIP string `json:"clientip"`
 }
 
 // Article store in database
 type Article struct {
 	ArticleBase
 	RUID              uint64 `json:"ruid"`
-	Title             string `json:"title"`
-	Content           string `json:"content"`
-	ClientIP          string `json:"clientip"`
 	Tags              string `json:"tags"`
-	AddTime           uint64 `json:"addtime"`
-	EditTime          uint64 `json:"edittime"`
-	Comments          uint64 `json:"comments"`
-	ClickCnt          uint64 `json:"clickcnt"`
 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
 	CloseComment      bool   `json:"closecomment"`
 	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
@@ -54,11 +62,8 @@ type Article struct {
 // ArticleMini 缩略版的Article信息
 type ArticleMini struct {
 	ArticleBase
-	Ruid     uint64 `json:"ruid"`
-	Title    string `json:"title"`
-	EditTime uint64 `json:"edittime"`
-	Comments uint64 `json:"comments"`
-	Hidden   bool   `json:"hidden"`
+	Ruid   uint64 `json:"ruid"`
+	Hidden bool   `json:"hidden"`
 }
 
 // ArticleListItem data strucy only used in page.
@@ -69,11 +74,8 @@ type ArticleListItem struct {
 	Cname       string `json:"cname"`
 	Ruid        uint64 `json:"ruid"`
 	Rname       string `json:"rname"`
-	Title       string `json:"title"`
-	EditTime    uint64 `json:"edittime"`
 	EditTimeFmt string `json:"edittimefmt"`
 	ClickCnt    uint64 `json:"clickcnt"`
-	Comments    uint64 `json:"comments"`
 
 	/**
 	 * When in search page, every article item have the highlight content,
@@ -94,6 +96,14 @@ type ArticlePageInfo struct {
 	PagePrev   uint64            `json:"pageprev"`
 	PageNext   uint64            `json:"pagenext"`
 	LastScore  uint64            `json:"lastscore"`
+}
+
+// FlarumArticlePageInfo flarum站点的数据信息
+type FlarumArticlePageInfo struct {
+	Items     []flarum.Discussion
+	LinkFirst string
+	LinkPrev  string
+	LinkNext  string
 }
 
 type ArticleLi struct {
@@ -129,62 +139,15 @@ type ArticleTag struct {
 
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, error) {
-	logger := util.GetLogger()
+	articleBaseList := sqlGetArticleBaseByList(db, redisDB, []uint64{aid})
 	obj := Article{}
-	rows, err := db.Query(
-		"SELECT id, node_id, user_id, title, content, created_at, updated_at, father_topic_id, client_ip FROM topic WHERE id = ? and active !=0",
-		aid,
-	)
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
-	util.CheckError(err, fmt.Sprintf("Query %d failed", aid))
-
-	if rows.Next() {
-		err = rows.Scan(
-			&obj.ID,
-			&obj.CID,
-			&obj.UID,
-			&obj.Title,
-			&obj.Content,
-			&obj.AddTime,
-			&obj.EditTime,
-			&obj.FatherTopicID,
-			&obj.ClientIP,
-		)
-
-		if util.CheckError(err, fmt.Sprintf("scan %d", aid)) {
-			return obj, errors.New("No result")
-		}
-		obj.GetArticleCntFromRedisDB(db, redisDB)
-	} else {
-		logger.Debug("failed query ", aid)
+	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
 	}
+	obj.ArticleBase = articleBaseList[0]
+	obj.GetArticleCntFromRedisDB(db, redisDB)
 
 	return obj, nil
-}
-
-// FlarumArticleGetByID 获取主题
-func FlarumArticleGetByID(db *sql.DB, aid uint64) map[string]interface{} {
-	dictData := executeQuery(
-		db,
-		"SELECT id, node_id, user_id, title, content, created_at, updated_at, father_topic_id, client_ip FROM topic WHERE id = ? and active !=0",
-		aid,
-	)
-
-	if len(dictData) == 0 {
-		return nil
-	}
-
-	return dictData[0]
-}
-
-// LoadDictData 从dict cursor的结果中获取数据
-func (article *Article) LoadDictData(map[string]interface{}) {
-
 }
 
 // GetCommentsSize 获取评论
@@ -193,23 +156,8 @@ func (article *Article) LoadDictData(map[string]interface{}) {
  * cntDB (*youdb.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (article *Article) GetCommentsSize(db *sql.DB) int {
-	var count int
-
-	row := db.QueryRow(
-		"SELECT count(*) FROM reply where topic_id = ?",
-		article.ID,
-	)
-
-	err := row.Scan(&count)
-	if util.CheckError(err, "查询评论数量") {
-		count = 0
-	}
-	// if count != 0 {
-	// 	util.GetLogger().Debugf("The %s has comments %d", article.Title, count)
-	// }
-
-	return count
+func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
+	return article.Comments
 }
 
 // GetWeight 获取当前帖子的权重
@@ -311,45 +259,12 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	var rows *sql.Rows
-	var err error
-	logger := util.GetLogger()
-	articleListStr := ""
-
-	var articlePageInfo ArticlePageInfo
-
-	if len(articleList) == 0 {
-		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
-		return articlePageInfo
-	}
-
-	for _, v := range articleList {
-		if len(articleListStr) > 0 {
-			articleListStr += ", "
-		}
-		articleListStr += strconv.FormatInt(int64(v), 10)
-	}
-	sql := "select id, title, node_id, user_id, updated_at from topic where id in (" + articleListStr + ")"
-
-	rows, err = db.Query(sql)
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return ArticlePageInfo{}
-	}
+	articleBaseList := sqlGetArticleBaseByList(db, redisDB, articleList)
 	m := make(map[uint64]ArticleListItem)
-	for rows.Next() {
-		item := ArticleListItem{}
-		err = rows.Scan(&item.ID, &item.Title, &item.CID, &item.UID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
 
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			continue
+	for _, articleBase := range articleBaseList {
+		item := ArticleListItem{
+			ArticleBase: articleBase,
 		}
 		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
 		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
@@ -362,7 +277,6 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 			items = append(items, item)
 		}
 	}
-
 	return ArticlePageInfo{
 		Items:      items,
 		HasPrev:    hasPrev,
@@ -374,6 +288,60 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 	}
 }
 
+// sqlGetArticleBaseByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
+func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []ArticleBase) {
+	var err error
+	var rows *sql.Rows
+	var articleListStr string
+	logger := util.GetLogger()
+	defer rowsClose(rows)
+
+	if len(articleList) == 0 {
+		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
+		return items
+	}
+
+	for _, v := range articleList {
+		if len(articleListStr) > 0 {
+			articleListStr += ", "
+		}
+		articleListStr += strconv.FormatInt(int64(v), 10)
+	}
+	qField := "id, title, content, node_id, user_id, hits, reply_count, first_post_id, last_post_id, created_at, updated_at"
+	sql := fmt.Sprintf("select %s from topic where id in (%s)",
+		qField, articleListStr)
+
+	rows, err = db.Query(sql)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+	m := make(map[uint64]ArticleBase)
+	for rows.Next() {
+		item := ArticleBase{}
+		err = rows.Scan(
+			&item.ID, &item.Title, &item.Content, &item.CID, &item.UID,
+			&item.ClickCnt, &item.Comments, &item.FirstPostID, &item.LastPostID,
+			&item.AddTime, &item.EditTime)
+
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
+
+		m[item.ID] = item
+	}
+
+	for _, id := range articleList {
+		if item, ok := m[id]; ok {
+			items = append(items, item)
+		}
+	}
+
+	return
+}
+
 // SQLCIDArticleListByPage 根据页码获取某个分类的列表
 func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
@@ -381,7 +349,6 @@ func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, li
 	if len(articleList) == 0 {
 		// TODO: remove it
 		articleIteratorStart := GetCIDArticleMax(nodeID)
-		fmt.Println("Current iterator is in ", articleIteratorStart)
 		pageInfo = SQLCIDArticleList(db, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
 		// 先前没有缓存, 需要加入到rank map中
 		var items []ArticleRankItem
@@ -417,15 +384,16 @@ func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
 
 // SQLCIDArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
+// TODO: delete it
 func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
-	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
 	var rows *sql.Rows
 	var err error
 	logger := util.GetLogger()
-	valueList := "id, title, user_id, node_id, updated_at"
+	valueList := "id"
 	selectList := " active != 0 "
+	var articleList []uint64
 	if nodeID == 0 {
 		if btnAct == "" || btnAct == "next" {
 			rows, err = db.Query(
@@ -465,22 +433,22 @@ func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, 
 		logger.Errorf("Query failed,err:%v", err)
 		return ArticlePageInfo{}
 	}
+
 	for rows.Next() {
-		item := ArticleListItem{}
-		err = rows.Scan(&item.ID, &item.Title, &item.UID, &item.CID, &item.EditTime) //不scan会导致连接不释放
-		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
-		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
+		var aid uint64
+		err = rows.Scan(&aid) //不scan会导致连接不释放
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			continue
 		}
-		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
-		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
-		items = append(items, item)
+		articleList = append(articleList, aid)
 	}
-	if len(items) > 0 {
-		firstKey = items[0].ID
-		lastKey = items[len(items)-1].ID
+
+	pageInfo := SQLArticleGetByList(db, redisDB, articleList, tz)
+
+	if len(articleList) > 0 {
+		firstKey = articleList[0]
+		lastKey = articleList[len(articleList)-1]
 		hasNext = true
 		hasPrev = true
 
@@ -488,18 +456,18 @@ func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, 
 		// 因为帖子较多时, 这算是一种近似
 
 		// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
-		if items[0].ID == 1 || start < uint64(limit) {
+		if articleList[0] == 1 || start < uint64(limit) {
 			hasPrev = false
 		}
 
 		// 查询出的数量比要求的数量要少, 说明没有下一页
-		if uint64(len(items)) < limit {
+		if uint64(len(articleList)) < limit {
 			hasNext = false
 		}
 	}
 
 	return ArticlePageInfo{
-		Items:      items,
+		Items:      pageInfo.Items,
 		HasPrev:    hasPrev,
 		HasNext:    hasNext,
 		FirstKey:   firstKey,
@@ -509,6 +477,7 @@ func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, 
 	}
 }
 
+// only for rank
 func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini, error) {
 	var articles []ArticleMini
 	var rows *sql.Rows
@@ -572,8 +541,6 @@ func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.
 		}
 		if clickCnt == 0 {
 			fmt.Println("Get data from cntDB", aid)
-			// 从cntDB中查找
-			// clickCnt, _ = cntDB.Hincr("article_views", youdb.I2b(aid), 1)
 			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), clickCnt)
 		}
 		if clickCnt == 0 {
@@ -700,18 +667,18 @@ func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) Articl
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
 				ArticleBase: ArticleBase{
-					ID:  article.ID,
-					UID: article.UID,
-					CID: article.CID,
+					ID:       article.ID,
+					UID:      article.UID,
+					CID:      article.CID,
+					Title:    article.Title,
+					EditTime: article.EditTime,
+					Comments: article.Comments,
 				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
-				Title:       article.Title,
-				EditTime:    article.EditTime,
 				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-				Comments:    article.Comments,
 			}
 			if article.Ruid > 0 {
 				item.Rname = userMap[article.Ruid].Name
@@ -907,18 +874,18 @@ func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePa
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
 				ArticleBase: ArticleBase{
-					ID:  article.ID,
-					UID: article.UID,
-					CID: article.CID,
+					ID:       article.ID,
+					UID:      article.UID,
+					CID:      article.CID,
+					Title:    article.Title,
+					EditTime: article.EditTime,
+					Comments: article.Comments,
 				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
-				Title:       article.Title,
-				EditTime:    article.EditTime,
 				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-				Comments:    article.Comments,
 			}
 			if article.Ruid > 0 {
 				item.Rname = userMap[article.Ruid].Name
@@ -1007,18 +974,18 @@ func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
 				ArticleBase: ArticleBase{
-					ID:  article.ID,
-					UID: article.UID,
-					CID: article.CID,
+					ID:       article.ID,
+					UID:      article.UID,
+					CID:      article.CID,
+					Title:    article.Title,
+					EditTime: article.EditTime,
+					Comments: article.Comments,
 				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
 				Cname:       category.Name,
 				Ruid:        article.Ruid,
-				Title:       article.Title,
-				EditTime:    article.EditTime,
 				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-				Comments:    article.Comments,
 			}
 			if article.Ruid > 0 {
 				item.Rname = userMap[article.Ruid].Name
@@ -1109,18 +1076,18 @@ func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePag
 			category := categoryMap[article.CID]
 			item := ArticleListItem{
 				ArticleBase: ArticleBase{
-					ID:  article.ID,
-					UID: article.UID,
-					CID: article.CID,
+					ID:       article.ID,
+					UID:      article.UID,
+					CID:      article.CID,
+					Title:    article.Title,
+					EditTime: article.EditTime,
+					Comments: article.Comments,
 				},
 				Name:        user.Name,
 				Avatar:      user.Avatar,
 				Cname:       category.Name,
 				Ruid:        article.RUID,
-				Title:       article.Title,
-				EditTime:    article.EditTime,
 				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-				Comments:    article.Comments,
 			}
 			if article.RUID > 0 {
 				item.Rname = userMap[article.RUID].Name
