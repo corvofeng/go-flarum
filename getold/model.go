@@ -46,7 +46,7 @@ type OldCategory struct {
 type OldComment struct {
 	Code    int    `json:"code"`
 	ID      string `json:"id"`
-	Aid     string `json:"articleid"`
+	AID     string `json:"articleid"`
 	UID     string `json:"uid"`
 	Content string `json:"content"`
 	AddTime string `json:"addtime"`

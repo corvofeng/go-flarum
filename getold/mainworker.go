@@ -205,23 +205,25 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 
-						rs := db.Hget("article", youdb.DS2b(t.Aid))
+						rs := db.Hget("article", youdb.DS2b(t.AID))
 						if rs.State == "ok" {
-							commentID, _ := db.HnextSequence("article_comment:" + t.Aid)
+							commentID, _ := db.HnextSequence("article_comment:" + t.AID)
 
 							obj := model.Comment{
-								ID:      commentID,
-								Aid:     youdb.DS2i(t.Aid),
-								UID:     youdb.DS2i(t.UID),
-								Content: t.Content,
-								AddTime: youdb.DS2i(t.AddTime),
+								CommentBase: model.CommentBase{
+									ID:      commentID,
+									AID:     youdb.DS2i(t.AID),
+									UID:     youdb.DS2i(t.UID),
+									Content: t.Content,
+									AddTime: youdb.DS2i(t.AddTime),
+								},
 							}
 							jb, _ := json.Marshal(obj)
 
-							db.Hset("article_comment:"+t.Aid, youdb.I2b(obj.ID), jb) // 文章评论bucket
+							db.Hset("article_comment:"+t.AID, youdb.I2b(obj.ID), jb) // 文章评论bucket
 							db.Hset("count", []byte("comment_num"), youdb.DS2b(t.ID))
 							// 用户回复文章列表
-							db.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.Aid), obj.AddTime)
+							db.Zset("user_article_reply:"+strconv.FormatUint(obj.UID, 10), youdb.I2b(obj.AID), obj.AddTime)
 						}
 						db.Hincr("getold_last_tb_id", []byte(tb), 1) // count flag
 					}
