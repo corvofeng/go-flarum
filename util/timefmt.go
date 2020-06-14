@@ -28,6 +28,7 @@ func TimeFmt(tp interface{}, sample string, tz int) string {
 	return tm.Format(sample)
 }
 
+// TimeHuman 给人类看的时间
 func TimeHuman(ts interface{}) string {
 	var t int64
 	switch ts.(type) {
