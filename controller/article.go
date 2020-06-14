@@ -543,7 +543,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	evn.Cobj = cobj
 	evn.Author = author
-	evn.Relative = model.ArticleGetRelative(aobj.ID, aobj.Tags)
+	// evn.Relative = model.ArticleGetRelative(aobj.ID, aobj.Tags)
 	evn.PageInfo = pageInfo
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
@@ -671,11 +671,13 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		}
 		// commentID, _ := cntDB.HnextSequence("article_comment:" + aid)
 		obj := model.Comment{
-			Aid:      aobj.ID,
-			UID:      currentUser.ID,
-			Content:  rec.Content,
-			AddTime:  timeStamp,
-			ClientIp: r.Header.Get("X-REAL-IP"),
+			CommentBase: model.CommentBase{
+				AID:      aobj.ID,
+				UID:      currentUser.ID,
+				Content:  rec.Content,
+				AddTime:  timeStamp,
+				ClientIP: r.Header.Get("X-REAL-IP"),
+			},
 		}
 
 		obj.SQLSaveComment(sqlDB)
@@ -778,6 +780,9 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		post := model.FlarumCreatePost(comment)
 		apiDoc.AppendResourcs(post)
 		postArr = append(postArr, post)
+
+		user := model.FlarumCreateUserFromComments(comment)
+		apiDoc.AppendResourcs(user)
 	}
 
 	// 获取评论的作者
@@ -789,11 +794,11 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 文章当前的分类
-	category, err := model.SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", article.CID))
-	tagRes := model.FlarumCreateTag(category)
-	tagArr := model.FlarumCreateTagRelations([]flarum.Resource{tagRes})
-	apiDoc.AppendResourcs(tagRes)
-	diss.BindRelations("Tags", tagArr)
+	// category, err := model.SQLCategoryGetByID(sqlDB, fmt.Sprintf("%d", article.CID))
+	// tagRes := model.FlarumCreateTag(category)
+	// tagArr := model.FlarumCreateTagRelations([]flarum.Resource{tagRes})
+	// apiDoc.AppendResourcs(tagRes)
+	// diss.BindRelations("Tags", tagArr)
 
 	postRelation := model.FlarumCreatePostRelations(postArr)
 	diss.BindRelations("Posts", postRelation)

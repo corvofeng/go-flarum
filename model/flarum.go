@@ -49,7 +49,7 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 }
 
 // FlarumCreateDiscussion 创建帖子资源
-func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
+func FlarumCreateDiscussion(article ArticleListItem, lastComment Comment) flarum.Resource {
 	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
 	data := obj.Attributes.(*flarum.Discussion)
 	data.Title = article.Title
@@ -57,10 +57,9 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	data.CommentCount = 10
 	data.ParticipantCount = 5
 	data.LastPostNumber = 1
-	// obj.Relationships = flarum.DiscussionRelations{
-	// 	User:
-	// 	},
-	// }
+	data.FirstPostID = article.FirstPostID
+	data.LastPostedAt = lastComment.AddTimeFmt
+
 	obj.BindRelations(
 		"User",
 		flarum.RelationDict{Data: flarum.InitBaseResources(article.CID, "users")},
@@ -71,6 +70,24 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 			Data: []flarum.BaseRelation{},
 		},
 	)
+
+	obj.BindRelations(
+		"FirstPost",
+		flarum.RelationDict{
+			Data: flarum.InitBaseResources(data.FirstPostID, "posts"),
+		},
+	)
+	if article.LastPostID != 0 {
+		data.LastPostID = article.LastPostID
+		data.LastUserID = lastComment.UID
+		obj.BindRelations(
+			"LastPostedUser",
+			flarum.RelationDict{
+				Data: flarum.InitBaseResources(lastComment.UID, "users"),
+			},
+		)
+
+	}
 
 	return obj
 }
@@ -97,6 +114,12 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 		"User",
 		flarum.RelationDict{Data: flarum.InitBaseResources(article.UID, "users")},
 	)
+	obj.BindRelations(
+		"Tags",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
 
 	return obj
 }
@@ -106,6 +129,7 @@ func FlarumCreateUser(article ArticleListItem) flarum.Resource {
 	obj := flarum.NewResource(flarum.EBaseUser, article.UID)
 	data := obj.Attributes.(*flarum.BaseUser)
 	data.Username = article.Cname
+	data.Displayname = article.Cname
 	data.AvatarURL = article.Avatar
 
 	return obj
@@ -137,10 +161,9 @@ func FlarumCreateUserFromComments(comment CommentListItem) flarum.Resource {
 	data.Username = comment.UserName
 	data.AvatarURL = comment.Avatar
 
-	data.LastSeenAt = "2020-06-02T04:56:23+00:00"
-
-	data.CommentCount = 20
-	data.DiscussionCount = 3
+	// data.LastSeenAt = "2020-06-02T04:56:23+00:00"
+	// data.CommentCount = 20
+	// data.DiscussionCount = 3
 
 	obj.BindRelations(
 		"Groups",
@@ -192,7 +215,7 @@ func FlarumCreatePost(comment CommentListItem) flarum.Resource {
 	obj.BindRelations(
 		"Discussion",
 		flarum.RelationDict{
-			Data: flarum.InitBaseResources(comment.Aid, "discussions"),
+			Data: flarum.InitBaseResources(comment.AID, "discussions"),
 		},
 	)
 	obj.BindRelations(

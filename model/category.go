@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"goyoubbs/model/flarum"
 	"goyoubbs/util"
+	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -18,6 +20,7 @@ type (
 		URLName     string `json:"urlname"`
 		Articles    uint64 `json:"articles"`
 		About       string `json:"about"`
+		ParentID    uint64 `json:"parent_id"`
 		Description string `json:"description"`
 		Hidden      bool   `json:"hidden"`
 	}
@@ -42,11 +45,8 @@ type (
 func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	var categories []Category
 	rows, err := db.Query("SELECT id, name, urlname, description FROM node order by topic_count desc limit 30")
-	defer func() {
-		if rows != nil {
-			rows.Close() // 可以关闭掉未scan连接一直占用
-		}
-	}()
+	defer rowsClose(rows)
+
 	if err != nil {
 		fmt.Printf("Query failed,err:%v", err)
 	}
@@ -64,6 +64,73 @@ func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	return categories, nil
 }
 
+// SQLGetNotEmptyCategory 获取非空的分类
+func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Category, err error) {
+	rows, err := db.Query("SELECT id FROM node where topic_count != 0 and is_hidden = 0")
+	defer rowsClose(rows)
+	logger := util.GetLogger()
+
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+	var categoryList []uint64
+	for rows.Next() {
+		var item uint64
+		err = rows.Scan(&item)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		categoryList = append(categoryList, item)
+	}
+	categories = sqlGetCategoryByList(db, redisDB, categoryList)
+	return
+}
+
+func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint64) (items []Category) {
+	var err error
+	var rows *sql.Rows
+	var categoryListStr []string
+	logger := util.GetLogger()
+	if len(categoryList) == 0 {
+		logger.Warning("sqlGetCategoryByList: Can't process the category list empty")
+		return
+	}
+	defer rowsClose(rows)
+	for _, v := range categoryList {
+		categoryListStr = append(categoryListStr, strconv.FormatInt(int64(v), 10))
+	}
+	qFieldList := []string{
+		"id", "name", "urlname",
+		"description", "is_hidden", "parent_id",
+	}
+	sql := fmt.Sprintf("select %s from node where id in (%s)",
+		strings.Join(qFieldList, ","),
+		strings.Join(categoryListStr, ","))
+	rows, err = db.Query(sql)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+
+	for rows.Next() {
+		item := Category{}
+		err = rows.Scan(
+			&item.ID, &item.Name, &item.URLName,
+			&item.Description, &item.Hidden,
+			&item.ParentID,
+		)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		items = append(items, item)
+	}
+
+	return
+}
+
 // SQLCategoryGetByID 通过id获取节点
 func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
 	return sqlCategoryGet(db, cid, "", "")
@@ -74,10 +141,16 @@ func SQLCategoryGetByName(db *sql.DB, name string) (Category, error) {
 	return sqlCategoryGet(db, "", name, "")
 }
 
+// SQLCategoryGetByURLName 通过urlname获取节点
+func SQLCategoryGetByURLName(db *sql.DB, urlname string) (Category, error) {
+	return sqlCategoryGet(db, "", "", urlname)
+}
+
 func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Category, error) {
 	obj := Category{}
 	var rows *sql.Rows
 	var err error
+	isAdd := false
 	defer rowsClose(rows)
 
 	if cid != "" {
@@ -95,11 +168,15 @@ func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Catego
 	}
 
 	for rows.Next() {
+		isAdd = true
 		err = rows.Scan(&obj.ID, &obj.Name, &obj.About, &obj.Articles) //不scan会导致连接不释放
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)
 			return obj, errors.New("No result")
 		}
+	}
+	if !isAdd {
+		return obj, errors.New("No result")
 	}
 
 	return obj, nil

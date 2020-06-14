@@ -85,33 +85,13 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 // FlarumIndex flarum主页
 func FlarumIndex(w http.ResponseWriter, r *http.Request) {
+	var err error
 	ctx := GetRetContext(r)
 	h := ctx.h
-
-	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
-	var start uint64
-	var err error
-	var count uint64
-
-	rsp := response{}
-	if len(key) > 0 {
-		start, err = strconv.ParseUint(key, 10, 64)
-		if err != nil {
-			rsp = response{400, "key type err"}
-			h.Jsonify(w, rsp)
-			return
-		}
-	}
-	if len(score) > 0 {
-		_, err = strconv.ParseUint(score, 10, 64)
-		if err != nil {
-			rsp = response{400, "scope type err"}
-			h.Jsonify(w, rsp)
-			return
-		}
-	}
-
 	scf := h.App.Cf.Site
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	page := uint64(1)
 
 	type pageData struct {
 		PageData
@@ -121,26 +101,16 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		FlarumInfo interface{}
 	}
 
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
-	// 获取全部的帖子数目
-	err = sqlDB.QueryRow("SELECT COUNT(*) FROM topic").Scan(&count)
-	if err != nil {
-		log.Printf("Error %s", err)
-		rsp = response{400, "Failed to get the count"}
-		h.Jsonify(w, rsp)
-		return
-	}
-
 	// 获取贴子列表
-	pageInfo := model.SQLArticleList(sqlDB, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
-	categories, err := model.SQLGetAllCategory(sqlDB)
+	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	// categories, err := model.SQLGetAllCategory(sqlDB)
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
 	evn.SiteCf = scf
-	evn.Title = scf.Name
-	evn.Keywords = evn.Title
+	// evn.Title = scf.Name
+	// evn.Keywords = evn.Title
 	// evn.Description = scf.Desc
 	// evn.IsMobile = tpl == "mobile"
 	// evn.CurrentUser = currentUser
@@ -163,7 +133,8 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	// 添加当前页面的帖子信息
 	var res []flarum.Resource
 	for _, article := range pageInfo.Items {
-		diss := model.FlarumCreateDiscussion(article)
+		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
+		diss := model.FlarumCreateDiscussion(article, lastComent)
 		coreData.AppendResourcs(diss)
 		res = append(res, diss)
 	}
@@ -175,14 +146,16 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		coreData.AppendResourcs(user)
 	}
 
-	coreData.APIDocument.Links = make(map[string]string)
-	coreData.APIDocument.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-
 	// 设置语言信息
 	coreData.Locales = make(map[string]string)
+
 	coreData.Locales["en"] = "English"
 	coreData.Locales["zh"] = "中文"
 	coreData.Locale = "en"
+
+	coreData.APIDocument.Links = make(map[string]string)
+	coreData.APIDocument.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
+	coreData.APIDocument.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D20"
 
 	// 添加当前用户的session信息
 	currentUser, err := h.CurrentUser(w, r)
@@ -205,34 +178,62 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	apiDoc := flarum.NewAPIDoc()
-	var err error
-	var page uint64
-
-	// 需要返回的relations
-	_include := r.FormValue("include")
-	strings.Split(_include, ",")
-	// fmt.Printf(include)
-	page = 1
-
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
+	var page uint64
+	var pageInfo model.ArticlePageInfo
 
-	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
-	// categories, err := model.SQLGetAllCategory(sqlDB)
-	if err != nil {
-		fmt.Println(err)
+	logger := h.App.Logger
+
+	apiDoc := flarum.NewAPIDoc()
+
+	// 需要返回的relations TODO: use it
+	_include := r.FormValue("include")
+	strings.Split(_include, ",")
+	// fmt.Println(_include)
+
+	// 当前的排序方式 TODO: use it
+	// _sort := r.FormValue("sort")
+	// strings.Split(_sort, ",")
+	// fmt.Println(_sort)
+
+	// 当前的过滤方式 filter[q]:  tag:r_funny
+	_filter := r.FormValue("filter[q]")
+	// fmt.Println(_filter)
+
+	// 当前的偏移数目, 可得到页码数目, 页码从1开始
+	_offset := r.FormValue("page[offset]")
+	if _offset != "" {
+		data, err := strconv.ParseUint(_offset, 10, 64)
+		if err != nil {
+			logger.Error("Parse offset err:", err)
+			h.Jsonify(w, apiDoc)
+			return
+		}
+		page = data / 20
 	}
+	page = page + 1
 
-	// for _, category := range categories {
-	// 	coreData.Resources = append(coreData.Resources,
-	// 		model.FlarumCreateTag(category))
-	// }
+	if _filter == "" {
+		pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	} else {
+		data := strings.Trim(_filter, " ")
+		if strings.HasPrefix(data, "tag:") {
+			cate, err := model.SQLCategoryGetByURLName(sqlDB, data[4:])
+			if err != nil {
+				logger.Error("Can't get category", err)
+				h.Jsonify(w, apiDoc)
+				return
+			}
+			pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, cate.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+		}
+	}
 
 	var dissArr []flarum.Resource
 	for _, article := range pageInfo.Items {
-		diss := model.FlarumCreateDiscussion(article)
+		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
+		diss := model.FlarumCreateDiscussion(article, lastComent)
 		dissArr = append(dissArr, diss)
 	}
 	apiDoc.SetData(dissArr)
@@ -245,8 +246,21 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
+	// 添加当前用户的session信息
+	currentUser, err := h.CurrentUser(w, r)
+	if err == nil {
+		user := model.FlarumCreateCurrentUser(currentUser)
+		apiDoc.AppendResourcs(user)
+	}
+
+	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
+	if page != 1 {
+		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*20)
+	}
+
+	if pageInfo.HasNext {
+		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
+	}
 
 	h.Jsonify(w, apiDoc)
 }

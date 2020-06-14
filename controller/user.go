@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -209,7 +210,7 @@ func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 		PageInfo model.ArticlePageInfo
 	}
 
-	db := h.App.Db
+	// db := h.App.Db
 	scf := h.App.Cf.Site
 
 	tpl := h.CurrentTpl(r)
@@ -224,7 +225,7 @@ func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "user_notification"
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-	evn.PageInfo = model.ArticleNotificationList(db, currentUser.Notice, scf.TimeZone)
+	// evn.PageInfo = model.ArticleNotificationList(db, currentUser.Notice, scf.TimeZone)
 
 	h.Render(w, tpl, evn, "layout.html", "notification.html")
 }
@@ -255,6 +256,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	fmt.Println(btn)
 
 	db := h.App.Db
 	redisDB := h.App.RedisDB
@@ -273,10 +275,10 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := "rscan"
-	if btn == "prev" {
-		cmd = "scan"
-	}
+	// cmd := "rscan"
+	// if btn == "prev" {
+	// 	cmd = "scan"
+	// }
 
 	uobj, err := model.SQLUserGetByID(sqlDB, uidi)
 	if err != nil {
@@ -295,13 +297,13 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	var pageInfo model.ArticlePageInfo
 
 	if act == "reply" {
-		tb := "user_article_reply:" + uid
+		// tb := "user_article_reply:" + uid
 		// pageInfo = model.UserArticleList(db, cmd, tb, key, h.App.Cf.Site.PageShowNum)
-		pageInfo = model.ArticleList(db, "z"+cmd, tb, key, score, scf.PageShowNum, scf.TimeZone)
+		// pageInfo = model.ArticleList(db, "z"+cmd, tb, key, score, scf.PageShowNum, scf.TimeZone)
 	} else {
 		act = "post"
-		tb := "user_article_timeline:" + uid
-		pageInfo = model.UserArticleList(db, "h"+cmd, tb, key, scf.PageShowNum, scf.TimeZone)
+		// tb := "user_article_timeline:" + uid
+		// pageInfo = model.UserArticleList(db, "h"+cmd, tb, key, scf.PageShowNum, scf.TimeZone)
 	}
 
 	type userDetail struct {

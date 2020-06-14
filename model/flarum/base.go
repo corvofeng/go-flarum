@@ -150,6 +150,7 @@ type Session struct {
 // APIDoc flarum api将会返回的结果
 type APIDoc struct {
 	/**
+	 * 虽然感觉没有在用, 但是需要保留
 	 * Links 当前可点的链接:
 	 * 		first: 首页
 	 * 		next: 下一页

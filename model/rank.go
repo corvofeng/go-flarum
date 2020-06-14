@@ -58,17 +58,21 @@ func getWeight(rankMap *RankMap, aid uint64) float64 {
 var rankMap *RankMap
 var rankRedisDB *redis.Client
 
+func cid2Key(cid uint64) string {
+	return fmt.Sprintf("rank-category-%d", cid)
+}
+
 // TimelyResort 刷新Redis数据库中每个帖子的权重
 func TimelyResort() {
 	// 刷新所有节点的排序
-	categoryList, err := SQLGetAllCategory(rankMap.SQLDB)
+	categoryList, err := SQLGetNotEmptyCategory(rankMap.SQLDB, rankMap.RedisDB)
 	logger := util.GetLogger()
 	if util.CheckError(err, "获取所有节点") {
 		return
 	}
 
 	for _, v := range categoryList {
-		logger.Debugf("Start refresh %s", v.Name)
+		logger.Debugf("Start refresh category %d(%s)", v.ID, v.Name)
 
 		// 删除redis中所有无效的帖子
 		sqlDataDel, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, false)
@@ -76,7 +80,7 @@ func TimelyResort() {
 			return
 		}
 		for _, t := range sqlDataDel {
-			_, err := rankRedisDB.ZRem(fmt.Sprintf("%d", v.ID), fmt.Sprintf("%d", t.ID)).Result()
+			_, err := rankRedisDB.ZRem(cid2Key(v.ID), fmt.Sprintf("%d", t.ID)).Result()
 			util.CheckError(err, "删除无效帖子")
 		}
 
@@ -88,7 +92,7 @@ func TimelyResort() {
 
 		// 	首先从数据库中获取所有有效的ID
 		for _, t := range sqlDataAdd {
-			_, err := rankRedisDB.ZAddNX(fmt.Sprintf("%d", v.ID), &redis.Z{
+			_, err := rankRedisDB.ZAddNX(cid2Key(v.ID), &redis.Z{
 				Score:  getWeight(rankMap, t.ID),
 				Member: fmt.Sprintf("%d", t.ID)},
 			).Result()
@@ -96,10 +100,10 @@ func TimelyResort() {
 		}
 
 		// 刷新权重
-		rdsData, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", v.ID), 0, -1).Result()
+		rdsData, _ := rankRedisDB.ZRevRange(cid2Key(v.ID), 0, -1).Result()
 		for _, topicID := range rdsData {
 			aid, _ := strconv.ParseUint(topicID, 10, 64)
-			rankRedisDB.ZAddXX(fmt.Sprintf("%d", v.ID), &redis.Z{
+			rankRedisDB.ZAddXX(cid2Key(v.ID), &redis.Z{
 				Score:  float64(getWeight(rankMap, aid)),
 				Member: fmt.Sprintf("%d", aid)},
 			)
@@ -140,7 +144,7 @@ func GetTopicListByPageNum(cid uint64, page uint64, limit uint64) []uint64 {
 
 	start := (page - 1) * limit
 	end := (page)*limit - 1
-	data, _ := rankRedisDB.ZRevRange(fmt.Sprintf("%d", cid), int64(start), int64(end)).Result()
+	data, _ := rankRedisDB.ZRevRange(cid2Key(cid), int64(start), int64(end)).Result()
 	for _, val := range data {
 		aid, _ := strconv.ParseUint(val, 10, 64)
 		retData = append(retData, aid)
@@ -168,7 +172,7 @@ func AddNewArticleList(cid uint64, rankItems []ArticleRankItem) {
 			maxID = d.AID
 		}
 
-		rankRedisDB.ZAdd(fmt.Sprintf("%d", cid), &redis.Z{
+		rankRedisDB.ZAdd(cid2Key(cid), &redis.Z{
 			Score:  float64(d.Weight),
 			Member: fmt.Sprintf("%d", d.AID)})
 	}

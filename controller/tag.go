@@ -3,29 +3,28 @@ package controller
 import (
 	"goyoubbs/model"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"goji.io/pat"
 )
 
 func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
-	btn, key := r.FormValue("btn"), r.FormValue("key")
-	if len(key) > 0 {
-		_, err := strconv.ParseUint(key, 10, 64)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
-			return
-		}
-	}
+	// btn, key := r.FormValue("btn"), r.FormValue("key")
+	// if len(key) > 0 {
+	// 	_, err := strconv.ParseUint(key, 10, 64)
+	// 	if err != nil {
+	// 		w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
+	// 		return
+	// 	}
+	// }
 
 	tag := pat.Param(r, "tag")
 	tagLow := strings.ToLower(tag)
 
-	cmd := "hrscan"
-	if btn == "prev" {
-		cmd = "hscan"
-	}
+	// cmd := "hrscan"
+	// if btn == "prev" {
+	// 	cmd = "hscan"
+	// }
 
 	db := h.App.Db
 	redisDB := h.App.RedisDB
@@ -38,7 +37,8 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 
 	currentUser, _ := h.CurrentUser(w, r)
 
-	pageInfo := model.UserArticleList(db, cmd, "tag:"+tagLow, key, scf.PageShowNum, scf.TimeZone)
+	// pageInfo := model.UserArticleList(db, cmd, "tag:"+tagLow, key, scf.PageShowNum, scf.TimeZone)
+	pageInfo := model.ArticlePageInfo{}
 
 	type tagDetail struct {
 		Name   string

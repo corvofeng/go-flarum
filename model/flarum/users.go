@@ -12,13 +12,13 @@ type BaseUser struct {
 	Displayname string `json:"displayName"`
 	AvatarURL   string `json:"avatarUrl"`
 
-	JoinTime        string `json:"joinTime"`
-	DiscussionCount int    `json:"discussionCount"`
-	CommentCount    int    `json:"commentCount"`
-	CanEdit         bool   `json:"canEdit"`
-	CanDelete       bool   `json:"canDelete"`
-	LastSeenAt      string `json:"lastSeenAt"`
-	CanSuspend      bool   `json:"canSuspend"`
+	// JoinTime        string `json:"joinTime"`
+	// DiscussionCount int    `json:"discussionCount"`
+	// CommentCount    int    `json:"commentCount"`
+	// CanEdit         bool   `json:"canEdit"`
+	// CanDelete       bool   `json:"canDelete"`
+	// LastSeenAt      string `json:"lastSeenAt"`
+	// CanSuspend      bool   `json:"canSuspend"`
 }
 
 // CurrentUser 当前用户信息

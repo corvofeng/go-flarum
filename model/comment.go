@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"strconv"
+	"strings"
 	"time"
 
 	"goyoubbs/util"
@@ -15,30 +16,31 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-// Comment 评论信息
-type Comment struct {
+// CommentBase 会在数据库中保存的信息
+type CommentBase struct {
 	ID       uint64 `json:"id"`
-	Aid      uint64 `json:"aid"`
+	AID      uint64 `json:"aid"`
 	UID      uint64 `json:"uid"`
 	Number   uint64 `json:"number"`
 	Content  string `json:"content"`
-	ClientIp string `json:"clientip"`
+	ClientIP string `json:"clientip"`
 	AddTime  uint64 `json:"addtime"`
+}
+
+// Comment 评论信息
+type Comment struct {
+	CommentBase
+	UserName   string `json:"username"`
+	Avatar     string `json:"avatar"`
+	ContentFmt template.HTML
+	AddTimeFmt string `json:"addtimefmt"`
 }
 
 // CommentListItem 页面中的评论
 type CommentListItem struct {
-	ID         uint64 `json:"id"`
-	Aid        uint64 `json:"aid"`
-	UID        uint64 `json:"uid"`
-	Number     uint64 `json:"number"`
-	Name       string `json:"name"`
-	UserName   string `json:"username"`
-	Avatar     string `json:"avatar"`
-	Content    string `json:"content"`
-	ContentFmt template.HTML
-	AddTime    uint64 `json:"addtime"`
-	AddTimeFmt string `json:"addtimefmt"`
+	Comment
+
+	Name string `json:"name"`
 }
 
 type CommentPageInfo struct {
@@ -57,8 +59,8 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 			"VALUES " +
 			"(?, ?, ?, ?, ?, ?)"),
 		comment.UID,
-		comment.Aid,
-		comment.ClientIp,
+		comment.AID,
+		comment.ClientIP,
 		comment.Content,
 		comment.AddTime,
 		comment.AddTime,
@@ -70,6 +72,102 @@ func (comment *Comment) SQLSaveComment(db *sql.DB) {
 	comment.ID = uint64(cid)
 }
 
+func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []uint64) (items []CommentBase) {
+	var err error
+	var rows *sql.Rows
+	var commentListStr []string
+	logger := util.GetLogger()
+	defer rowsClose(rows)
+
+	if len(commentsList) == 0 {
+		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
+		return
+	}
+
+	for _, v := range commentsList {
+		commentListStr = append(commentListStr, strconv.FormatInt(int64(v), 10))
+	}
+	qFieldList := []string{
+		"id", "user_id", "topic_id", "content",
+		"number", "created_at",
+	}
+	sql := fmt.Sprintf("select %s from reply where id in (%s)",
+		strings.Join(qFieldList, ","),
+		strings.Join(commentListStr, ","))
+
+	rows, err = db.Query(sql)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+
+	for rows.Next() {
+		item := CommentBase{}
+		err = rows.Scan(
+			&item.ID, &item.UID, &item.AID, &item.Content,
+			&item.Number, &item.AddTime,
+		)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		items = append(items, item)
+	}
+	return
+}
+func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comment {
+	c := Comment{
+		CommentBase: *cb,
+	}
+	c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
+
+	// 预防XSS漏洞
+	c.ContentFmt = template.HTML(util.ContentFmt(cb.Content))
+
+	c.UserName = GetUserNameByID(db, redisDB, cb.UID)
+	c.Avatar = GetAvatarByID(db, redisDB, cb.UID)
+	return c
+}
+
+func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) (comments []Comment, err error) {
+	var rows *sql.Rows
+	defer rowsClose(rows)
+	logger := util.GetLogger()
+
+	rows, err = db.Query("SELECT id FROM reply where topic_id = ?", topicID)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+
+	var commentList []uint64
+	for rows.Next() {
+		var item uint64
+		err = rows.Scan(&item)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		commentList = append(commentList, item)
+	}
+	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	for _, bc := range baseComments {
+		comments = append(comments, bc.toComment(db, redisDB, tz))
+	}
+	return
+}
+
+// SQLGetCommentByID 获取一条评论
+func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) Comment {
+	logger := util.GetLogger()
+	comments := sqlGetCommentsBaseByList(db, redisDB, []uint64{cid})
+	if len(comments) == 0 {
+		logger.Warningf("Error get comment(%d)", cid)
+		return Comment{}
+	}
+	return comments[0].toComment(db, redisDB, tz)
+}
+
 // SQLCommentListByPage 获取帖子的所有评论
 func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
@@ -77,33 +175,17 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 	var firstKey, lastKey uint64
 	var rows *sql.Rows
 	var err error
-	rows, err = db.Query(
-		("SELECT id, user_id, topic_id, number, content, created_at " +
-			" FROM  reply WHERE topic_id = ?"),
-		topicID,
-	)
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
+	defer rowsClose(rows)
+	logger := util.GetLogger()
+
+	comments, err := sqlCommentListByTopicID(db, redisDB, topicID, tz)
+	if err != nil {
+		logger.Errorf("Query comments failed for %d", topicID)
+	}
+	for _, c := range comments {
+		item := CommentListItem{
+			Comment: c,
 		}
-	}()
-
-	for rows.Next() {
-		item := CommentListItem{}
-		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Number, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
-		item.UserName = GetUserNameByID(db, redisDB, item.UID)
-
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			continue
-		}
-
-		item.AddTimeFmt = util.TimeFmt(item.AddTime, time.RFC3339, tz)
-
-		// 预防XSS漏洞
-		item.ContentFmt = template.HTML(util.ContentFmt(item.Content))
-
 		items = append(items, item)
 	}
 
@@ -152,7 +234,7 @@ func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, bt
 	}()
 	for rows.Next() {
 		item := CommentListItem{}
-		err = rows.Scan(&item.ID, &item.UID, &item.Aid, &item.Content, &item.AddTime)
+		err = rows.Scan(&item.ID, &item.UID, &item.AID, &item.Content, &item.AddTime)
 		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
 		item.UserName = GetUserNameByID(db, redisDB, item.UID)
 
@@ -258,14 +340,18 @@ func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageIn
 		for _, citem := range citems {
 			user := userMap[citem.UID]
 			item := CommentListItem{
-				ID:         citem.ID,
-				Aid:        citem.Aid,
-				UID:        citem.UID,
-				Name:       user.Name,
-				Avatar:     user.Avatar,
-				AddTime:    citem.AddTime,
-				AddTimeFmt: util.TimeFmt(citem.AddTime, "2006-01-02 15:04", tz),
-				ContentFmt: template.HTML(util.ContentFmt(citem.Content)),
+				Comment: Comment{
+					CommentBase: CommentBase{
+						ID:      citem.ID,
+						AID:     citem.AID,
+						UID:     citem.UID,
+						AddTime: citem.AddTime,
+					},
+					Avatar:     user.Avatar,
+					AddTimeFmt: util.TimeFmt(citem.AddTime, "2006-01-02 15:04", tz),
+					ContentFmt: template.HTML(util.ContentFmt(citem.Content)),
+				},
+				Name: user.Name,
 			}
 			items = append(items, item)
 			if firstKey == 0 {

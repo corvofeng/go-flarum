@@ -31,13 +31,13 @@ type Discussion struct {
 
 	// 第一个评论的信息, 通常由作者创建
 	CreatedAt   string `json:"createdAt"`
-	StartPostID string
-	StartUserID string
+	FirstPostID uint64
+	FirstUserID string
 
 	// 最后一次评论的信息
+	LastPostID   uint64
 	LastPostedAt string `json:"lastPostedAt"`
-	LastPostedID string
-	LastUserID   string
+	LastUserID   uint64
 
 	CanReply bool `json:"canReply"`
 	// CanRename bool `json:"canRename"`
@@ -58,9 +58,9 @@ type Discussion struct {
 
 // DiscussionRelations 帖子具有的关系
 type DiscussionRelations struct {
-	User RelationDict `json:"user"` // 创建帖子的用户
-	// LastPostedUser RelationDict `json:"lastPostedUser"`
-	// FirstPost      RelationDict `json:"firstPost"`
+	User           RelationDict `json:"user"` // 创建帖子的用户
+	FirstPost      RelationDict `json:"firstPost"`
+	LastPostedUser RelationDict `json:"lastPostedUser"`
 
 	Tags  RelationArray `json:"tags"`
 	Posts RelationArray `json:"posts"`

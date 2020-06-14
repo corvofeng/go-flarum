@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"html"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -254,6 +253,15 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *r
 	return true
 }
 
+func (ab *ArticleBase) toArticleListItem(db *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
+	item := ArticleListItem{
+		ArticleBase: *ab,
+	}
+	item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
+	item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
+	return item
+}
+
 // SQLArticleGetByList 通过id列表获取对应的帖子
 func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
@@ -263,13 +271,7 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 	m := make(map[uint64]ArticleListItem)
 
 	for _, articleBase := range articleBaseList {
-		item := ArticleListItem{
-			ArticleBase: articleBase,
-		}
-		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
-		item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
-		item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
-		m[item.ID] = item
+		m[articleBase.ID] = articleBase.toArticleListItem(db, redisDB, tz)
 	}
 
 	for _, id := range articleList {
@@ -292,24 +294,27 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []ArticleBase) {
 	var err error
 	var rows *sql.Rows
-	var articleListStr string
+	var articleListStr []string
 	logger := util.GetLogger()
 	defer rowsClose(rows)
 
 	if len(articleList) == 0 {
 		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
-		return items
+		return
 	}
 
 	for _, v := range articleList {
-		if len(articleListStr) > 0 {
-			articleListStr += ", "
-		}
-		articleListStr += strconv.FormatInt(int64(v), 10)
+		articleListStr = append(articleListStr, strconv.FormatInt(int64(v), 10))
 	}
-	qField := "id, title, content, node_id, user_id, hits, reply_count, first_post_id, last_post_id, created_at, updated_at"
+	qFieldList := []string{
+		"id", "title", "content",
+		"node_id", "user_id", "hits", "reply_count",
+		"first_post_id", "last_post_id",
+		"created_at", "updated_at",
+	}
 	sql := fmt.Sprintf("select %s from topic where id in (%s)",
-		qField, articleListStr)
+		strings.Join(qFieldList, ","),
+		strings.Join(articleListStr, ","))
 
 	rows, err = db.Query(sql)
 	if err != nil {
@@ -321,7 +326,8 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 		item := ArticleBase{}
 		err = rows.Scan(
 			&item.ID, &item.Title, &item.Content, &item.CID, &item.UID,
-			&item.ClickCnt, &item.Comments, &item.FirstPostID, &item.LastPostID,
+			&item.ClickCnt, &item.Comments,
+			&item.FirstPostID, &item.LastPostID,
 			&item.AddTime, &item.EditTime)
 
 		if err != nil {
@@ -329,7 +335,6 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 			continue
 		}
 		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
-
 		m[item.ID] = item
 	}
 
@@ -346,6 +351,7 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
+	fmt.Println("Get article list", page, limit, articleList)
 	if len(articleList) == 0 {
 		// TODO: remove it
 		articleIteratorStart := GetCIDArticleMax(nodeID)
@@ -367,6 +373,9 @@ func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, li
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1
 	pageInfo.PagePrev = page - 1
+	if len(articleList) == int(limit) {
+		pageInfo.HasNext = true
+	}
 	return pageInfo
 }
 
@@ -574,13 +583,6 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) 
 		fmt.Printf("Get %d with error :%v", aid, err)
 		data = 0
 	}
-	// if data == 0 {
-	// rep := cntDB.Hget("article_views", youdb.I2b(aid))
-	// if rep != nil {
-	// data = rep.Uint64()
-	// redisDB.HSet("article_views", fmt.Sprintf("%d", aid), data)
-	// }
-	// }
 	return data
 }
 
@@ -591,514 +593,7 @@ func SQLArticleList(db *sql.DB, redisDB *redis.Client, start uint64, btnAct stri
 	)
 }
 
-func ArticleList(db *youdb.DB, cmd, tb, key, score string, limit, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-	var keys [][]byte
-	var hasPrev, hasNext bool
-	var firstKey, firstScore, lastKey, lastScore uint64
-
-	keyStart := youdb.DS2b(key)
-	scoreStart := youdb.DS2b(score)
-	if cmd == "zrscan" {
-		rs := db.Zrscan(tb, keyStart, scoreStart, limit)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				keys = append(keys, rs.Data[i])
-			}
-		}
-	} else if cmd == "zscan" {
-		rs := db.Zscan(tb, keyStart, scoreStart, limit)
-		if rs.State == "ok" {
-			for i := len(rs.Data) - 2; i >= 0; i -= 2 {
-				keys = append(keys, rs.Data[i])
-			}
-		}
-	}
-
-	if len(keys) > 0 {
-		var aitems []ArticleMini
-		userMap := map[uint64]UserMini{}
-		categoryMap := map[uint64]CategoryMini{}
-
-		rs := db.Hmget("article", keys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := ArticleMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				if !item.Hidden {
-					aitems = append(aitems, item)
-					userMap[item.UID] = UserMini{}
-					if item.Ruid > 0 {
-						userMap[item.Ruid] = UserMini{}
-					}
-					categoryMap[item.CID] = CategoryMini{}
-				}
-			}
-		}
-
-		userKeys := make([][]byte, 0, len(userMap))
-		for k := range userMap {
-			userKeys = append(userKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("user", userKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := UserMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.ID] = item
-			}
-		}
-
-		categoryKeys := make([][]byte, 0, len(categoryMap))
-		for k := range categoryMap {
-			categoryKeys = append(categoryKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("category", categoryKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := CategoryMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.ID] = item
-			}
-		}
-
-		for _, article := range aitems {
-			user := userMap[article.UID]
-			category := categoryMap[article.CID]
-			item := ArticleListItem{
-				ArticleBase: ArticleBase{
-					ID:       article.ID,
-					UID:      article.UID,
-					CID:      article.CID,
-					Title:    article.Title,
-					EditTime: article.EditTime,
-					Comments: article.Comments,
-				},
-				Name:        user.Name,
-				Avatar:      user.Avatar,
-				Cname:       category.Name,
-				Ruid:        article.Ruid,
-				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-			}
-			if article.Ruid > 0 {
-				item.Rname = userMap[article.Ruid].Name
-			}
-			items = append(items, item)
-			if firstKey == 0 {
-				firstKey = item.ID
-				firstScore = item.EditTime
-			}
-			lastKey = item.ID
-			lastScore = item.EditTime
-		}
-
-		// not fix hidden article
-		rs = db.Zscan(tb, youdb.I2b(firstKey), youdb.I2b(firstScore), 1)
-		if rs.State == "ok" {
-			hasPrev = true
-		}
-		rs = db.Zrscan(tb, youdb.I2b(lastKey), youdb.I2b(lastScore), 1)
-		if rs.State == "ok" {
-			hasNext = true
-		}
-
-	}
-
-	return ArticlePageInfo{
-		Items:      items,
-		HasPrev:    hasPrev,
-		HasNext:    hasNext,
-		FirstKey:   firstKey,
-		FirstScore: firstScore,
-		LastKey:    lastKey,
-		LastScore:  lastScore,
-	}
-}
-
-func ArticleGetRelative(aid uint64, tags string) ArticleRelative {
-	if len(tags) == 0 {
-		return ArticleRelative{}
-	}
-	getMax := 10
-	// scanMax := 100
-
-	var aitems []ArticleLi
-	var titems []string
-
-	// tagsLow := strings.ToLower(tags)
-
-	// ctagMap := map[string]struct{}{}
-
-	aidCount := map[uint64]int{}
-
-	// for _, tag := range strings.Split(tagsLow, ",") {
-	// 	ctagMap[tag] = struct{}{}
-	// 	rs := db.Hrscan("tag:"+tag, []byte(""), scanMax)
-	// 	if rs.State == "ok" {
-	// 		for i := 0; i < len(rs.Data)-1; i += 2 {
-	// 			aid2 := youdb.B2i(rs.Data[i])
-	// 			if aid2 != aid {
-	// 				if _, ok := aidCount[aid2]; ok {
-	// 					aidCount[aid2] += 1
-	// 				} else {
-	// 					aidCount[aid2] = 1
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	if len(aidCount) > 0 {
-
-		type Kv struct {
-			Key   uint64
-			Value int
-		}
-
-		var ss []Kv
-		for k, v := range aidCount {
-			ss = append(ss, Kv{k, v})
-		}
-
-		sort.Slice(ss, func(i, j int) bool {
-			return ss[i].Value > ss[j].Value
-		})
-
-		var akeys [][]byte
-		j := 0
-		for _, kv := range ss {
-			akeys = append(akeys, youdb.I2b(kv.Key))
-			j++
-			if j == getMax {
-				break
-			}
-		}
-
-		// rs := db.Hmget("article", akeys)
-		// if rs.State == "ok" {
-		// 	tmpMap := map[string]struct{}{}
-		// 	for i := 0; i < len(rs.Data)-1; i += 2 {
-		// 		item := ArticleLi{}
-		// 		json.Unmarshal(rs.Data[i+1], &item)
-		// 		aitems = append(aitems, item)
-		// 		for _, tag := range strings.Split(strings.ToLower(item.Tags), ",") {
-		// 			if _, ok := ctagMap[tag]; !ok {
-		// 				tmpMap[tag] = struct{}{}
-		// 			}
-		// 		}
-		// 	}
-
-		// 	for k := range tmpMap {
-		// 		titems = append(titems, k)
-		// 	}
-		// }
-	}
-
-	return ArticleRelative{
-		Articles: aitems,
-		Tags:     titems,
-	}
-}
-
-func UserArticleList(db *youdb.DB, cmd, tb, key string, limit, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-	var keys [][]byte
-
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-
-	keyStart := youdb.DS2b(key)
-	if cmd == "hrscan" {
-		rs := db.Hrscan(tb, keyStart, limit)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				keys = append(keys, rs.Data[i])
-			}
-		}
-	} else if cmd == "hscan" {
-		rs := db.Hscan(tb, keyStart, limit)
-		if rs.State == "ok" {
-			for i := len(rs.Data) - 2; i >= 0; i -= 2 {
-				keys = append(keys, rs.Data[i])
-			}
-		}
-	}
-
-	if len(keys) > 0 {
-		var aitems []ArticleMini
-		userMap := map[uint64]UserMini{}
-		categoryMap := map[uint64]CategoryMini{}
-
-		rs := db.Hmget("article", keys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := ArticleMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				aitems = append(aitems, item)
-				userMap[item.UID] = UserMini{}
-				if item.Ruid > 0 {
-					userMap[item.Ruid] = UserMini{}
-				}
-				categoryMap[item.CID] = CategoryMini{}
-			}
-		}
-
-		userKeys := make([][]byte, 0, len(userMap))
-		for k := range userMap {
-			userKeys = append(userKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("user", userKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := UserMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.ID] = item
-			}
-		}
-
-		categoryKeys := make([][]byte, 0, len(categoryMap))
-		for k := range categoryMap {
-			categoryKeys = append(categoryKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("category", categoryKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := CategoryMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.ID] = item
-			}
-		}
-
-		for _, article := range aitems {
-			user := userMap[article.UID]
-			category := categoryMap[article.CID]
-			item := ArticleListItem{
-				ArticleBase: ArticleBase{
-					ID:       article.ID,
-					UID:      article.UID,
-					CID:      article.CID,
-					Title:    article.Title,
-					EditTime: article.EditTime,
-					Comments: article.Comments,
-				},
-				Name:        user.Name,
-				Avatar:      user.Avatar,
-				Cname:       category.Name,
-				Ruid:        article.Ruid,
-				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-			}
-			if article.Ruid > 0 {
-				item.Rname = userMap[article.Ruid].Name
-			}
-			items = append(items, item)
-			if firstKey == 0 {
-				firstKey = item.ID
-			}
-			lastKey = item.ID
-		}
-
-		rs = db.Hscan(tb, youdb.I2b(firstKey), 1)
-		if rs.State == "ok" {
-			hasPrev = true
-		}
-		rs = db.Hrscan(tb, youdb.I2b(lastKey), 1)
-		if rs.State == "ok" {
-			hasNext = true
-		}
-	}
-
-	return ArticlePageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
-}
-
-func ArticleNotificationList(db *youdb.DB, ids string, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-	var keys [][]byte
-
-	for _, v := range strings.Split(ids, ",") {
-		keys = append(keys, youdb.DS2b(v))
-	}
-
-	if len(keys) > 0 {
-		var aitems []ArticleMini
-		userMap := map[uint64]UserMini{}
-		categoryMap := map[uint64]CategoryMini{}
-
-		rs := db.Hmget("article", keys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := ArticleMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				aitems = append(aitems, item)
-				userMap[item.UID] = UserMini{}
-				if item.Ruid > 0 {
-					userMap[item.Ruid] = UserMini{}
-				}
-				categoryMap[item.CID] = CategoryMini{}
-			}
-		}
-
-		userKeys := make([][]byte, 0, len(userMap))
-		for k := range userMap {
-			userKeys = append(userKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("user", userKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := UserMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.ID] = item
-			}
-		}
-
-		categoryKeys := make([][]byte, 0, len(categoryMap))
-		for k := range categoryMap {
-			categoryKeys = append(categoryKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("category", categoryKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := CategoryMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.ID] = item
-			}
-		}
-
-		for _, article := range aitems {
-			user := userMap[article.UID]
-			category := categoryMap[article.CID]
-			item := ArticleListItem{
-				ArticleBase: ArticleBase{
-					ID:       article.ID,
-					UID:      article.UID,
-					CID:      article.CID,
-					Title:    article.Title,
-					EditTime: article.EditTime,
-					Comments: article.Comments,
-				},
-				Name:        user.Name,
-				Avatar:      user.Avatar,
-				Cname:       category.Name,
-				Ruid:        article.Ruid,
-				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-			}
-			if article.Ruid > 0 {
-				item.Rname = userMap[article.Ruid].Name
-			}
-			items = append(items, item)
-		}
-	}
-
-	return ArticlePageInfo{Items: items}
-}
-
-func ArticleSearchList(db *youdb.DB, where, kw string, limit, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-
-	var aitems []Article
-	userMap := map[uint64]UserMini{}
-	categoryMap := map[uint64]CategoryMini{}
-
-	startKey := []byte("")
-	for {
-		rs := db.Hrscan("article", startKey, limit)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				startKey = rs.Data[i]
-				aitem := Article{}
-				json.Unmarshal(rs.Data[i+1], &aitem)
-				if !aitem.Hidden {
-					var getIt bool
-					if where == "title" {
-						if strings.Index(strings.ToLower(aitem.Title), kw) >= 0 {
-							getIt = true
-						}
-					} else {
-						if strings.Index(strings.ToLower(aitem.Content), kw) >= 0 {
-							getIt = true
-						}
-					}
-					if getIt {
-						aitems = append(aitems, aitem)
-						userMap[aitem.UID] = UserMini{}
-						if aitem.RUID > 0 {
-							userMap[aitem.RUID] = UserMini{}
-						}
-						categoryMap[aitem.CID] = CategoryMini{}
-						if len(aitems) == limit {
-							break
-						}
-					}
-				}
-			}
-			if len(aitems) == limit {
-				break
-			}
-		} else {
-			break
-		}
-	}
-
-	if len(aitems) > 0 {
-		userKeys := make([][]byte, 0, len(userMap))
-		for k := range userMap {
-			userKeys = append(userKeys, youdb.I2b(k))
-		}
-		rs := db.Hmget("user", userKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := UserMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.ID] = item
-			}
-		}
-
-		categoryKeys := make([][]byte, 0, len(categoryMap))
-		for k := range categoryMap {
-			categoryKeys = append(categoryKeys, youdb.I2b(k))
-		}
-		rs = db.Hmget("category", categoryKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := CategoryMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				categoryMap[item.ID] = item
-			}
-		}
-
-		for _, article := range aitems {
-			user := userMap[article.UID]
-			category := categoryMap[article.CID]
-			item := ArticleListItem{
-				ArticleBase: ArticleBase{
-					ID:       article.ID,
-					UID:      article.UID,
-					CID:      article.CID,
-					Title:    article.Title,
-					EditTime: article.EditTime,
-					Comments: article.Comments,
-				},
-				Name:        user.Name,
-				Avatar:      user.Avatar,
-				Cname:       category.Name,
-				Ruid:        article.RUID,
-				EditTimeFmt: util.TimeFmt(article.EditTime, "2006-01-02 15:04", tz),
-			}
-			if article.RUID > 0 {
-				item.Rname = userMap[article.RUID].Name
-			}
-			items = append(items, item)
-		}
-	}
-
-	return ArticlePageInfo{Items: items}
-}
-
+// ArticleFeedList 旧有函数, TODO: 增加feeds功能
 func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
 	var items []ArticleFeedListItem
 	var keys [][]byte
