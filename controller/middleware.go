@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 )
 
@@ -90,15 +89,43 @@ func MustAuthMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	}
 }
 
-func TestMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
+// MustCSRFMiddleware 检查csrf token
+func MustCSRFMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("In md 1")
-		inner(w, r)
+		reqCtx := GetRetContext(r)
+		h := reqCtx.h
+		user := reqCtx.currentUser
+		csrf := r.Header.Get("X-CSRF-Token")
+		redisDB := h.App.RedisDB
+		if !user.VerifyCSRFToken(redisDB, csrf) {
+			w.WriteHeader(http.StatusForbidden)
+			reqCtx.h.jsonify(w, response{
+				Retcode: 403,
+				Retmsg:  "用户csrf token错误, 刷新页面后重试",
+			})
+		} else {
+			inner(w, r)
+		}
 	}
 }
-func TestMiddleware2(inner HTTPHandleFunc) HTTPHandleFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("In md 2")
-		inner(w, r)
+func readUserIP(r *http.Request) string {
+	IPAddress := r.Header.Get("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = r.Header.Get("X-Forwarded-For")
 	}
+	if IPAddress == "" {
+		IPAddress = r.RemoteAddr
+	}
+	return IPAddress
+}
+
+// RealIPMiddleware 获取用户的真实ip
+func RealIPMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		reqCtx.realIP = readUserIP(r)
+		inner.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(mw)
 }

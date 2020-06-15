@@ -55,6 +55,7 @@ type (
 		currentUser model.User
 		inAPI       bool
 		h           *BaseHandler
+		realIP      string
 	}
 )
 
