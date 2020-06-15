@@ -61,28 +61,6 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 
 	rsp := response{}
-	// token := h.GetCookie(r, "token")
-	// if len(token) == 0 {
-	// 	rsp = response{400, "token cookie missed"}
-	// 	h.Jsonify(w, rsp)
-	// 	return
-	// }
-
-	currentUser, _ := h.CurrentUser(w, r)
-	if !currentUser.CanCreateTopic() || !currentUser.CanReply() {
-		rsp = response{403, "forbiden"}
-		w.WriteHeader(http.StatusBadGateway)
-		h.jsonify(w, rsp)
-		return
-	}
-	redisDB := h.App.RedisDB
-	csrf := r.Header.Get("X-CSRF-Token")
-	if !currentUser.VerifyCSRFToken(redisDB, csrf) {
-		w.WriteHeader(http.StatusBadGateway)
-		rsp = response{400, "csrf token required"}
-		h.jsonify(w, rsp)
-	}
-
 	decoder := json.NewDecoder(r.Body)
 	post := flarum.NewResource(flarum.EPost, 0)
 	err := decoder.Decode(&post)

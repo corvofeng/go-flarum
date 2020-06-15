@@ -51,6 +51,29 @@ type CommentPageInfo struct {
 	LastKey  uint64            `json:"lastkey"`
 }
 
+// sqlSaveComment 在数据库中存储评论
+func (comment *Comment) sqlSaveComment(tx *sql.Tx) (bool, error) {
+	rows, err := tx.Exec(
+		("INSERT INTO `reply`" +
+			"(`user_id`, `topic_id`, `number`, `client_ip`, `content`, `created_at`, `updated_at`)" +
+			"VALUES " +
+			"(?, ?, ?, ?, ?, ?, ?)"),
+		comment.UID,
+		comment.AID,
+		comment.Number,
+		comment.ClientIP,
+		comment.Content,
+		comment.AddTime,
+		comment.AddTime,
+	)
+	if util.CheckError(err, "回复失败") {
+		return false, err
+	}
+	cid, err := rows.LastInsertId()
+	comment.ID = uint64(cid)
+	return true, nil
+}
+
 // SQLSaveComment 在数据库中存储评论
 func (comment *Comment) SQLSaveComment(db *sql.DB) {
 	rows, err := db.Exec(

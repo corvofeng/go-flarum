@@ -185,9 +185,8 @@ func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 	return weight
 }
 
-// SQLCreateTopic 创建主题
-func (article *Article) SQLCreateTopic(db *sql.DB) bool {
-	row, err := db.Exec(
+func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
+	row, err := tx.Exec(
 		("INSERT INTO `topic` " +
 			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
 			" VALUES " +
@@ -203,12 +202,64 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 		article.Active,
 	)
 	if util.CheckError(err, "创建主题") {
-		return false
+		return false, err
 	}
 	aid, err := row.LastInsertId()
 	article.ID = uint64(aid)
+	return true, nil
+}
 
+// SQLCreateTopic 创建主题
+func (article *Article) SQLCreateTopic(db *sql.DB) bool {
+	tx, err := db.Begin()
+	defer clearTransaction(tx)
+	if err != nil {
+		return false
+	}
+	article.sqlCreateTopic(tx)
+	if err := tx.Commit(); err != nil {
+		logger := util.GetLogger()
+		logger.Error("Create topic with error", err)
+		return false
+	}
 	return true
+}
+
+// CreateFlarumDiscussion 创建flarum的帖子
+func (article *Article) CreateFlarumDiscussion(db *sql.DB) (bool, error) {
+	tx, err := db.Begin()
+	defer clearTransaction(tx)
+	if err != nil {
+		return false, err
+	}
+	if ok, err := article.sqlCreateTopic(tx); !ok {
+		return false, err
+	}
+
+	comment := Comment{
+		CommentBase: CommentBase{
+			AID:      article.ID,
+			UID:      article.UID,
+			Content:  article.Content,
+			Number:   1,
+			ClientIP: article.ClientIP,
+			AddTime:  article.AddTime,
+		},
+	}
+	if ok, err := comment.sqlSaveComment(tx); !ok {
+		return false, err
+	}
+	// TODO: update article lastPostID firstPostID
+
+	// TODO: update article tags
+
+	if err := tx.Commit(); err != nil {
+		logger := util.GetLogger()
+		logger.Error("Create topic with error", err)
+		return false, err
+	}
+
+	return true, nil
 }
 
 // SQLArticleUpdate 更新当前帖子

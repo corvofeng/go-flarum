@@ -841,3 +841,55 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.FlarumInfo = coreData
 	h.Render(w, tpl, evn, "layout.html", "article.html")
 }
+
+// FlarumAPICreateDiscussion 用户创建一条话题
+func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	rsp := response{}
+	sqlDB := h.App.MySQLdb
+
+	// 用户创建的话题
+	type PostedDiscussion struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				Title   string `json:"title"`
+				Content string `json:"content"`
+			} `json:"attributes"`
+			Relationships flarum.DiscussionRelations `json:"relationships"`
+		} `json:"data"`
+	}
+
+	diss := PostedDiscussion{}
+	err := json.NewDecoder(r.Body).Decode(&diss)
+
+	if err != nil {
+		rsp = response{400, "json Decode err:" + err.Error()}
+		h.jsonify(w, rsp)
+		return
+	}
+
+	now := uint64(time.Now().UTC().Unix())
+	aobj := model.Article{
+		ArticleBase: model.ArticleBase{
+			UID:      ctx.currentUser.ID,
+			Title:    diss.Data.Attributes.Title,
+			Content:  diss.Data.Attributes.Content,
+			AddTime:  now,
+			EditTime: now,
+			ClientIP: ctx.realIP,
+		},
+
+		Active:        1, // 帖子为激活状态
+		FatherTopicID: 0, // 没有原始主题
+	}
+	aobj.CreateFlarumDiscussion(sqlDB)
+
+	// obj := flarum.NewResource(flarum.EDiscussion, 0)
+	// user := ctx.currentUser
+	// redisDB := h.App.RedisDB
+
+	w.WriteHeader(http.StatusForbidden)
+	h.jsonify(w, rsp)
+}

@@ -94,11 +94,12 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)
+	sp.Use(ct.RealIPMiddleware)
 
 	sp.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
-			ct.TestMiddleware,
-			ct.TestMiddleware2,
+			// ct.TestMiddleware,
+			// ct.TestMiddleware2,
 		},
 		ct.FlarumIndex,
 	))
@@ -120,8 +121,23 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	// API handler
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
+	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/discussions"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustCSRFMiddleware,
+			ct.InAPIMiddleware,
+		},
+		ct.FlarumAPICreateDiscussion,
+	))
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), ct.InAPIMiddleware(ct.NewCaptcha))
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), ct.InAPIMiddleware(ct.FlarumAPICreatePost))
+	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustCSRFMiddleware,
+			ct.InAPIMiddleware,
+		},
+		ct.FlarumAPICreatePost,
+	))
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
 	return sp
 }

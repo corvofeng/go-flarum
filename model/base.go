@@ -50,6 +50,13 @@ func rowsClose(rows *sql.Rows) {
 	}
 }
 
+func clearTransaction(tx *sql.Tx) {
+	err := tx.Rollback()
+	if err != sql.ErrTxDone && err != nil {
+		fmt.Println("error in transaction", err)
+	}
+}
+
 // dataGetByRows 从数据库返回结果中获取数据, 解析成为dict的形式
 func dataGetByRows(rows *sql.Rows) ([]map[string]interface{}, error) {
 	columns, err := rows.Columns()
