@@ -21,6 +21,7 @@ type (
 		Articles    uint64 `json:"articles"`
 		About       string `json:"about"`
 		ParentID    uint64 `json:"parent_id"`
+		Position    uint64 `json:"position"`
 		Description string `json:"description"`
 		Hidden      bool   `json:"hidden"`
 	}
@@ -103,7 +104,7 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 	}
 	qFieldList := []string{
 		"id", "name", "urlname",
-		"description", "is_hidden", "parent_id",
+		"description", "is_hidden", "parent_id", "position",
 	}
 	sql := fmt.Sprintf("SELECT %s FROM tags WHERE id IN (%s)",
 		strings.Join(qFieldList, ","),
@@ -119,7 +120,7 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 		err = rows.Scan(
 			&item.ID, &item.Name, &item.URLName,
 			&item.Description, &item.Hidden,
-			&item.ParentID,
+			&item.ParentID, &item.Position,
 		)
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)

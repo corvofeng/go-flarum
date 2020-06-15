@@ -8,6 +8,7 @@ import (
 func FlarumCreateForumInfo(
 	appConf AppConf,
 	siteInfo SiteInfo,
+	tags []flarum.Resource,
 ) flarum.Resource {
 	obj := flarum.NewResource(flarum.EForum, 1)
 	data := (obj.Attributes).(*flarum.Forum)
@@ -22,12 +23,22 @@ func FlarumCreateForumInfo(
 	data.AdminURL = "/admin"
 	// data.BasePath = "http://192.168.101.35:8082"
 	data.BaseURL = mainConf.BaseURL
+	data.CanStartDiscussion = true
 	data.AllowSignUp = true
+	data.WelcomeMessage = "这是一个简单的小站"
+	data.WelcomeTitle = "用作测试"
+	data.Debug = true
+	data.MaxPrimaryTags = 3
+	data.MaxSecondaryTags = 3
+	data.MinPrimaryTags = 1
+	data.MinSecondaryTags = 0
 
 	data.BasePath = ""
 	// data.BaseURL = "/"
-
-	obj.Relationships = flarum.ForumRelations{}
+	obj.BindRelations(
+		"Tags",
+		FlarumCreateTagRelations(tags),
+	)
 
 	return obj
 }
@@ -35,15 +46,30 @@ func FlarumCreateForumInfo(
 // FlarumCreateTag 创建tag资源
 func FlarumCreateTag(cat Category) flarum.Resource {
 	obj := flarum.NewResource(flarum.ETAG, cat.ID)
+
 	data := obj.Attributes.(*flarum.Tag)
 	data.Name = cat.Name
-	data.DiscussionCount = cat.Articles
+	data.DiscussionCount = 3
 	data.IsHidden = cat.Hidden
 	data.Slug = cat.URLName
+	data.CanAddToDiscussion = true
+	data.CanStartDiscussion = true
+	data.LastPostedAt = "2020-06-10T01:20:37+00:00"
+	data.Position = cat.Position
 
-	// data.Candd
 	data.Color = "#B72A2A"
 	data.Icon = "fas fa-wrench"
+
+	// please refer to #11
+	if cat.ParentID == 0 {
+		obj.Relationships = flarum.TagRelations{}
+	} else {
+		obj.Relationships = flarum.TagChildRelations{}
+		obj.BindRelations(
+			"Parent",
+			flarum.RelationDict{Data: flarum.InitBaseResources(cat.ParentID, "tags")},
+		)
+	}
 
 	return obj
 }

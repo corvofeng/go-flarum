@@ -1,7 +1,5 @@
 package flarum
 
-import "time"
-
 // Tag flarum tag信息
 type Tag struct {
 	BaseResources
@@ -14,20 +12,26 @@ type Tag struct {
 	BackgroundMode     string      `json:"backgroundMode"`
 	Icon               string      `json:"icon"`
 	DiscussionCount    uint64      `json:"discussionCount"`
-	Position           int         `json:"position"`
+	Position           uint64      `json:"position"`
 	DefaultSort        interface{} `json:"defaultSort"`
 	IsChild            bool        `json:"isChild"`
 	IsHidden           bool        `json:"isHidden"`
-	LastPostedAt       time.Time   `json:"lastPostedAt"`
+	LastPostedAt       string      `json:"lastPostedAt"`
 	CanStartDiscussion bool        `json:"canStartDiscussion"`
 	CanAddToDiscussion bool        `json:"canAddToDiscussion"`
 	IsRestricted       bool        `json:"isRestricted"`
 }
 
+// TagChildRelations 标签具有的关系
+// 子节点需要携带父节点的信息
+type TagChildRelations struct {
+	LastPostedDiscussion RelationDict `json:"lastPostedDiscussion"`
+	Parent               RelationDict `json:"parent"`
+}
+
 // TagRelations 标签具有的关系
 type TagRelations struct {
 	LastPostedDiscussion RelationDict `json:"lastPostedDiscussion"`
-	Parent               RelationDict `json:"parent"`
 }
 
 // DoInit 初始化tags

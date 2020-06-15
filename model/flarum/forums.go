@@ -34,10 +34,10 @@ type Forum struct {
 	CanViewFlags         bool        `json:"canViewFlags"`
 	FlagCount            int         `json:"flagCount"`
 	GuidelinesURL        interface{} `json:"guidelinesUrl"`
-	MinPrimaryTags       string      `json:"minPrimaryTags"`
-	MaxPrimaryTags       string      `json:"maxPrimaryTags"`
-	MinSecondaryTags     string      `json:"minSecondaryTags"`
-	MaxSecondaryTags     string      `json:"maxSecondaryTags"`
+	MinPrimaryTags       int         `json:"minPrimaryTags"`
+	MaxPrimaryTags       int         `json:"maxPrimaryTags"`
+	MinSecondaryTags     int         `json:"minSecondaryTags"`
+	MaxSecondaryTags     int         `json:"maxSecondaryTags"`
 }
 
 // ForumRelations 站点关系

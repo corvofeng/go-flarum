@@ -104,21 +104,23 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	// 获取贴子列表
 	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	// categories, err := model.SQLGetAllCategory(sqlDB)
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
 	evn.SiteCf = scf
 	coreData := flarum.CoreData{}
 
-	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo))
-
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
 	// 添加所有分类的信息
+	var flarumTags []flarum.Resource
 	for _, category := range categories {
-		coreData.AppendResourcs(
-			model.FlarumCreateTag(category))
+		tag := model.FlarumCreateTag(category)
+		coreData.AppendResourcs(tag)
+		flarumTags = append(flarumTags, tag)
 	}
+
+	// 添加主站点信息
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo, flarumTags))
 
 	// 添加当前页面的帖子信息
 	var res []flarum.Resource
@@ -236,6 +238,13 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	for _, article := range pageInfo.Items {
 		user := model.FlarumCreateUser(article)
 		apiDoc.AppendResourcs(user)
+	}
+	// categories, err := model.SQLGetAllCategory(sqlDB)
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+
+	// 添加所有分类的信息
+	for _, category := range categories {
+		apiDoc.AppendResourcs(model.FlarumCreateTag(category))
 	}
 
 	// 添加当前用户的session信息

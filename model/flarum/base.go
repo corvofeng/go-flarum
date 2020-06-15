@@ -200,6 +200,7 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 		break
 	case EForum:
 		data = &Forum{}
+		defaultRelation = &ForumRelations{}
 		break
 	case ETAG:
 		data = &Tag{}
