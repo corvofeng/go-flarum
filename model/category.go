@@ -44,7 +44,7 @@ type (
 // SQLGetAllCategory 获取所有分类
 func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 	var categories []Category
-	rows, err := db.Query("SELECT id, name, urlname, description FROM node order by topic_count desc limit 30")
+	rows, err := db.Query("SELECT id, name, urlname, description FROM tags order by topic_count desc limit 30")
 	defer rowsClose(rows)
 
 	if err != nil {
@@ -66,7 +66,7 @@ func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
 
 // SQLGetNotEmptyCategory 获取非空的分类
 func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Category, err error) {
-	rows, err := db.Query("SELECT id FROM node where topic_count != 0 and is_hidden = 0")
+	rows, err := db.Query("SELECT id FROM tags where topic_count != 0 and is_hidden = 0")
 	defer rowsClose(rows)
 	logger := util.GetLogger()
 
@@ -105,7 +105,7 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 		"id", "name", "urlname",
 		"description", "is_hidden", "parent_id",
 	}
-	sql := fmt.Sprintf("select %s from node where id in (%s)",
+	sql := fmt.Sprintf("SELECT %s FROM tags WHERE id IN (%s)",
 		strings.Join(qFieldList, ","),
 		strings.Join(categoryListStr, ","))
 	rows, err = db.Query(sql)
@@ -154,11 +154,11 @@ func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Catego
 	defer rowsClose(rows)
 
 	if cid != "" {
-		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE id =  ?", cid)
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM tags WHERE id =  ?", cid)
 	} else if name != "" {
-		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE name =  ?", name)
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM tags WHERE name =  ?", name)
 	} else if urlname != "" {
-		rows, err = db.Query("SELECT id, name, summary, topic_count FROM node WHERE urlname =  ?", urlname)
+		rows, err = db.Query("SELECT id, name, summary, topic_count FROM tags WHERE urlname =  ?", urlname)
 	} else {
 		return obj, errors.New("Did not give any category")
 	}
