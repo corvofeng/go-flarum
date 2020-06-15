@@ -62,7 +62,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
 		rsp = response{400, "token cookie missed"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 
@@ -83,20 +83,20 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			400,
 			"表单解析错误:" + err.Error(),
 		}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	defer r.Body.Close()
 
 	if len(rec.Name) == 0 || len(rec.Password) == 0 {
 		rsp = normalRsp{400, "name or pw is empty"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	nameLow := strings.ToLower(rec.Name)
 	if !util.IsUserName(nameLow) {
 		rsp = response{400, "name fmt err"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	// 返回并且携带新的验证码
@@ -111,7 +111,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			response{405, "验证码错误"},
 			model.NewCaptcha(),
 		}
-		h.Jsonify(w, respCaptcha)
+		h.jsonify(w, respCaptcha)
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 				response{405, "登录失败, 请检查用户名与密码"},
 				model.NewCaptcha(),
 			}
-			h.Jsonify(w, respCaptcha)
+			h.jsonify(w, respCaptcha)
 			return
 		}
 		if uobj.Password != rec.Password {
@@ -135,7 +135,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 				response{405, "登录失败, 请检查用户名与密码"},
 				model.NewCaptcha(),
 			}
-			h.Jsonify(w, respCaptcha)
+			h.jsonify(w, respCaptcha)
 			return
 		}
 		sessionid := xid.New().String()
@@ -149,12 +149,12 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		siteCf := h.App.Cf.Site
 		if siteCf.QQClientID > 0 || siteCf.WeiboClientID > 0 {
 			rsp = response{400, "请用QQ 或 微博一键登录"}
-			h.Jsonify(w, rsp)
+			h.jsonify(w, rsp)
 			return
 		}
 		if siteCf.CloseReg {
 			rsp = response{400, "已经停用用户注册"}
-			h.Jsonify(w, rsp)
+			h.jsonify(w, rsp)
 			return
 		}
 		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err == nil {
@@ -162,7 +162,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 				response{405, "用户名已经存在"},
 				model.NewCaptcha(),
 			}
-			h.Jsonify(w, respCaptcha)
+			h.jsonify(w, respCaptcha)
 			return
 		}
 
@@ -194,7 +194,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	h.DelCookie(w, "token")
 
 	rsp.Retcode = 200
-	h.Jsonify(w, rsp)
+	h.jsonify(w, rsp)
 }
 
 // UserNotification 用户消息
@@ -356,7 +356,7 @@ func NewCaptcha(w http.ResponseWriter, r *http.Request) {
 		response{200, "success"},
 		model.NewCaptcha(),
 	}
-	h.Jsonify(w, respCaptcha)
+	h.jsonify(w, respCaptcha)
 }
 
 // FlarumUserRegister 用户注册
@@ -380,7 +380,7 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 			400,
 			"表单解析错误:" + err.Error(),
 		}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	defer r.Body.Close()
@@ -398,13 +398,13 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 			response{405, "验证码错误"},
 			model.NewCaptcha(),
 		}
-		h.Jsonify(w, respCaptcha)
+		h.jsonify(w, respCaptcha)
 		return
 	}
 	rsp.Retcode = 200
 	rsp.Retmsg = "注册成功"
 
-	h.Jsonify(w, rsp)
+	h.jsonify(w, rsp)
 }
 
 // FlarumUserLogin flarum用户登录
@@ -423,7 +423,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&rec)
 	if err != nil || rec.Identification == "" || rec.Password == "" {
 		rsp = normalRsp{400, "数据填写错误:" + err.Error()}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	defer r.Body.Close()
@@ -439,7 +439,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 			response{405, "验证码错误"},
 			model.NewCaptcha(),
 		}
-		h.Jsonify(w, respCaptcha)
+		h.jsonify(w, respCaptcha)
 		return
 	}
 
@@ -453,7 +453,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 			response{405, "登录失败, 请检查用户名与密码"},
 			model.NewCaptcha(),
 		}
-		h.Jsonify(w, respCaptcha)
+		h.jsonify(w, respCaptcha)
 		return
 	}
 	if uobj.Password != rec.Password {
@@ -461,7 +461,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 			response{405, "登录失败, 请检查用户名与密码"},
 			model.NewCaptcha(),
 		}
-		h.Jsonify(w, respCaptcha)
+		h.jsonify(w, respCaptcha)
 		return
 	}
 	sessionid := xid.New().String()
@@ -473,7 +473,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	rsp.Retcode = 200
 	rsp.Retmsg = "登录成功"
-	h.Jsonify(w, rsp)
+	h.jsonify(w, rsp)
 }
 
 func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.Request) {
@@ -495,19 +495,19 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {
 		rsp = normalRsp{400, "表单参数解析错误"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	user, err := h.CurrentUser(w, r)
 	if err != nil {
 		rsp = normalRsp{400, "用户未登录:" + err.Error()}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 
 	if !user.VerifyCSRFToken(redisDB, token) {
 		rsp = normalRsp{400, "csrf错误"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 
@@ -515,6 +515,6 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	rsp.Retcode = 200
 	rsp.Retmsg = "登出成功"
-	h.Jsonify(w, rsp)
+	h.jsonify(w, rsp)
 	return
 }

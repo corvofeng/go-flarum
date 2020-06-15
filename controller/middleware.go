@@ -74,6 +74,22 @@ func InAPIMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	}
 }
 
+// MustAuthMiddleware 要求用户必须登录
+func MustAuthMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		if reqCtx.currentUser.ID == 0 {
+			w.WriteHeader(http.StatusForbidden)
+			reqCtx.h.jsonify(w, response{
+				Retcode: 403,
+				Retmsg:  "用户需要进行登录",
+			})
+		} else {
+			inner(w, r)
+		}
+	}
+}
+
 func TestMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("In md 1")

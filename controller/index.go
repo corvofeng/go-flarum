@@ -22,7 +22,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		start, err = strconv.ParseUint(key, 10, 64)
 		if err != nil {
 			rsp = response{400, "key type err"}
-			h.Jsonify(w, rsp)
+			h.jsonify(w, rsp)
 			return
 		}
 	}
@@ -30,7 +30,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 		_, err = strconv.ParseUint(score, 10, 64)
 		if err != nil {
 			rsp = response{400, "scope type err"}
-			h.Jsonify(w, rsp)
+			h.jsonify(w, rsp)
 			return
 		}
 	}
@@ -52,7 +52,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error %s", err)
 		rsp = response{400, "Failed to get the count"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 
@@ -109,16 +109,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
 	evn.SiteCf = scf
-	// evn.Title = scf.Name
-	// evn.Keywords = evn.Title
-	// evn.Description = scf.Desc
-	// evn.IsMobile = tpl == "mobile"
-	// evn.CurrentUser = currentUser
-	// evn.ShowSideAd = false
-	// evn.PageName = "home"
-	// evn.NewestNodes = categories
-	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 	coreData := flarum.CoreData{}
 
 	// 添加主站点信息
@@ -208,7 +198,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		data, err := strconv.ParseUint(_offset, 10, 64)
 		if err != nil {
 			logger.Error("Parse offset err:", err)
-			h.Jsonify(w, apiDoc)
+			h.jsonify(w, apiDoc)
 			return
 		}
 		page = data / 20
@@ -223,7 +213,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			cate, err := model.SQLCategoryGetByURLName(sqlDB, data[4:])
 			if err != nil {
 				logger.Error("Can't get category", err)
-				h.Jsonify(w, apiDoc)
+				h.jsonify(w, apiDoc)
 				return
 			}
 			pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, cate.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
@@ -232,7 +222,12 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	var dissArr []flarum.Resource
 	for _, article := range pageInfo.Items {
-		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
+		var lastComent model.Comment
+		if article.LastPostID != 0 {
+			lastComent = model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
+		} else {
+			lastComent = model.Comment{}
+		}
 		diss := model.FlarumCreateDiscussion(article, lastComent)
 		dissArr = append(dissArr, diss)
 	}
@@ -240,10 +235,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	for _, article := range pageInfo.Items {
 		user := model.FlarumCreateUser(article)
-		apiDoc.Included = append(
-			apiDoc.Included,
-			user,
-		)
+		apiDoc.AppendResourcs(user)
 	}
 
 	// 添加当前用户的session信息
@@ -262,5 +254,5 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
 	}
 
-	h.Jsonify(w, apiDoc)
+	h.jsonify(w, apiDoc)
 }

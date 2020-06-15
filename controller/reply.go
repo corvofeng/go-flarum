@@ -72,7 +72,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	if !currentUser.CanCreateTopic() || !currentUser.CanReply() {
 		rsp = response{403, "forbiden"}
 		w.WriteHeader(http.StatusBadGateway)
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	redisDB := h.App.RedisDB
@@ -80,7 +80,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	if !currentUser.VerifyCSRFToken(redisDB, csrf) {
 		w.WriteHeader(http.StatusBadGateway)
 		rsp = response{400, "csrf token required"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -88,13 +88,13 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&post)
 	if err != nil {
 		rsp = response{400, "json Decode err:" + err.Error()}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	defer r.Body.Close()
 	rsp.Retcode = 404
 	w.WriteHeader(http.StatusBadGateway)
-	h.Jsonify(w, rsp)
+	h.jsonify(w, rsp)
 
 	// if rec.Act == "preview" && len(rec.Content) > 0 {
 	// 	rsp.Retcode = 200

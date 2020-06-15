@@ -762,7 +762,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		rsp = response{400, "aid type err"}
-		h.Jsonify(w, rsp)
+		h.jsonify(w, rsp)
 		return
 	}
 	scf := h.App.Cf.Site
@@ -814,7 +814,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		// 单个评论
 		// w.Write([]byte(`{"data":{"type":"discussions","id":"2","attributes":{"title":"\u8fd9\u662f\u7b2c\u4e8c\u4e2a\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-31T12:49:51+00:00","lastPostedAt":"2020-05-31T12:49:51+00:00","lastPostNumber":1,"canReply":false,"canRename":false,"canDelete":false,"canHide":false,"isLocked":false,"canLock":false},"relationships":{"posts":{"data":[{"type":"posts","id":"5"}]}}},"included":[{"type":"posts","id":"5","attributes":{"number":1,"createdAt":"2020-05-31T12:49:51+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u60f3\u770b\u770b\u8fd9\u4e2a\u662f\u4ec0\u4e48\u6837\u7684\u5185\u5bb9\u003C\/p\u003E","canEdit":false,"canDelete":false,"canHide":false,"canFlag":false,"canLike":false},"relationships":{"discussion":{"data":{"type":"discussions","id":"2"}},"user":{"data":{"type":"users","id":"1"}},"likes":{"data":[]},"mentionedBy":{"data":[]}}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":2,"commentCount":5,"canEdit":false,"canDelete":false,"lastSeenAt":"2020-06-02T04:56:23+00:00","canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}]}`))
 		logger.Debug("flarum api return")
-		h.Jsonify(w, apiDoc)
+		h.jsonify(w, apiDoc)
 		return
 	}
 

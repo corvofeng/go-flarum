@@ -99,8 +99,8 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	return err
 }
 
-// Jsonify 序列化结构体并进行返回
-func (h *BaseHandler) Jsonify(w http.ResponseWriter, data interface{}) error {
+// jsonify 序列化结构体并进行返回
+func (h *BaseHandler) jsonify(w http.ResponseWriter, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	return json.NewEncoder(w).Encode(data)
 }
