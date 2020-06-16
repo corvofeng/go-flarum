@@ -188,9 +188,9 @@ func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 	row, err := tx.Exec(
 		("INSERT INTO `topic` " +
-			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, father_topic_id, active)" +
+			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, active)" +
 			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+			" (?, ?, ?, ?, ?, ?, ?, ?)"),
 		article.CID,
 		article.UID,
 		article.Title,
@@ -198,10 +198,10 @@ func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 		article.AddTime,
 		article.EditTime,
 		article.ClientIP,
-		article.FatherTopicID,
 		article.Active,
 	)
-	if util.CheckError(err, "创建主题") {
+	if err != nil {
+		// util.CheckError(err, "创建主题")
 		return false, err
 	}
 	aid, err := row.LastInsertId()
@@ -226,7 +226,7 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 }
 
 // CreateFlarumDiscussion 创建flarum的帖子
-func (article *Article) CreateFlarumDiscussion(db *sql.DB) (bool, error) {
+func (article *Article) CreateFlarumDiscussion(db *sql.DB, relation flarum.DiscussionRelations) (bool, error) {
 	tx, err := db.Begin()
 	defer clearTransaction(tx)
 	if err != nil {
@@ -249,8 +249,15 @@ func (article *Article) CreateFlarumDiscussion(db *sql.DB) (bool, error) {
 	if ok, err := comment.sqlSaveComment(tx); !ok {
 		return false, err
 	}
-	// TODO: update article lastPostID firstPostID
+	article.LastPostID = comment.ID
+	article.FirstPostID = comment.ID
+	if ok, err := article.updateFlarumPost(tx); !ok {
+		return false, err
+	}
 
+	if ok, err := article.updateFlarumTag(tx, relation); !ok {
+		return false, err
+	}
 	// TODO: update article tags
 
 	if err := tx.Commit(); err != nil {
@@ -262,8 +269,45 @@ func (article *Article) CreateFlarumDiscussion(db *sql.DB) (bool, error) {
 	return true, nil
 }
 
+// updateFlarumPost 更新评论信息
+func (article *Article) updateFlarumPost(tx *sql.Tx) (bool, error) {
+
+	_, err := tx.Exec(
+		"UPDATE `topic` SET"+
+			" first_post_id=?,"+
+			" last_post_id=?"+
+			" where id=?",
+		article.FirstPostID,
+		article.LastPostID,
+		article.ID,
+	)
+	if util.CheckError(err, "更新帖子") {
+		return false, err
+	}
+	return true, nil
+}
+
+// updateFlarumTag 更新评论信息
+func (article *Article) updateFlarumTag(tx *sql.Tx, relation flarum.DiscussionRelations) (bool, error) {
+
+	for _, rela := range relation.Tags.Data {
+		_, err := tx.Exec(
+			("INSERT INTO `topic_tag` " +
+				" (`topic_id`, `tag_id`)" +
+				" VALUES " +
+				" (?, ?)"),
+			article.ID,
+			rela.ID,
+		)
+		if util.CheckError(err, "更新帖子") {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
 // SQLArticleUpdate 更新当前帖子
-func (article *Article) SQLArticleUpdate(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) bool {
+func (article *Article) SQLArticleUpdate(db *sql.DB, redisDB *redis.Client) bool {
 	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
 	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
 	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.

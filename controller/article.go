@@ -884,7 +884,11 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Active:        1, // 帖子为激活状态
 		FatherTopicID: 0, // 没有原始主题
 	}
-	aobj.CreateFlarumDiscussion(sqlDB)
+	ok, err := aobj.CreateFlarumDiscussion(sqlDB, diss.Data.Relationships)
+	if err != nil {
+		h.App.Logger.Error("Can't create topic", err)
+	}
+	fmt.Println(ok, err)
 
 	// obj := flarum.NewResource(flarum.EDiscussion, 0)
 	// user := ctx.currentUser

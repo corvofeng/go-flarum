@@ -253,7 +253,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 	aobj.CloseComment = closeComment
 	aobj.ClientIP = r.Header.Get("X-REAL-IP")
 	aobj.EditTime = uint64(time.Now().UTC().Unix())
-	aobj.SQLArticleUpdate(sqlDB, db, redisDB)
+	aobj.SQLArticleUpdate(sqlDB, redisDB)
 
 	jb, _ := json.Marshal(aobj)
 	db.Hset("article", aidB, jb)
