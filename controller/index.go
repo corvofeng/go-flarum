@@ -93,14 +93,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	page := uint64(1)
 
-	type pageData struct {
-		PageData
-		SiteInfo   model.SiteInfo
-		PageInfo   model.ArticlePageInfo
-		Links      []model.Link
-		FlarumInfo interface{}
-	}
-
 	// 获取贴子列表
 	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	// categories, err := model.SQLGetAllCategory(sqlDB)

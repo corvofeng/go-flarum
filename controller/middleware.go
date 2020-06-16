@@ -108,6 +108,7 @@ func MustCSRFMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 		}
 	}
 }
+
 func readUserIP(r *http.Request) string {
 	IPAddress := r.Header.Get("X-Real-Ip")
 	if IPAddress == "" {

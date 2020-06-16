@@ -2,6 +2,7 @@ package controller
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,8 @@ import (
 	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
+	"github.com/go-redis/redis/v7"
+	"github.com/op/go-logging"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
@@ -743,36 +746,24 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(rsp)
 }
 
-// FlarumArticleDetail 获取flarum中的某篇帖子
-func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := GetRetContext(r)
-	h := ctx.h
-	inAPI := ctx.inAPI
-
-	rsp := response{}
-	logger := h.App.Logger
-
-	// _filter := r.URL.Query()["filter"]
-	// _filter)
-	// return
-
+func createFlarumArticleAPIDoc(
+	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
+	appConf model.AppConf,
+	siteInfo model.SiteInfo,
+	currentUser *model.User,
+	aid uint64, tz int,
+) (flarum.CoreData, error) {
+	var err error
+	coreData := flarum.CoreData{}
 	apiDoc := flarum.NewAPIDoc()
-	_aid := pat.Param(r, "aid")
-	aid, err := strconv.ParseUint(_aid, 10, 64)
-
-	if err != nil {
-		rsp = response{400, "aid type err"}
-		h.jsonify(w, rsp)
-		return
-	}
-	scf := h.App.Cf.Site
-
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	if err != nil {
+		logger.Error("Get article error", err)
+		return coreData, err
+	}
 
 	diss := model.FlarumCreateDiscussionFromArticle(article)
-	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, scf.TimeZone)
+	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, tz)
 
 	// 获取该文章下面所有的评论信息
 	postArr := []flarum.Resource{}
@@ -795,6 +786,12 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	// 文章当前的分类
 	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+
+	if err != nil {
+		logger.Error("Get all categories error", err)
+		return coreData, err
+	}
+
 	// 添加所有分类的信息
 	var flarumTags []flarum.Resource
 	for _, category := range categories {
@@ -809,10 +806,55 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 
+	coreData.APIDocument = apiDoc
+	// 添加主站点信息
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+
+	// 添加当前用户的session信息
+
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+	}
+
+	return coreData, nil
+}
+
+// FlarumArticleDetail 获取flarum中的某篇帖子
+func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	inAPI := ctx.inAPI
+	scf := h.App.Cf.Site
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	logger := ctx.GetLogger()
+
+	// _filter := r.URL.Query()["filter"]
+	// _filter)
+	// return
+
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("aid type error"))
+		return
+	}
+
+	evn := &pageData{}
+	evn.SiteCf = scf
+	evn.SiteInfo = model.GetSiteInfo(redisDB)
+
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, &ctx.currentUser, aid, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
 	// 如果是API直接进行返回
 	if inAPI {
 		logger.Debug("flarum api return")
-		h.jsonify(w, apiDoc)
+		h.jsonify(w, coreData.APIDocument)
 		return
 	}
 
@@ -820,22 +862,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	type pageData struct {
 		PageData
 		FlarumInfo interface{}
-	}
-
-	evn := &pageData{}
-	evn.SiteCf = scf
-	coreData := flarum.CoreData{}
-	coreData.APIDocument = apiDoc
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
-
-	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo, flarumTags))
-
-	// 添加当前用户的session信息
-	currentUser, err := h.CurrentUser(w, r)
-	if err == nil {
-		user := model.FlarumCreateCurrentUser(currentUser)
-		coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
 	}
 
 	evn.FlarumInfo = coreData
@@ -846,8 +872,10 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	rsp := response{}
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	logger := ctx.GetLogger()
+	scf := h.App.Cf.Site
 
 	// 用户创建的话题
 	type PostedDiscussion struct {
@@ -857,7 +885,14 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 				Title   string `json:"title"`
 				Content string `json:"content"`
 			} `json:"attributes"`
-			Relationships flarum.DiscussionRelations `json:"relationships"`
+			Relationships struct {
+				Tags struct {
+					Data []struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"tags"`
+			} `json:"relationships"`
 		} `json:"data"`
 	}
 
@@ -865,8 +900,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&diss)
 
 	if err != nil {
-		rsp = response{400, "json Decode err:" + err.Error()}
-		h.jsonify(w, rsp)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("json Decode err:"+err.Error()))
 		return
 	}
 
@@ -884,16 +918,28 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Active:        1, // 帖子为激活状态
 		FatherTopicID: 0, // 没有原始主题
 	}
-	ok, err := aobj.CreateFlarumDiscussion(sqlDB, diss.Data.Relationships)
-	if err != nil {
-		h.App.Logger.Error("Can't create topic", err)
+	tagsArray := flarum.RelationArray{}
+	for _, rela := range diss.Data.Relationships.Tags.Data {
+		tagID, err := strconv.Atoi(rela.ID)
+		if err != nil {
+			logger.Warning("Get wrong tag id", rela.ID)
+			continue
+		}
+		tagsArray.Data = append(tagsArray.Data, flarum.InitBaseResources(uint64(tagID), rela.Type))
 	}
-	fmt.Println(ok, err)
 
-	// obj := flarum.NewResource(flarum.EDiscussion, 0)
-	// user := ctx.currentUser
-	// redisDB := h.App.RedisDB
+	_, err = aobj.CreateFlarumDiscussion(sqlDB, tagsArray)
+	if err != nil {
+		logger.Error("Can't create topic", err)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
+	}
+	si := model.GetSiteInfo(redisDB)
 
-	w.WriteHeader(http.StatusForbidden)
-	h.jsonify(w, rsp)
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, aobj.ID, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
+	h.jsonify(w, coreData.APIDocument)
 }

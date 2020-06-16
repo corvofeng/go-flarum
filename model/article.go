@@ -226,7 +226,7 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 }
 
 // CreateFlarumDiscussion 创建flarum的帖子
-func (article *Article) CreateFlarumDiscussion(db *sql.DB, relation flarum.DiscussionRelations) (bool, error) {
+func (article *Article) CreateFlarumDiscussion(db *sql.DB, tags flarum.RelationArray) (bool, error) {
 	tx, err := db.Begin()
 	defer clearTransaction(tx)
 	if err != nil {
@@ -255,7 +255,7 @@ func (article *Article) CreateFlarumDiscussion(db *sql.DB, relation flarum.Discu
 		return false, err
 	}
 
-	if ok, err := article.updateFlarumTag(tx, relation); !ok {
+	if ok, err := article.updateFlarumTag(tx, tags); !ok {
 		return false, err
 	}
 	// TODO: update article tags
@@ -288,9 +288,8 @@ func (article *Article) updateFlarumPost(tx *sql.Tx) (bool, error) {
 }
 
 // updateFlarumTag 更新评论信息
-func (article *Article) updateFlarumTag(tx *sql.Tx, relation flarum.DiscussionRelations) (bool, error) {
-
-	for _, rela := range relation.Tags.Data {
+func (article *Article) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bool, error) {
+	for _, rela := range tags.Data {
 		_, err := tx.Exec(
 			("INSERT INTO `topic_tag` " +
 				" (`topic_id`, `tag_id`)" +

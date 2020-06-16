@@ -13,6 +13,8 @@ import (
 	"goyoubbs/model"
 	"goyoubbs/system"
 	"goyoubbs/util"
+
+	"github.com/op/go-logging"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
@@ -40,12 +42,22 @@ type (
 		SiteInfo      model.SiteInfo
 		PrimaryColor  string
 	}
+	// response  返回信息
 	response struct {
 		Retcode int `json:"retcode"`
 
 		Retmsg string `json:"retmsg"`
 	}
+
 	normalRsp = response // .. deprecated: 2020-05-29 Please don't use it
+
+	flarumError struct {
+		Detail string `json:"detail"`
+	}
+	// FlarumErrorResponse  flarum API调用时出现的错误
+	FlarumErrorResponse struct {
+		Errors []flarumError `json:"errors"`
+	}
 
 	// ContextKey 记录context的value
 	ContextKey int64
@@ -56,6 +68,15 @@ type (
 		inAPI       bool
 		h           *BaseHandler
 		realIP      string
+		err         error
+	}
+
+	pageData struct {
+		PageData
+		SiteInfo   model.SiteInfo
+		PageInfo   model.ArticlePageInfo
+		Links      []model.Link
+		FlarumInfo interface{}
 	}
 )
 
@@ -66,6 +87,16 @@ const (
 // GetRetContext 获取当前上线信息中的自有的context
 func GetRetContext(r *http.Request) *ReqContext {
 	return r.Context().Value(ckRequest).(*ReqContext)
+}
+
+// createSimpleFlarumError 初始化一个最简单的错误值
+func createSimpleFlarumError(err string) FlarumErrorResponse {
+	return FlarumErrorResponse{[]flarumError{initFlarumError(err)}}
+}
+
+// initFlarumError 初始化一个错误值
+func initFlarumError(err string) flarumError {
+	return flarumError{Detail: err}
 }
 
 // Render 渲染html
@@ -102,6 +133,14 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 
 // jsonify 序列化结构体并进行返回
 func (h *BaseHandler) jsonify(w http.ResponseWriter, data interface{}) error {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	return json.NewEncoder(w).Encode(data)
+}
+
+// flarumErrorJsonify flarum错误需要此函数进行返回
+// h.flarumErrorJsonify(w, createSimpleFlarumError("这是其中的错误"))
+func (h *BaseHandler) flarumErrorJsonify(w http.ResponseWriter, data FlarumErrorResponse) error {
+	w.WriteHeader(http.StatusUnprocessableEntity)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	return json.NewEncoder(w).Encode(data)
 }
@@ -200,4 +239,10 @@ func (h *BaseHandler) CurrentTpl(r *http.Request) string {
 		return "mobile"
 	}
 	return tpl
+}
+
+// GetLogger 获取当前的logger
+// TODO: 期望未来能按照用户进行日志打印
+func (ctx *ReqContext) GetLogger() *logging.Logger {
+	return ctx.h.App.Logger
 }
