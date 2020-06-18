@@ -53,7 +53,9 @@ type Discussion struct {
 	// HiddenAt   string `json:"hiddenAt"`
 	// LastReadAt string `json:"lastReadAt"`
 	// Subscription bool `json:"subscription"`
-	// LastReadPostNumber int    `json:"lastReadPostNumber"`
+
+	// #12 TODO: 当前用户上一次阅读到的位置
+	LastReadPostNumber int `json:"lastReadPostNumber"`
 }
 
 // DiscussionRelations 帖子具有的关系
