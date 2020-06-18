@@ -155,6 +155,9 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		},
 		ct.FlarumAPICreatePost,
 	))
+
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users"), ct.InAPIMiddleware(ct.FlarumConfirmUserAndPost))
+
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
 	return sp
 }

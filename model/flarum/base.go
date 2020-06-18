@@ -230,6 +230,8 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 func NewAPIDoc() APIDoc {
 	apiDoc := APIDoc{}
 	apiDoc.Links = make(map[string]string)
+	apiDoc.Data = []Resource{}
+	apiDoc.Included = []Resource{}
 	return apiDoc
 }
 

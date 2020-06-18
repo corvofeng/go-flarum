@@ -2,10 +2,14 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
+	"goyoubbs/model"
 	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 	"html/template"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 // ContentPreviewPost 预览主题以及评论
@@ -80,4 +84,50 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	// }
 	// json.NewEncoder(w).Encode(rsp)
 
+}
+
+// FlarumConfirmUserAndPost 确认当前的用户的评论信息
+// FIXME: 这个函数我只知道是在评论时, @其他用户时会调用这个接口, 但是接口具体的行为还不太了解
+func FlarumConfirmUserAndPost(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	scf := h.App.Cf.Site
+	// sqlDB := h.App.MySQLdb
+	// redisDB := h.App.RedisDB
+	// logger := ctx.GetLogger()
+
+	_filter := strings.TrimSpace(r.FormValue("filter[q]"))
+	_pageLimit := r.FormValue("page[limit]")
+
+	// filterData := strings.Split(_filter, "#")
+	// if len(filterData) != 2 {
+	// 	h.flarumErrorJsonify(w, createSimpleFlarumError("给定的回复信息有误"))
+	// 	return
+	// }
+
+	// pageLimit, err := strconv.ParseUint(_pageLimit, 10, 64)
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	h.flarumErrorJsonify(w, createSimpleFlarumError("页面限制信息给定错误"))
+	// 	return
+	// }
+
+	// postID, err := strconv.ParseUint(filterData[1], 10, 64)
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	h.flarumErrorJsonify(w, createSimpleFlarumError(fmt.Sprintf("无法解析评论信息: %s", filterData)))
+	// 	return
+	// }
+	// comment := model.SQLGetCommentByID(sqlDB, redisDB, postID, scf.TimeZone)
+	// if comment.UserName != filterData[0] {
+	// 	logger.Warningf("用户与评论信息不符合: %s", filterData)
+	// }
+	apiDoc := flarum.NewAPIDoc()
+
+	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/users?" +
+		fmt.Sprintf("filter%%5Bq%%5D=%s&page%%5Blimit%%5D=%s", url.QueryEscape(_filter), _pageLimit)
+		// fmt.Sprintf("filter%%5Bq%%5D=%s%%23%d+&page%%5Blimit%%5D=%d", comment.UserName, comment.ID, pageLimit)
+
+	h.jsonify(w, apiDoc)
+	return
 }
