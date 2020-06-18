@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"goyoubbs/model"
+	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 
 	"github.com/dchest/captcha"
@@ -516,5 +517,33 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 	rsp.Retcode = 200
 	rsp.Retmsg = "登出成功"
 	h.jsonify(w, rsp)
+	return
+}
+
+// FlarumUser flarum用户查询
+func FlarumUser(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	currentUser := ctx.currentUser
+	h := ctx.h
+	sqlDB := h.App.MySQLdb
+	uid := pat.Param(r, "uid")
+	uidi, err := strconv.ParseUint(uid, 10, 64)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("解析uid参数错误"+err.Error()))
+		return
+	}
+	user, err := model.SQLUserGetByID(sqlDB, uidi)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误"+err.Error()))
+		return
+	}
+
+	apiDoc := flarum.NewAPIDoc()
+	if user.ID == currentUser.ID {
+		apiDoc.SetData(model.FlarumCreateCurrentUser(currentUser))
+	} else {
+		// TODO: 当前用户暂时无法获取其他用户的信息
+	}
+	h.jsonify(w, apiDoc)
 	return
 }

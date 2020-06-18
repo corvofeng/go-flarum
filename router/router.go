@@ -119,6 +119,14 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
 
+	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.InAPIMiddleware,
+		},
+		ct.FlarumUser,
+	))
+
 	// API handler
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
 	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/discussions"), ct.MiddlewareArrayToChains(

@@ -175,12 +175,7 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id =  ?",
 		uid,
 	)
-
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
+	defer rowsClose(rows)
 	if err != nil {
 		fmt.Printf("Query failed,err:%v", err)
 		return obj, err
