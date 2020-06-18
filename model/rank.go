@@ -81,6 +81,7 @@ func TimelyResort() {
 		}
 		for _, t := range sqlDataDel {
 			_, err := rankRedisDB.ZRem(cid2Key(v.ID), fmt.Sprintf("%d", t.ID)).Result()
+			logger.Debug("Delete not active topic", t.ID)
 			util.CheckError(err, "删除无效帖子")
 		}
 

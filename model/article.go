@@ -585,25 +585,30 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 	var articles []ArticleMini
 	var rows *sql.Rows
 	var err error
+	logger := util.GetLogger()
+
+	activeData := 0
+
 	if active {
-		rows, err = db.Query("SELECT id FROM topic WHERE node_id = ? AND active = ?", cid, 1)
+		activeData = 1
 	} else {
-		rows, err = db.Query("SELECT id FROM topic WHERE node_id = ? AND active = ?", cid, 0)
+		activeData = 0
 	}
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
+
+	rows, err = db.Query(
+		"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
+		cid, activeData)
+	defer rowsClose(rows)
+
 	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
+		logger.Error("Can't get topic_tag info", err)
 		return articles, err
 	}
 	for rows.Next() {
 		obj := ArticleMini{}
 		err = rows.Scan(&obj.ID)
 		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
+			logger.Error("Scan failed", err)
 			return articles, err
 		}
 
