@@ -936,6 +936,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
+		return
 	}
 	si := model.GetSiteInfo(redisDB)
 
