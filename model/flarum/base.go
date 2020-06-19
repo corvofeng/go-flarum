@@ -251,9 +251,13 @@ func (coreData *CoreData) AppendResourcs(res Resource) {
 	coreData.Resources = append(coreData.Resources, res)
 }
 
-// AddSessionData 添加用户会话信息
-func (coreData *CoreData) AddSessionData(user Resource, csrf string) {
+// AddCurrentUser 增加当前用户的信息
+func (coreData *CoreData) AddCurrentUser(user Resource) {
 	coreData.AppendResourcs(user)
+}
+
+// AddSessionData 添加用户的session信息, 仅用于csrf
+func (coreData *CoreData) AddSessionData(user Resource, csrf string) {
 	coreData.Sessions = Session{
 		UserID:    user.GetID(),
 		CsrfToken: csrf,

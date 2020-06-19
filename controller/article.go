@@ -751,8 +751,10 @@ func createFlarumArticleAPIDoc(
 	appConf model.AppConf,
 	siteInfo model.SiteInfo,
 	currentUser *model.User,
+	inAPI bool,
 	aid uint64, tz int,
 ) (flarum.CoreData, error) {
+
 	var err error
 	coreData := flarum.CoreData{}
 	apiDoc := flarum.NewAPIDoc()
@@ -811,10 +813,12 @@ func createFlarumArticleAPIDoc(
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
 
 	// 添加当前用户的session信息
-
 	if currentUser != nil {
 		user := model.FlarumCreateCurrentUser(*currentUser)
-		coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
 	}
 
 	return coreData, nil
@@ -845,7 +849,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, &ctx.currentUser, aid, scf.TimeZone)
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, &ctx.currentUser, ctx.inAPI, aid, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -935,7 +939,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	si := model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, aobj.ID, scf.TimeZone)
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

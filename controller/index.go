@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"database/sql"
 	"fmt"
 	"goyoubbs/model"
 	"goyoubbs/model/flarum"
@@ -8,6 +9,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-redis/redis/v7"
+	"github.com/op/go-logging"
 )
 
 // ArticleHomeList 文章主页
@@ -83,6 +87,73 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
+func createFlarumPageAPIDoc(
+	logger *logging.Logger,
+	sqlDB *sql.DB, redisDB *redis.Client,
+	appConf model.AppConf, siteInfo model.SiteInfo,
+	currentUser *model.User,
+	inAPI bool, page uint64,
+	cid uint64, tz int,
+) (flarum.CoreData, error) {
+	var err error
+	coreData := flarum.CoreData{}
+	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+
+	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, cid, page, 20, tz)
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+
+	// 添加所有分类的信息
+	var flarumTags []flarum.Resource
+	for _, category := range categories {
+		tag := model.FlarumCreateTag(category)
+		coreData.AppendResourcs(tag)
+		flarumTags = append(flarumTags, tag)
+	}
+	// 添加主站点信息
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+
+	// 添加当前页面的帖子信息
+	var res []flarum.Resource
+	for _, article := range pageInfo.Items {
+		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, tz)
+		diss := model.FlarumCreateDiscussion(article, lastComent)
+		res = append(res, diss)
+		coreData.AppendResourcs(diss)
+	}
+	coreData.APIDocument.SetData(res)
+
+	// 添加当前页面的帖子的用户信息, TODO: 用户有可能重复, 这里理论是需要优化的
+	for _, article := range pageInfo.Items {
+		user := model.FlarumCreateUser(article)
+		if user.GetID() == currentUser.ID { // 当前用户单独进行添加
+			continue
+		}
+		coreData.AppendResourcs(user)
+	}
+
+	// 添加当前用户的session信息
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
+
+	scf := appConf.Site
+	coreData.APIDocument.Links = make(map[string]string)
+	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
+	if page != 1 {
+		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*20)
+	}
+
+	if pageInfo.HasNext {
+		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
+	}
+
+	return coreData, err
+}
+
 // FlarumIndex flarum主页
 func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	var err error
@@ -91,66 +162,27 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
+	logger := ctx.GetLogger()
 	page := uint64(1)
-
-	// 获取贴子列表
-	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
-	// categories, err := model.SQLGetAllCategory(sqlDB)
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
 	evn.SiteCf = scf
-	coreData := flarum.CoreData{}
+	si := model.GetSiteInfo(redisDB)
 
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
-	// 添加所有分类的信息
-	var flarumTags []flarum.Resource
-	for _, category := range categories {
-		tag := model.FlarumCreateTag(category)
-		coreData.AppendResourcs(tag)
-		flarumTags = append(flarumTags, tag)
-	}
-
-	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, evn.SiteInfo, flarumTags))
-
-	// 添加当前页面的帖子信息
-	var res []flarum.Resource
-	for _, article := range pageInfo.Items {
-		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
-		diss := model.FlarumCreateDiscussion(article, lastComent)
-		coreData.AppendResourcs(diss)
-		res = append(res, diss)
-	}
-	coreData.APIDocument.SetData(res)
-
-	// 添加当前页面的帖子的用户信息, TODO: 用户有可能重复, 这里理论是需要优化的
-	for _, article := range pageInfo.Items {
-		user := model.FlarumCreateUser(article)
-		coreData.AppendResourcs(user)
+	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
+		return
 	}
 
 	// 设置语言信息
 	coreData.Locales = make(map[string]string)
-
 	coreData.Locales["en"] = "English"
 	coreData.Locales["zh"] = "中文"
 	coreData.Locale = "en"
 
-	coreData.APIDocument.Links = make(map[string]string)
-	coreData.APIDocument.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
-	coreData.APIDocument.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D20"
-
-	// 添加当前用户的session信息
-	currentUser, err := h.CurrentUser(w, r)
-	if err == nil {
-		user := model.FlarumCreateCurrentUser(currentUser)
-		coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-	}
-
 	evn.FlarumInfo = coreData
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
-	evn.PageInfo = pageInfo
 
 	// 右侧的链接
 	evn.Links = model.RedisLinkList(redisDB, false)
@@ -166,15 +198,15 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	var page uint64
-	var pageInfo model.ArticlePageInfo
 
 	logger := h.App.Logger
-
 	apiDoc := flarum.NewAPIDoc()
 
 	// 需要返回的relations TODO: use it
 	_include := r.FormValue("include")
 	strings.Split(_include, ",")
+	var coreData flarum.CoreData
+	var err error
 	// fmt.Println(_include)
 
 	// 当前的排序方式 TODO: use it
@@ -198,62 +230,26 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		page = data / 20
 	}
 	page = page + 1
+	si := model.GetSiteInfo(redisDB)
 
 	if _filter == "" {
-		pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, 0, page, uint64(scf.HomeShowNum), scf.TimeZone)
+		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
 	} else {
 		data := strings.Trim(_filter, " ")
 		if strings.HasPrefix(data, "tag:") {
 			cate, err := model.SQLCategoryGetByURLName(sqlDB, data[4:])
 			if err != nil {
-				logger.Error("Can't get category", err)
-				h.jsonify(w, apiDoc)
+				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
 			}
-			pageInfo = model.SQLCIDArticleListByPage(sqlDB, redisDB, cate.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
 		}
 	}
 
-	var dissArr []flarum.Resource
-	for _, article := range pageInfo.Items {
-		var lastComent model.Comment
-		if article.LastPostID != 0 {
-			lastComent = model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, scf.TimeZone)
-		} else {
-			lastComent = model.Comment{}
-		}
-		diss := model.FlarumCreateDiscussion(article, lastComent)
-		dissArr = append(dissArr, diss)
-	}
-	apiDoc.SetData(dissArr)
-
-	for _, article := range pageInfo.Items {
-		user := model.FlarumCreateUser(article)
-		apiDoc.AppendResourcs(user)
-	}
-	// categories, err := model.SQLGetAllCategory(sqlDB)
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
-
-	// 添加所有分类的信息
-	for _, category := range categories {
-		apiDoc.AppendResourcs(model.FlarumCreateTag(category))
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
+		return
 	}
 
-	// 添加当前用户的session信息
-	currentUser, err := h.CurrentUser(w, r)
-	if err == nil {
-		user := model.FlarumCreateCurrentUser(currentUser)
-		apiDoc.AppendResourcs(user)
-	}
-
-	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
-	if page != 1 {
-		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*20)
-	}
-
-	if pageInfo.HasNext {
-		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
-	}
-
-	h.jsonify(w, apiDoc)
+	h.jsonify(w, coreData.APIDocument)
 }
