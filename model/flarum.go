@@ -5,12 +5,13 @@ import (
 )
 
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo
+// tags 当前站点具有的标签集合, TODO: 缓存
 func FlarumCreateForumInfo(
 	appConf AppConf,
 	siteInfo SiteInfo,
 	tags []flarum.Resource,
 ) flarum.Resource {
-	obj := flarum.NewResource(flarum.EForum, 1)
+	obj := flarum.NewResource(flarum.EForum, 1) // flarum 默认为1
 	data := (obj.Attributes).(*flarum.Forum)
 
 	mainConf := appConf.Main
