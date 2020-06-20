@@ -109,6 +109,7 @@ func createFlarumPageAPIDoc(
 		coreData.AppendResourcs(tag)
 		flarumTags = append(flarumTags, tag)
 	}
+
 	// 添加主站点信息
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
 
@@ -122,10 +123,10 @@ func createFlarumPageAPIDoc(
 	}
 	coreData.APIDocument.SetData(res)
 
-	// 添加当前页面的帖子的用户信息, TODO: 用户有可能重复, 这里理论是需要优化的
+	// 添加当前页面的帖子的用户信息, FIXME: 用户有可能重复, 这里理论是需要优化的
 	for _, article := range pageInfo.Items {
 		user := model.FlarumCreateUser(article)
-		if user.GetID() == currentUser.ID { // 当前用户单独进行添加
+		if currentUser != nil && user.GetID() == currentUser.ID { // 当前用户单独进行添加
 			continue
 		}
 		coreData.AppendResourcs(user)
@@ -184,9 +185,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 
 	evn.FlarumInfo = coreData
 
-	// 右侧的链接
-	evn.Links = model.RedisLinkList(redisDB, false)
-
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
@@ -207,16 +205,13 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	strings.Split(_include, ",")
 	var coreData flarum.CoreData
 	var err error
-	// fmt.Println(_include)
 
 	// 当前的排序方式 TODO: use it
 	// _sort := r.FormValue("sort")
 	// strings.Split(_sort, ",")
-	// fmt.Println(_sort)
 
 	// 当前的过滤方式 filter[q]:  tag:r_funny
 	_filter := r.FormValue("filter[q]")
-	// fmt.Println(_filter)
 
 	// 当前的偏移数目, 可得到页码数目, 页码从1开始
 	_offset := r.FormValue("page[offset]")
@@ -243,6 +238,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
+		} else {
+			logger.Warning("Can't use filter:", _filter)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))
+			return
 		}
 	}
 
