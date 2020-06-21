@@ -90,8 +90,8 @@ func GetRetContext(r *http.Request) *ReqContext {
 }
 
 // createSimpleFlarumError 初始化一个最简单的错误值
-func createSimpleFlarumError(err string) FlarumErrorResponse {
-	return FlarumErrorResponse{[]flarumError{initFlarumError(err)}}
+func createSimpleFlarumError(errMsg string) FlarumErrorResponse {
+	return FlarumErrorResponse{[]flarumError{initFlarumError(errMsg)}}
 }
 
 // initFlarumError 初始化一个错误值
@@ -143,6 +143,12 @@ func (h *BaseHandler) flarumErrorJsonify(w http.ResponseWriter, data FlarumError
 	w.WriteHeader(http.StatusUnprocessableEntity)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	return json.NewEncoder(w).Encode(data)
+}
+
+// flarumErrorJsonify flarum错误需要此函数进行返回
+// h.flarumErrorJsonify(w, createSimpleFlarumError("这是其中的错误"))
+func (h *BaseHandler) flarumErrorMsg(w http.ResponseWriter, errMsg string) error {
+	return h.flarumErrorJsonify(w, createSimpleFlarumError(errMsg))
 }
 
 // CurrentUser 当前用户

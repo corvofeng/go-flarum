@@ -75,26 +75,25 @@ func createFlarumCommentAPIDoc(
 	cid uint64, tz int,
 ) (flarum.CoreData, error) {
 	var err error
-	coreData := flarum.CoreData{}
+	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument
 
 	comment, err := model.SQLGetCommentByID(sqlDB, redisDB, cid, tz)
 	if err != nil {
-		logger.Error("Get comment error", err)
+		logger.Error("Get comment error:", err)
 		return coreData, err
 	}
 	commentListItem := model.CommentListItem{Comment: comment}
 
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
 	if err != nil {
-		logger.Error("Get article error", err)
+		logger.Error("Get article error:", err)
 		return coreData, err
 	}
 
 	diss := model.FlarumCreateDiscussionFromArticle(article)
 	post := model.FlarumCreatePost(commentListItem)
 	apiDoc.SetData(post)
-	// apiDoc.AppendResourcs(post)
 
 	if currentUser != nil && comment.UID == currentUser.ID { // 当前用户单独进行添加
 		user := model.FlarumCreateCurrentUser(*currentUser)
@@ -149,12 +148,12 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	reply := PostedReply{}
 	err := json.NewDecoder(r.Body).Decode(&reply)
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("解析json错误:"+err.Error()))
+		h.flarumErrorMsg(w, "解析json错误:"+err.Error())
 		return
 	}
 	aid, err := strconv.ParseUint(reply.Data.Relationships.Discussion.Data.ID, 10, 64)
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取正确的帖子信息:"+err.Error()))
+		h.flarumErrorMsg(w, "无法获取正确的帖子信息:"+err.Error())
 		return
 	}
 
@@ -171,14 +170,13 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("创建评论出现错误:"+err.Error()))
+		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())
 		return
-
 	}
 
 	coreData, err := createFlarumCommentAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, comment.ID, scf.TimeZone)
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("查询评论出现错误:"+err.Error()))
+		h.flarumErrorMsg(w, "查询评论出现错误:"+err.Error())
 		return
 	}
 
