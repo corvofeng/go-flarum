@@ -96,7 +96,7 @@ func createFlarumPageAPIDoc(
 	cid uint64, tz int,
 ) (flarum.CoreData, error) {
 	var err error
-	coreData := flarum.CoreData{}
+	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, cid, page, 20, tz)
@@ -113,28 +113,32 @@ func createFlarumPageAPIDoc(
 	// 添加主站点信息
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
 
-	// 添加当前页面的帖子信息
 	var res []flarum.Resource
+	allUsers := make(map[uint64]bool)
+
+	// 添加当前页面的的帖子与用户信息, 已经去重
 	for _, article := range pageInfo.Items {
 		lastComent, err := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, tz)
 		if err != nil {
-			logger.Warning("Can't get comment for", article.LastPostID)
-			continue
+			logger.Warningf("Can't get article comment(%d, %d) err: %s", article.ID, article.LastPostID, err.Error())
 		}
 		diss := model.FlarumCreateDiscussion(article, lastComent)
 		res = append(res, diss)
 		coreData.AppendResourcs(diss)
-	}
-	coreData.APIDocument.SetData(res)
 
-	// 添加当前页面的帖子的用户信息, FIXME: 用户有可能重复, 这里理论是需要优化的
-	for _, article := range pageInfo.Items {
-		user := model.FlarumCreateUser(article)
-		if currentUser != nil && user.GetID() == currentUser.ID { // 当前用户单独进行添加
+		if currentUser != nil && article.UID == currentUser.ID { // 当前用户单独进行添加
 			continue
 		}
-		coreData.AppendResourcs(user)
+
+		// 用户不存在则添加, 已经存在的用户不会考虑
+		if _, ok := allUsers[article.UID]; !ok {
+			user := model.FlarumCreateUser(article)
+			// apiDoc.AppendResourcs(user)
+			allUsers[article.UID] = true
+			coreData.AppendResourcs(user)
+		}
 	}
+	apiDoc.SetData(res)
 
 	// 添加当前用户的session信息
 	if currentUser != nil {
@@ -146,7 +150,6 @@ func createFlarumPageAPIDoc(
 	}
 
 	scf := appConf.Site
-	coreData.APIDocument.Links = make(map[string]string)
 	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
 	if page != 1 {
 		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*20)
@@ -200,15 +203,15 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	var page uint64
+	var err error
 
 	logger := h.App.Logger
-	apiDoc := flarum.NewAPIDoc()
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	// 需要返回的relations TODO: use it
 	_include := r.FormValue("include")
 	strings.Split(_include, ",")
-	var coreData flarum.CoreData
-	var err error
 
 	// 当前的排序方式 TODO: use it
 	// _sort := r.FormValue("sort")

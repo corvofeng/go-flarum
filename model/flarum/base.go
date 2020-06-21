@@ -226,13 +226,23 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 	return obj
 }
 
-// NewAPIDoc 新建一个APIDoc对象
-func NewAPIDoc() APIDoc {
+// newAPIDoc 新建一个APIDoc对象
+func newAPIDoc() APIDoc {
 	apiDoc := APIDoc{}
 	apiDoc.Links = make(map[string]string)
 	apiDoc.Data = []Resource{}
 	apiDoc.Included = []Resource{}
 	return apiDoc
+}
+
+// NewCoreData 新建一个CoreData对象
+// 使用方法:
+// 	coreData := flarum.NewCoreData()
+// 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+func NewCoreData() CoreData {
+	coreData := CoreData{}
+	coreData.APIDocument = newAPIDoc()
+	return coreData
 }
 
 // SetData 设置为字典类型的数据

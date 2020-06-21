@@ -185,7 +185,7 @@ func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (C
 	logger := util.GetLogger()
 	comments := sqlGetCommentsBaseByList(db, redisDB, []uint64{cid})
 	if len(comments) == 0 {
-		logger.Warningf("Error get comment(%d)", cid)
+		logger.Debugf("Error get comment(%d)", cid)
 		return Comment{}, fmt.Errorf("Can't find comment")
 	}
 	return comments[0].toComment(db, redisDB, tz), nil

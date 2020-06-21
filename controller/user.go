@@ -538,7 +538,8 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiDoc := flarum.NewAPIDoc()
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument
 	if user.ID == currentUser.ID {
 		apiDoc.SetData(model.FlarumCreateCurrentUser(*currentUser))
 	} else {

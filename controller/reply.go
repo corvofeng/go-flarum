@@ -221,7 +221,8 @@ func FlarumConfirmUserAndPost(w http.ResponseWriter, r *http.Request) {
 	// if comment.UserName != filterData[0] {
 	// 	logger.Warningf("用户与评论信息不符合: %s", filterData)
 	// }
-	apiDoc := flarum.NewAPIDoc()
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/users?" +
 		fmt.Sprintf("filter%%5Bq%%5D=%s&page%%5Blimit%%5D=%s", url.QueryEscape(_filter), _pageLimit)

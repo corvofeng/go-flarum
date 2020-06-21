@@ -756,8 +756,8 @@ func createFlarumArticleAPIDoc(
 ) (flarum.CoreData, error) {
 
 	var err error
-	coreData := flarum.CoreData{}
-	apiDoc := flarum.NewAPIDoc()
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 	if err != nil {
 		logger.Error("Get article error", err)
@@ -769,20 +769,27 @@ func createFlarumArticleAPIDoc(
 
 	// 获取该文章下面所有的评论信息
 	postArr := []flarum.Resource{}
+	allUsers := make(map[uint64]bool)
 	for _, comment := range pageInfo.Items {
 		post := model.FlarumCreatePost(comment)
 		apiDoc.AppendResourcs(post)
 		postArr = append(postArr, post)
 
-		user := model.FlarumCreateUserFromComments(comment)
-		apiDoc.AppendResourcs(user)
+		// 当前用户会在后面统一添加
+		if currentUser != nil && currentUser.ID == comment.UID {
+			continue
+		}
+
+		// 用户不存在则添加, 已经存在的用户不会考虑
+		if _, ok := allUsers[comment.UID]; !ok {
+			user := model.FlarumCreateUserFromComments(comment)
+			apiDoc.AppendResourcs(user)
+			allUsers[comment.UID] = true
+		}
 	}
 
 	// 获取评论的作者
-	if len(pageInfo.Items) > 0 {
-		user := model.FlarumCreateUserFromComments(pageInfo.Items[0])
-		apiDoc.AppendResourcs(user)
-	} else {
+	if len(pageInfo.Items) == 0 {
 		logger.Errorf("Can't get any comment for %d", article.ID)
 	}
 
@@ -808,7 +815,7 @@ func createFlarumArticleAPIDoc(
 	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 
-	coreData.APIDocument = apiDoc
+	// coreData.APIDocument = apiDoc
 	// 添加主站点信息
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
 
