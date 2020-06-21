@@ -9,7 +9,9 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // ContentPreviewPost 预览主题以及评论
@@ -63,17 +65,56 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-
 	rsp := response{}
-	decoder := json.NewDecoder(r.Body)
-	post := flarum.NewResource(flarum.EPost, 0)
-	err := decoder.Decode(&post)
+	sqlDB := h.App.MySQLdb
+
+	type PostedReply struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				Content string `json:"content"`
+			} `json:"attributes"`
+			Relationships struct {
+				Discussion struct {
+					Data struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"discussion"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}
+
+	reply := PostedReply{}
+	err := json.NewDecoder(r.Body).Decode(&reply)
 	if err != nil {
-		rsp = response{400, "json Decode err:" + err.Error()}
-		h.jsonify(w, rsp)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("解析json错误:"+err.Error()))
 		return
 	}
-	defer r.Body.Close()
+	aid, err := strconv.ParseUint(reply.Data.Relationships.Discussion.Data.ID, 10, 64)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取正确的帖子ID:"+err.Error()))
+		return
+	}
+
+	now := uint64(time.Now().UTC().Unix())
+	comment := model.Comment{
+		CommentBase: model.CommentBase{
+			AID:      aid,
+			UID:      ctx.currentUser.ID,
+			Content:  reply.Data.Attributes.Content,
+			Number:   1,
+			ClientIP: ctx.realIP,
+			AddTime:  now,
+		},
+	}
+
+	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("创建帖子出现错误:"+err.Error()))
+		return
+
+	}
+
 	rsp.Retcode = 404
 	w.WriteHeader(http.StatusBadGateway)
 	h.jsonify(w, rsp)

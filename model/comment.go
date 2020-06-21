@@ -298,6 +298,107 @@ func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, bt
 	}
 }
 
+// CreateFlarumComment 创建flarum的评论
+func (comment *Comment) CreateFlarumComment(db *sql.DB) (bool, error) {
+	tx, err := db.Begin()
+	logger := util.GetLogger()
+	defer clearTransaction(tx)
+	if err != nil {
+		return false, err
+	}
+	if ok, err := comment.sqlCreateComment(tx); !ok {
+		return false, err
+	}
+
+	logger.Debugf("Create comment %d success", comment.ID)
+
+	if ok, err := comment.sqlUpdateNumber(tx); !ok {
+		return false, err
+	}
+
+	logger.Debugf("Update comment number %d success", comment.ID)
+	if err := tx.Commit(); err != nil {
+		logger.Error("Create reply with error", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (comment *Comment) sqlCreateComment(tx *sql.Tx) (bool, error) {
+	row, err := tx.Exec(
+		("INSERT INTO `reply` " +
+			" (`user_id`, `topic_id`, `content`, created_at, updated_at, client_ip)" +
+			" VALUES " +
+			" (?, ?, ?, ?, ?, ?)"),
+		comment.UID,
+		comment.AID,
+		comment.Content,
+		comment.AddTime,
+		comment.AddTime,
+		comment.ClientIP,
+	)
+	if err != nil {
+		return false, err
+	}
+	cid, err := row.LastInsertId()
+	comment.ID = uint64(cid)
+
+	return true, nil
+}
+
+func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
+	// 锁表
+	logger := util.GetLogger()
+	row, err := tx.Query(
+		("SELECT reply.id, reply.number" +
+			" FROM " +
+			" (SELECT last_post_id FROM `topic` WHERE id = ? FOR UPDATE ) AS t" +
+			" LEFT JOIN reply ON t.last_post_id = reply.id"),
+		comment.AID,
+	)
+	defer rowsClose(row)
+	if err != nil {
+		return false, err
+	}
+
+	var lastReplyID uint64
+	var lastReplyNumber uint64
+
+	if row.Next() {
+		row.Scan(&lastReplyID, &lastReplyNumber)
+	} else {
+		logger.Warningf("Can't get last post for topic %d", comment.AID)
+		lastReplyID = 0
+		lastReplyNumber = 0
+	}
+	rowsClose(row)
+	logger.Debugf("Get last reply (%d,%d) for article: %d", lastReplyID, lastReplyNumber, comment.AID)
+
+	comment.Number = lastReplyNumber + 1
+	_, err = tx.Exec(
+		("UPDATE `topic` SET" +
+			" last_post_id=?" +
+			" where id=?"),
+		comment.ID,
+		comment.AID,
+	)
+	if err != nil {
+		return false, err
+	}
+	_, err = tx.Exec(
+		("UPDATE `reply` SET" +
+			" number=?" +
+			" where id=?"),
+		comment.Number,
+		comment.ID,
+	)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func CommentGetByKey(db *youdb.DB, aid uint64, cid uint64) (Comment, error) {
 	obj := Comment{}
 	rs := db.Hget("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid))
