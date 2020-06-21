@@ -64,7 +64,7 @@ type (
 
 	// ReqContext 请求时将会携带的contex信息
 	ReqContext struct {
-		currentUser model.User
+		currentUser *model.User
 		inAPI       bool
 		h           *BaseHandler
 		realIP      string

@@ -351,7 +351,7 @@ func (ab *ArticleBase) toArticleListItem(db *sql.DB, redisDB *redis.Client, tz i
 	item := ArticleListItem{
 		ArticleBase: *ab,
 	}
-	item.EditTimeFmt = util.TimeFmt(item.EditTime, "2006-01-02 15:04", tz)
+	item.EditTimeFmt = util.TimeFmt(item.EditTime, util.TIME_FMT, tz)
 	item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
 	return item
 }

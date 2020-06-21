@@ -58,7 +58,12 @@ func (h *BaseHandler) InitMiddlewareContext(inner http.Handler) http.Handler {
 func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		reqCtx := GetRetContext(r)
-		reqCtx.currentUser, _ = h.CurrentUser(w, r)
+		currentUser, err := h.CurrentUser(w, r)
+		if err != nil {
+			reqCtx.currentUser = nil
+		} else {
+			reqCtx.currentUser = &currentUser
+		}
 		inner.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(mw)

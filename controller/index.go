@@ -116,7 +116,11 @@ func createFlarumPageAPIDoc(
 	// 添加当前页面的帖子信息
 	var res []flarum.Resource
 	for _, article := range pageInfo.Items {
-		lastComent := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, tz)
+		lastComent, err := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, tz)
+		if err != nil {
+			logger.Warning("Can't get comment for", article.LastPostID)
+			continue
+		}
 		diss := model.FlarumCreateDiscussion(article, lastComent)
 		res = append(res, diss)
 		coreData.AppendResourcs(diss)
@@ -171,7 +175,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	si := model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
+	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
 		return
@@ -228,7 +232,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	si := model.GetSiteInfo(redisDB)
 
 	if _filter == "" {
-		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
+		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
 	} else {
 		data := strings.Trim(_filter, " ")
 		if strings.HasPrefix(data, "tag:") {
@@ -237,7 +241,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
 			}
-			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
 		} else {
 			logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))

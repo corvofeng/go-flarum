@@ -540,7 +540,7 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 
 	apiDoc := flarum.NewAPIDoc()
 	if user.ID == currentUser.ID {
-		apiDoc.SetData(model.FlarumCreateCurrentUser(currentUser))
+		apiDoc.SetData(model.FlarumCreateCurrentUser(*currentUser))
 	} else {
 		// TODO: 当前用户暂时无法获取其他用户的信息
 	}

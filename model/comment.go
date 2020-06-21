@@ -181,14 +181,14 @@ func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, 
 }
 
 // SQLGetCommentByID 获取一条评论
-func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) Comment {
+func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
 	logger := util.GetLogger()
 	comments := sqlGetCommentsBaseByList(db, redisDB, []uint64{cid})
 	if len(comments) == 0 {
 		logger.Warningf("Error get comment(%d)", cid)
-		return Comment{}
+		return Comment{}, fmt.Errorf("Can't find comment")
 	}
-	return comments[0].toComment(db, redisDB, tz)
+	return comments[0].toComment(db, redisDB, tz), nil
 }
 
 // SQLCommentListByPage 获取帖子的所有评论
@@ -350,6 +350,9 @@ func (comment *Comment) sqlCreateComment(tx *sql.Tx) (bool, error) {
 func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 	// 锁表
 	logger := util.GetLogger()
+	var lastReplyID uint64
+	var lastReplyNumber uint64
+
 	row, err := tx.Query(
 		("SELECT reply.id, reply.number" +
 			" FROM " +
@@ -357,13 +360,9 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 			" LEFT JOIN reply ON t.last_post_id = reply.id"),
 		comment.AID,
 	)
-	defer rowsClose(row)
 	if err != nil {
 		return false, err
 	}
-
-	var lastReplyID uint64
-	var lastReplyNumber uint64
 
 	if row.Next() {
 		row.Scan(&lastReplyID, &lastReplyNumber)
@@ -372,7 +371,8 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 		lastReplyID = 0
 		lastReplyNumber = 0
 	}
-	rowsClose(row)
+	rowsClose(row) // 查询之后, 立刻关闭, 否则后面的语句无法执行
+
 	logger.Debugf("Get last reply (%d,%d) for article: %d", lastReplyID, lastReplyNumber, comment.AID)
 
 	comment.Number = lastReplyNumber + 1
@@ -386,6 +386,7 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	_, err = tx.Exec(
 		("UPDATE `reply` SET" +
 			" number=?" +

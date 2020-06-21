@@ -849,7 +849,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, &ctx.currentUser, ctx.inAPI, aid, scf.TimeZone)
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, ctx.inAPI, aid, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -940,7 +940,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	si := model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, &ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
+	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

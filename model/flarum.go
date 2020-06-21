@@ -104,6 +104,13 @@ func FlarumCreateDiscussion(article ArticleListItem, lastComment Comment) flarum
 			Data: flarum.InitBaseResources(data.FirstPostID, "posts"),
 		},
 	)
+	obj.BindRelations(
+		"Posts",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+
 	if article.LastPostID != 0 {
 		data.LastPostID = article.LastPostID
 		data.LastUserID = lastComment.UID
@@ -143,6 +150,12 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	)
 	obj.BindRelations(
 		"Tags",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+	obj.BindRelations(
+		"Posts",
 		flarum.RelationArray{
 			Data: []flarum.BaseRelation{},
 		},

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"goyoubbs/model"
@@ -12,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-redis/redis/v7"
+	"github.com/op/go-logging"
 )
 
 // ContentPreviewPost 预览主题以及评论
@@ -61,12 +65,69 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 
 }
 
+// 获取一条评论的信息
+func createFlarumCommentAPIDoc(
+	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
+	appConf model.AppConf,
+	siteInfo model.SiteInfo,
+	currentUser *model.User,
+	inAPI bool,
+	cid uint64, tz int,
+) (flarum.CoreData, error) {
+	var err error
+	coreData := flarum.CoreData{}
+	apiDoc := &coreData.APIDocument
+
+	comment, err := model.SQLGetCommentByID(sqlDB, redisDB, cid, tz)
+	if err != nil {
+		logger.Error("Get comment error", err)
+		return coreData, err
+	}
+	commentListItem := model.CommentListItem{Comment: comment}
+
+	article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
+	if err != nil {
+		logger.Error("Get article error", err)
+		return coreData, err
+	}
+
+	diss := model.FlarumCreateDiscussionFromArticle(article)
+	post := model.FlarumCreatePost(commentListItem)
+	apiDoc.SetData(post)
+	// apiDoc.AppendResourcs(post)
+
+	if currentUser != nil && comment.UID == currentUser.ID { // 当前用户单独进行添加
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		apiDoc.AppendResourcs(user)
+	} else {
+		user := model.FlarumCreateUserFromComments(commentListItem)
+		apiDoc.AppendResourcs(user)
+	}
+
+	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, tz)
+
+	postArr := []flarum.Resource{}
+	for _, comment := range pageInfo.Items {
+		post := model.FlarumCreatePost(comment)
+		postArr = append(postArr, post)
+	}
+
+	postRelation := model.FlarumCreatePostRelations(postArr)
+	diss.BindRelations("Posts", postRelation)
+	apiDoc.AppendResourcs(diss)
+
+	return coreData, nil
+}
+
 // FlarumAPICreatePost flarum进行评论的接口
 func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	rsp := response{}
 	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	scf := h.App.Cf.Site
+	si := model.GetSiteInfo(redisDB)
+	logger := ctx.GetLogger()
 
 	type PostedReply struct {
 		Data struct {
@@ -93,7 +154,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 	aid, err := strconv.ParseUint(reply.Data.Relationships.Discussion.Data.ID, 10, 64)
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取正确的帖子ID:"+err.Error()))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取正确的帖子信息:"+err.Error()))
 		return
 	}
 
@@ -110,21 +171,18 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("创建帖子出现错误:"+err.Error()))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("创建评论出现错误:"+err.Error()))
 		return
 
 	}
 
-	rsp.Retcode = 404
-	w.WriteHeader(http.StatusBadGateway)
-	h.jsonify(w, rsp)
+	coreData, err := createFlarumCommentAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, comment.ID, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("查询评论出现错误:"+err.Error()))
+		return
+	}
 
-	// if rec.Act == "preview" && len(rec.Content) > 0 {
-	// 	rsp.Retcode = 200
-	// 	rsp.HTML = template.HTML(util.ContentFmt(rec.Content))
-	// }
-	// json.NewEncoder(w).Encode(rsp)
-
+	h.jsonify(w, coreData.APIDocument)
 }
 
 // FlarumConfirmUserAndPost 确认当前的用户的评论信息
