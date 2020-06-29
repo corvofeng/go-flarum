@@ -188,9 +188,9 @@ func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Cl
 func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 	row, err := tx.Exec(
 		("INSERT INTO `topic` " +
-			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, active)" +
+			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, reply_count, active)" +
 			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?, ?)"),
+			" (?, ?, ?, ?, ?, ?, ?, 0, ?)"),
 		article.CID,
 		article.UID,
 		article.Title,
@@ -201,7 +201,6 @@ func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 		article.Active,
 	)
 	if err != nil {
-		// util.CheckError(err, "创建主题")
 		return false, err
 	}
 	aid, err := row.LastInsertId()
@@ -419,8 +418,8 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 	for rows.Next() {
 		item := ArticleBase{}
 		err = rows.Scan(
-			&item.ID, &item.Title, &item.Content, &item.CID, &item.UID,
-			&item.ClickCnt, &item.Comments,
+			&item.ID, &item.Title, &item.Content,
+			&item.CID, &item.UID, &item.ClickCnt, &item.Comments,
 			&item.FirstPostID, &item.LastPostID,
 			&item.AddTime, &item.EditTime)
 

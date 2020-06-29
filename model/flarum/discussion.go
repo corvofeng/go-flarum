@@ -27,7 +27,7 @@ type Discussion struct {
 
 	CommentCount     uint64 `json:"commentCount"`
 	ParticipantCount int    `json:"participantCount"`
-	LastPostNumber   int    `json:"lastPostNumber"`
+	LastPostNumber   uint64 `json:"lastPostNumber"`
 
 	// 第一个评论的信息, 通常由作者创建
 	CreatedAt   string `json:"createdAt"`

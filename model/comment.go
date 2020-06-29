@@ -352,11 +352,12 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 	logger := util.GetLogger()
 	var lastReplyID uint64
 	var lastReplyNumber uint64
+	var replyCount uint64
 
 	row, err := tx.Query(
-		("SELECT reply.id, reply.number" +
+		("SELECT reply.id, reply.number, t.reply_count" +
 			" FROM " +
-			" (SELECT last_post_id FROM `topic` WHERE id = ? FOR UPDATE ) AS t" +
+			" (SELECT last_post_id, reply_count FROM `topic` WHERE id = ? FOR UPDATE ) AS t" +
 			" LEFT JOIN reply ON t.last_post_id = reply.id"),
 		comment.AID,
 	)
@@ -365,22 +366,26 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 	}
 
 	if row.Next() {
-		row.Scan(&lastReplyID, &lastReplyNumber)
+		row.Scan(&lastReplyID, &lastReplyNumber, &replyCount)
 	} else {
 		logger.Warningf("Can't get last post for topic %d", comment.AID)
 		lastReplyID = 0
 		lastReplyNumber = 0
+		replyCount = 0
 	}
 	rowsClose(row) // 查询之后, 立刻关闭, 否则后面的语句无法执行
 
-	logger.Debugf("Get last reply (%d,%d) for article: %d", lastReplyID, lastReplyNumber, comment.AID)
+	logger.Debugf("Get last reply (%d,%d) for article: %d cnt: %d", lastReplyID, lastReplyNumber, comment.AID, replyCount)
 
 	comment.Number = lastReplyNumber + 1
+	replyCount = replyCount + 1
 	_, err = tx.Exec(
 		("UPDATE `topic` SET" +
-			" last_post_id=?" +
+			" last_post_id=?," +
+			" reply_count=?" +
 			" where id=?"),
 		comment.ID,
+		replyCount,
 		comment.AID,
 	)
 	if err != nil {
