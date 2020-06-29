@@ -55,7 +55,7 @@ func main() {
 	app := &system.Application{}
 
 	app.Init(c, os.Args[0])
-	model.RankMapInit(app.MySQLdb, app.Db, app.RedisDB)
+	model.RankMapInit(app.MySQLdb, app.RedisDB)
 
 	// 验证码信息使用Redis保存
 	model.SetCaptchaUseRedisStore(app.RedisDB)

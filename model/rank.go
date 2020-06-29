@@ -3,10 +3,10 @@ package model
 import (
 	"database/sql"
 	"fmt"
+
 	"goyoubbs/util"
 	"sync"
 
-	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 
 	"strconv"
@@ -22,7 +22,6 @@ type ArticleRankItem struct {
 	AID     uint64 `json:"a_id"`
 	Weight  uint64
 	SQLDB   *sql.DB
-	CacheDB *youdb.DB
 	RedisDB *redis.Client
 }
 
@@ -39,7 +38,6 @@ type RankMap struct {
 	m       map[uint64]*CategoryRankData
 	mtx     sync.Mutex // 同一时刻, 只允许一个协程操纵map
 	SQLDB   *sql.DB
-	CacheDB *youdb.DB
 	RedisDB *redis.Client
 }
 
@@ -50,7 +48,6 @@ func getWeight(rankMap *RankMap, aid uint64) float64 {
 	}
 	return article.GetWeight(
 		rankMap.SQLDB,
-		rankMap.CacheDB,
 		rankMap.RedisDB,
 	)
 }
@@ -70,6 +67,7 @@ func TimelyResort() {
 	if util.CheckError(err, "获取所有节点") {
 		return
 	}
+	categoryList = append(categoryList, Category{ID: 0, Name: "所有节点"})
 
 	for _, v := range categoryList {
 		logger.Debugf("Start refresh category %d(%s)", v.ID, v.Name)
@@ -118,10 +116,9 @@ func newRankMap() (m *RankMap) {
 }
 
 // RankMapInit init a ttl map
-func RankMapInit(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) {
+func RankMapInit(sqlDB *sql.DB, redisDB *redis.Client) {
 	rankMap = newRankMap()
 	rankMap.SQLDB = sqlDB
-	rankMap.CacheDB = cntDB
 	rankMap.RedisDB = redisDB
 
 	rankRedisDB = redisDB

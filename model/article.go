@@ -166,7 +166,7 @@ func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (article *Article) GetWeight(db *sql.DB, cntDB *youdb.DB, redisDB *redis.Client) float64 {
+func (article *Article) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 	var editTime time.Time
 	var now = time.Now()
 	if article.EditTime == 0 {
@@ -593,10 +593,16 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 	} else {
 		activeData = 0
 	}
+	if cid == 0 {
+		rows, err = db.Query(
+			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag`) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
+			activeData)
+	} else {
+		rows, err = db.Query(
+			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
+			cid, activeData)
+	}
 
-	rows, err = db.Query(
-		"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
-		cid, activeData)
 	defer rowsClose(rows)
 
 	if err != nil {

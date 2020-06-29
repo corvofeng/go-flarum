@@ -221,8 +221,6 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 	}
 	obj.setID(id)
 	obj.setType(data.GetType())
-	// obj.BaseResources.setID(id)
-	// obj.BaseResources.SetType(data.GetType())
 	return obj
 }
 
