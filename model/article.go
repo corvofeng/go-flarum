@@ -444,7 +444,8 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
-	fmt.Println("Get article list", page, limit, articleList)
+	logger := util.GetLogger()
+	logger.Debug("Get article list", page, limit, articleList)
 	if len(articleList) == 0 {
 		// TODO: remove it
 		articleIteratorStart := GetCIDArticleMax(nodeID)
