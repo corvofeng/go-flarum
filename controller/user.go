@@ -527,12 +527,18 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	sqlDB := h.App.MySQLdb
 	uid := pat.Param(r, "uid")
-	uidi, err := strconv.ParseUint(uid, 10, 64)
+
+	user, err := model.SQLUserGetByName(sqlDB, uid)
+
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("解析uid参数错误"+err.Error()))
-		return
+		uidi, err := strconv.ParseUint(uid, 10, 64)
+		if err != nil { // 说明当前的
+			h.flarumErrorJsonify(w, createSimpleFlarumError("解析uid参数错误"+err.Error()))
+			return
+		}
+		user, err = model.SQLUserGetByID(sqlDB, uidi)
 	}
-	user, err := model.SQLUserGetByID(sqlDB, uidi)
+
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误"+err.Error()))
 		return
