@@ -486,6 +486,20 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 	user.CleareRedisCache(redisDB)
 }
 
+// FlarumUserComments 获取用户的评论
+func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
+	parm := r.URL.Query()
+	_user := parm.Get("filter[user]")
+	_type := parm.Get("filter[type]")
+	_limit := parm.Get("page[limit]")
+	_sort := parm.Get("sort")
+
+	_no_exist := parm.Get("no_exist")
+	fmt.Println(_user, _type, _limit, _sort, _no_exist)
+
+	return
+}
+
 // FlarumUserLogout flarum用户注销
 func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
