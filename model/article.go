@@ -474,14 +474,24 @@ func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, li
 
 // SQLArticleSetClickCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
 func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
-
 	_, err := sqlDB.Exec("UPDATE `topic`"+
 		" set hits = ?"+
 		" where id = ?",
 		clickCnt,
 		aid,
 	)
-	util.CheckError(err, "更新帖子权重")
+	util.CheckError(err, "更新帖子点击次数")
+}
+
+// SQLArticleSetCommentCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
+func SQLArticleSetCommentCnt(sqlDB *sql.DB, aid uint64, replyCnt uint64) {
+	_, err := sqlDB.Exec("UPDATE `topic`"+
+		" set reply_count = ?"+
+		" where id = ?",
+		replyCnt,
+		aid,
+	)
+	util.CheckError(err, "更新帖子评论数目")
 }
 
 // SQLCIDArticleList 返回某个节点的主题
