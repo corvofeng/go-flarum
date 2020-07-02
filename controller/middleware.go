@@ -82,7 +82,7 @@ func InAPIMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 func MustAuthMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqCtx := GetRetContext(r)
-		if reqCtx.currentUser.ID == 0 {
+		if reqCtx.currentUser == nil || reqCtx.currentUser.ID == 0 {
 			w.WriteHeader(http.StatusForbidden)
 			reqCtx.h.jsonify(w, response{
 				Retcode: 403,
