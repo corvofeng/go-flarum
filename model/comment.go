@@ -179,6 +179,33 @@ func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, 
 	}
 	return
 }
+func sqlCommentListByUserID(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
+	var rows *sql.Rows
+	defer rowsClose(rows)
+	logger := util.GetLogger()
+
+	rows, err = db.Query("SELECT id FROM `reply` where user_id = ? order by created_at desc limit ?", userID)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return
+	}
+
+	var commentList []uint64
+	for rows.Next() {
+		var item uint64
+		err = rows.Scan(&item)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
+		}
+		commentList = append(commentList, item)
+	}
+	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	for _, bc := range baseComments {
+		comments = append(comments, bc.toComment(db, redisDB, tz))
+	}
+	return
+}
 
 // SQLGetCommentByID 获取一条评论
 func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
@@ -196,9 +223,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
-	var rows *sql.Rows
 	var err error
-	defer rowsClose(rows)
 	logger := util.GetLogger()
 
 	comments, err := sqlCommentListByTopicID(db, redisDB, topicID, tz)
@@ -219,6 +244,11 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 		FirstKey: firstKey,
 		LastKey:  lastKey,
 	}
+}
+
+// SQLCommentListByUser 获取某个用户的帖子信息
+func SQLCommentListByUser(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) ([]Comment, error) {
+	return sqlCommentListByUserID(db, redisDB, userID, limit, tz)
 }
 
 // SQLCommentList 获取在数据库中存储的评论

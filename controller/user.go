@@ -489,13 +489,30 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 // FlarumUserComments 获取用户的评论
 func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
 	parm := r.URL.Query()
-	_user := parm.Get("filter[user]")
+	_userID := parm.Get("filter[user]")
 	_type := parm.Get("filter[type]")
 	_limit := parm.Get("page[limit]")
 	_sort := parm.Get("sort")
 
-	_no_exist := parm.Get("no_exist")
-	fmt.Println(_user, _type, _limit, _sort, _no_exist)
+	var limit uint64
+	var userID uint64
+	var err error
+
+	if len(_limit) > 0 {
+		limit, err = strconv.ParseUint(_limit, 10, 64)
+		if err != nil {
+			return
+		}
+	}
+	limit = 20
+	if len(_userID) > 0 {
+		userID, err = strconv.ParseUint(_userID, 10, 64)
+		if err != nil {
+			return
+		}
+	}
+
+	fmt.Println(userID, _type, _limit, _sort, limit)
 
 	return
 }
