@@ -152,6 +152,13 @@ func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comm
 	return c
 }
 
+func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz int) CommentListItem {
+	item := CommentListItem{
+		Comment: *comment,
+	}
+	return item
+}
+
 func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
@@ -184,7 +191,7 @@ func sqlCommentListByUserID(db *sql.DB, redisDB *redis.Client, userID uint64, li
 	defer rowsClose(rows)
 	logger := util.GetLogger()
 
-	rows, err = db.Query("SELECT id FROM `reply` where user_id = ? order by created_at desc limit ?", userID)
+	rows, err = db.Query("SELECT id FROM `reply` where user_id = ? order by created_at desc limit ?", userID, limit)
 	if err != nil {
 		logger.Errorf("Query failed,err:%v", err)
 		return
@@ -231,10 +238,7 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 		logger.Errorf("Query comments failed for %d", topicID)
 	}
 	for _, c := range comments {
-		item := CommentListItem{
-			Comment: c,
-		}
-		items = append(items, item)
+		items = append(items, c.toCommentListItem(db, redisDB, tz))
 	}
 
 	return CommentPageInfo{
@@ -247,11 +251,32 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz 
 }
 
 // SQLCommentListByUser 获取某个用户的帖子信息
-func SQLCommentListByUser(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) ([]Comment, error) {
-	return sqlCommentListByUserID(db, redisDB, userID, limit, tz)
+func SQLCommentListByUser(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
+	var items []CommentListItem
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+	var err error
+	logger := util.GetLogger()
+
+	comments, err := sqlCommentListByUserID(db, redisDB, userID, limit, tz)
+	if err != nil {
+		logger.Errorf("Query comments failed for user %d", userID)
+	}
+	for _, c := range comments {
+		items = append(items, c.toCommentListItem(db, redisDB, tz))
+	}
+
+	return CommentPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
 }
 
 // SQLCommentList 获取在数据库中存储的评论
+// TODO: deprecated
 func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool

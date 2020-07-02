@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"goyoubbs/util"
 
 	"github.com/dchest/captcha"
+	"github.com/go-redis/redis/v7"
+	"github.com/op/go-logging"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
@@ -486,17 +489,82 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 	user.CleareRedisCache(redisDB)
 }
 
+func createFlarumUserAPIDoc(
+	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
+	appConf model.AppConf,
+	siteInfo model.SiteInfo,
+	currentUser *model.User,
+	inAPI bool,
+	comments *[]model.CommentListItem, // 需要返回的评论信息
+	tz int,
+) (flarum.CoreData, error) {
+	var err error
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument
+	postArr := []flarum.Resource{}
+
+	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
+	allDiscussions := make(map[uint64]bool) // 用于保存已经添加的帖子, 进行去重
+
+	if comments != nil {
+		for _, comment := range *comments {
+			post := model.FlarumCreatePost(comment)
+			apiDoc.AppendResourcs(post)
+			postArr = append(postArr, post)
+
+			// 当前用户会在后面统一添加
+			if currentUser == nil || currentUser.ID != comment.UID {
+				if _, ok := allUsers[comment.UID]; !ok {
+					user := model.FlarumCreateUserFromComments(comment)
+					apiDoc.AppendResourcs(user)
+					allUsers[comment.UID] = true
+				}
+			}
+
+			if _, ok := allDiscussions[comment.AID]; !ok {
+				article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
+				if err != nil {
+					logger.Warning("Can't get article: ", comment.AID, err)
+				} else {
+					apiDoc.AppendResourcs(model.FlarumCreateDiscussionFromArticle(article))
+				}
+				allDiscussions[comment.AID] = true
+			}
+		}
+	}
+	apiDoc.SetData(postArr)
+
+	// 添加当前用户的session信息
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
+
+	return coreData, err
+}
+
 // FlarumUserComments 获取用户的评论
 func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	logger := ctx.GetLogger()
+	h := ctx.h
+
 	parm := r.URL.Query()
 	_userID := parm.Get("filter[user]")
-	_type := parm.Get("filter[type]")
+	// _type := parm.Get("filter[type]")
 	_limit := parm.Get("page[limit]")
-	_sort := parm.Get("sort")
+	// _sort := parm.Get("sort")
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	inAPI := ctx.inAPI
 
 	var limit uint64
 	var userID uint64
 	var err error
+	var user model.User
 
 	if len(_limit) > 0 {
 		limit, err = strconv.ParseUint(_limit, 10, 64)
@@ -505,14 +573,45 @@ func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	limit = 20
-	if len(_userID) > 0 {
-		userID, err = strconv.ParseUint(_userID, 10, 64)
-		if err != nil {
-			return
+
+	// 尝试获取用户
+	for true {
+		if user, err = model.SQLUserGetByName(sqlDB, _userID); err == nil {
+			break
 		}
+		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
+			logger.Warning("Can't get user id for ", _userID)
+			break
+		}
+		if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
+			break
+		}
+		break
+	}
+	if user.ID == 0 {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for"+_userID))
+		return
 	}
 
-	fmt.Println(userID, _type, _limit, _sort, limit)
+	pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, user.ID, limit, h.App.Cf.Site.TimeZone)
+	if err != nil {
+		logger.Warning("Can't get comments for  user", user.Name)
+	}
+
+	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB),
+		ctx.currentUser, ctx.inAPI, &pageInfo.Items, h.App.Cf.Site.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
+	// fmt.Println(userID, _type, _limit, _sort, limit, user, comments)
+	// 如果是API直接进行返回
+	if inAPI {
+		logger.Debug("flarum api return")
+		h.jsonify(w, coreData.APIDocument)
+		return
+	}
 
 	return
 }

@@ -604,7 +604,9 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 	} else {
 		activeData = 0
 	}
+
 	if cid == 0 {
+		// cid为0, 查询所有节点
 		rows, err = db.Query(
 			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag`) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
 			activeData)
@@ -613,7 +615,6 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
 			cid, activeData)
 	}
-
 	defer rowsClose(rows)
 
 	if err != nil {
