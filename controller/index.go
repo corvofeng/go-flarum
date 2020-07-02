@@ -92,7 +92,8 @@ func createFlarumPageAPIDoc(
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf, siteInfo model.SiteInfo,
 	currentUser *model.User,
-	inAPI bool, page uint64,
+	inAPI bool,
+	page uint64,
 	cid uint64, tz int,
 ) (flarum.CoreData, error) {
 	var err error
@@ -245,6 +246,13 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
+		} else if strings.HasPrefix(data, "author:") {
+			user, err := model.SQLUserGetByName(sqlDB, data[7:])
+			if err != nil {
+				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create user"+err.Error()))
+				return
+			}
+			fmt.Println(user)
 		} else {
 			logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))
