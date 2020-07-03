@@ -9,7 +9,8 @@ trigger:
 pool: Digital
 
 variables:
-  WORKDIR: /home/azure/goyobbs-build
+  WORKDIR: /home/azure/zoe-build
+  PROJ: zoe
   # for go build in alpine
   CGO_ENABLED: 0
   GOOS: linux 
@@ -22,36 +23,33 @@ steps:
     echo "Get build number $(Build.BuildNumber)"
   displayName: 'pwd and echo dir'
 
-- task: GoTool@0
-  displayName: 'Use Go 1.13'
-  inputs:
-    version: 1.13
+# - task: GoTool@0
+#   displayName: 'Use Go 1.13'
+#   inputs:
+#     version: 1.13
 
 - script: |
     rsync --delete -avz --exclude '.git' --exclude 'gopath' $(System.DefaultWorkingDirectory)/* $(WORKDIR)
   displayName: 'Sync the blog'
 
-- task: Go@0
-  displayName: 'go build'
-  inputs:
-    command: build
-    arguments: '-o goyoubbs'
-    workingDirectory: '$(WORKDIR)'
+# - task: Go@0
+#   displayName: 'go build'
+#   inputs:
+#     command: build
+#     arguments: '-o zoe'
+#     workingDirectory: '$(WORKDIR)'
 
 
 - script: |
     echo "$(System.DefaultWorkingDirectory)"
-    cp /home/azure/yiqi-config.yaml $(WORKDIR)/config/config.yaml
-    docker build . -t 'yiqi:v$(Build.BuildId)'
-    sed -i 's/yiqi:dev/yiqi:v$(Build.BuildId)/' docker-compose.yaml
-    sed -i 's@- ./static:/home/goyoubbs/static@- /home/collipa/goyoubbs/static:/home/goyoubbs/static@' docker-compose.yaml
+    docker build . -t '$(PROJ):v$(Build.BuildId)'
   workingDirectory: '$(WORKDIR)'
   displayName: 'Build yiqi image'
 
-- script: |
-    docker stack deploy --compose-file docker-compose.yaml yiqi
-  workingDirectory: '$(WORKDIR)'
-  displayName: 'Use docker stack to run'
+# - script: |
+#     docker stack deploy --compose-file docker-compose.yaml yiqi
+#   workingDirectory: '$(WORKDIR)'
+#   displayName: 'Use docker stack to run'
 
 # - task: CopyFiles@2
 #   displayName: 'Copy Files to: /home/azure/goyoubbs'
