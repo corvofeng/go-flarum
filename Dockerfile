@@ -1,5 +1,5 @@
 # 可以指定依赖的node镜像的版本 node:<version>，如果不指定，就会是最新的
-FROM node:14.5.0 as build-static
+FROM node:14.5.0-alpine3.12 as build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
 WORKDIR /usr/src/app
@@ -12,7 +12,8 @@ COPY package.json *.lock ./
 # RUN yarn --only=prod --registry=https://registry.npm.taobao.org
 RUN yarn --only=prod
 
-COPY . .
+COPY view webpack.config.js ./
+
 
 RUN yarn build
 
