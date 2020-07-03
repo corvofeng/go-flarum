@@ -1,8 +1,8 @@
-# 可以指定依赖的node镜像的版本 node:<version>，如果不指定，就会是最新的
+# 静态资源编译阶段
 FROM node:14.5.0-alpine3.12 as build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
-WORKDIR /usr/src/app
+WORKDIR /home/zoe
 
 # 把 package.json，package-lock.json(npm@5+) 或 yarn.lock 复制到工作目录(相对路径)
 COPY package.json *.lock ./
@@ -12,18 +12,17 @@ COPY package.json *.lock ./
 # RUN yarn --only=prod --registry=https://registry.npm.taobao.org
 RUN yarn --only=prod
 
-COPY view webpack.config.js ./
-
-
+COPY webpack.config.js ./
+COPY view ./view
 RUN yarn build
 
 # Golang编译阶段
-FROM 1.14.4-alpine3.12 as build-backend
+FROM golang:1.14.4-alpine3.12 as build-backend
 # All these steps will be cached
 WORKDIR /home/zoe
 
 # 国内用户可能需要设置 go proxy
-# RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 
 # COPY go.mod and go.sum files to the workspace
 COPY go.mod .
@@ -35,16 +34,23 @@ RUN go mod download
 COPY . .
 
 # Build the binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o /go/bin/hello
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o zoe
 
+
+# 构建最终镜像
 FROM alpine:3.7
-
 WORKDIR /home/zoe
 
-COPY ./goyoubbs $PROJDIR/goyoubbs
-COPY ./config/config.yaml $PROJDIR/config.yml
-COPY ./static $PROJDIR/static
-COPY ./view $PROJDIR/view
+# 下面的内容仅在调试时使用，线上构建时会将其删除
+# sed '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile
+## BOF CLEAN
+COPY ./config/config.yaml-tpl config.yml
+COPY ./static static
+COPY ./view view
+## EOF CLEAN
+
+COPY --from=build-static /home/zoe/static static
+COPY --from=build-backend /home/zoe/zoe zoe
 
 EXPOSE 8082
-CMD ["/home/goyoubbs/goyoubbs", "-config", "/home/goyoubbs/config.yml"]
+CMD ["/home/zoe/zoe", "-config", "/home/zoe/config.yml"]

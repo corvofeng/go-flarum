@@ -42,9 +42,10 @@ steps:
 
 - script: |
     echo "$(System.DefaultWorkingDirectory)"
+    sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
     docker build . -t '$(PROJ):v$(Build.BuildId)'
   workingDirectory: '$(WORKDIR)'
-  displayName: 'Build yiqi image'
+  displayName: 'Build zoe image'
 
 # - script: |
 #     docker stack deploy --compose-file docker-compose.yaml yiqi
