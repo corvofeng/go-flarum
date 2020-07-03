@@ -13,7 +13,6 @@ config/
 mydata.db
 vendor
 .vscode
-go.sum
 
 
 #### joe made this: http://goel.io/joe
