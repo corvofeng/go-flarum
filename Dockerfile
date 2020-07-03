@@ -23,8 +23,11 @@ WORKDIR /home/zoe
 
 ## BOF CLEAN
 # 国内用户可能需要设置 go proxy
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 ## EOF CLEAN
+
+RUN apk update && apk add git
 
 # COPY go.mod and go.sum files to the workspace
 COPY go.mod .
