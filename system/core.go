@@ -51,6 +51,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	mcf := &model.MainConf{}
 	c.GetStruct("Main", mcf)
 	logger := util.GetLogger()
+	app.Logger = logger
 
 	app.Rand = rand.New(rand.NewSource(time.Now().Unix()))
 
@@ -113,7 +114,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient
 	app.MongoDB = mongoClient
-	app.Logger = util.GetLogger()
 
 	// set main node
 	// db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))
@@ -138,8 +138,15 @@ func (app *Application) IsFlarum() bool {
 func (app *Application) Close() {
 	if app.Db != nil {
 		app.Db.Close()
+		app.Db = nil
 	}
-	app.MySQLdb.Close()
-	app.RedisDB.Close()
+	if app.MySQLdb != nil {
+		app.MySQLdb.Close()
+		app.MySQLdb = nil
+	}
+	if app.RedisDB != nil {
+		app.RedisDB.Close()
+		app.RedisDB = nil
+	}
 	app.Logger.Debug("db cloded")
 }
