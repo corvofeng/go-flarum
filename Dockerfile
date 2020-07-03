@@ -21,8 +21,10 @@ FROM golang:1.14.4-alpine3.12 as build-backend
 # All these steps will be cached
 WORKDIR /home/zoe
 
+## BOF CLEAN
 # 国内用户可能需要设置 go proxy
 RUN go env -w GOPROXY=https://goproxy.cn,direct
+## EOF CLEAN
 
 # COPY go.mod and go.sum files to the workspace
 COPY go.mod .
@@ -41,9 +43,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o zoe
 FROM alpine:3.7
 WORKDIR /home/zoe
 
+## BOF CLEAN
 # 下面的内容仅在调试时使用，线上构建时会将其删除
 # sed '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile
-## BOF CLEAN
 COPY ./config/config.yaml-tpl config.yml
 COPY ./static static
 COPY ./view view
