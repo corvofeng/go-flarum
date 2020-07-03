@@ -1,25 +1,6 @@
 package controller
 
-import (
-	"bytes"
-	"context"
-	"crypto/md5"
-	"encoding/hex"
-	"encoding/json"
-	"goyoubbs/lib/upyun"
-	"goyoubbs/util"
-	"github.com/ego008/youdb"
-	"github.com/qiniu/api.v7/auth/qbox"
-	"github.com/qiniu/api.v7/storage"
-	"github.com/h2non/filetype"
-	"image"
-	"image/jpeg"
-	"io"
-	"net/http"
-	"os"
-	"strings"
-)
-
+/*
 func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -248,3 +229,4 @@ func (h *BaseHandler) FileUpload(w http.ResponseWriter, r *http.Request) {
 	rsp.Retmsg = "上传成功"
 	json.NewEncoder(w).Encode(rsp)
 }
+*/

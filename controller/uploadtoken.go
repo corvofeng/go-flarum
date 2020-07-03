@@ -1,14 +1,6 @@
 package controller
 
-import (
-	"encoding/json"
-	"net/http"
-
-	"github.com/qiniu/api.v7/auth/qbox"
-	"github.com/qiniu/api.v7/storage"
-	"github.com/rs/xid"
-)
-
+/*
 func (h *BaseHandler) GetUploadImgToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -41,3 +33,4 @@ func (h *BaseHandler) GetUploadImgToken(w http.ResponseWriter, r *http.Request) 
 
 	json.NewEncoder(w).Encode(rsp)
 }
+*/

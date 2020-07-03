@@ -16,7 +16,6 @@ import (
 	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"
 	logging "github.com/op/go-logging"
-	"github.com/qiniu/api.v7/storage"
 	"github.com/weint/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,9 +31,9 @@ type Application struct {
 	MySQLdb *sql.DB
 	MongoDB *mongo.Client
 	Sc      *securecookie.SecureCookie
-	QnZone  *storage.Zone
-	Logger  *logging.Logger
-	Rand    *rand.Rand // 负责处理随机数
+	// QnZone  *storage.Zone
+	Logger *logging.Logger
+	Rand   *rand.Rand // 负责处理随机数
 }
 
 // LoadConfig 从文件中初始化程序配置
