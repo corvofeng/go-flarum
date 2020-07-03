@@ -87,20 +87,45 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
+// 记录当前的过滤器内容
+type filterType string
+
+const (
+	eUser     filterType = "user"
+	eCategory filterType = "category"
+)
+
+type dissFilter struct {
+	FT    filterType
+	CID   uint64
+	UID   uint64
+	Page  uint64
+	Limit uint64
+}
+
 func createFlarumPageAPIDoc(
 	logger *logging.Logger,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf, siteInfo model.SiteInfo,
 	currentUser *model.User,
 	inAPI bool,
-	page uint64,
-	cid uint64, tz int,
+	// page uint64,
+	// cid uint64,
+	df dissFilter,
+	tz int,
 ) (flarum.CoreData, error) {
 	var err error
+	var pageInfo model.ArticlePageInfo
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+	page := df.Page
 
-	pageInfo := model.SQLCIDArticleListByPage(sqlDB, redisDB, cid, page, 20, tz)
+	if df.FT == eCategory {
+		pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, df.CID, page, 20, tz)
+	} else if df.FT == eUser {
+		pageInfo = model.SQLArticleGetByUID(sqlDB, redisDB, df.UID, page, 20, tz)
+	}
+
 	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
 
 	// 添加所有分类的信息
@@ -179,7 +204,12 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	si := model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
+	df := dissFilter{
+		FT:   eCategory,
+		CID:  0,
+		Page: page,
+	}
+	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
 		return
@@ -236,7 +266,12 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	si := model.GetSiteInfo(redisDB)
 
 	if _filter == "" {
-		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, 0, scf.TimeZone)
+		df := dissFilter{
+			FT:   eCategory,
+			Page: page,
+			CID:  0,
+		}
+		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 	} else {
 		data := strings.Trim(_filter, " ")
 		if strings.HasPrefix(data, "tag:") {
@@ -245,14 +280,24 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
 			}
-			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, page, cate.ID, scf.TimeZone)
+			df := dissFilter{
+				FT:   eCategory,
+				Page: page,
+				CID:  cate.ID,
+			}
+			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 		} else if strings.HasPrefix(data, "author:") {
 			user, err := model.SQLUserGetByName(sqlDB, data[7:])
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create user"+err.Error()))
 				return
 			}
-			fmt.Println(user)
+			df := dissFilter{
+				FT:   eUser,
+				Page: page,
+				UID:  user.ID,
+			}
+			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 		} else {
 			logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))

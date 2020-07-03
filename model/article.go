@@ -440,8 +440,8 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 	return
 }
 
-// SQLCIDArticleListByPage 根据页码获取某个分类的列表
-func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
+// SQLArticleGetByCID 根据页码获取某个分类的列表
+func SQLArticleGetByCID(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
 	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
 	logger := util.GetLogger()
@@ -464,6 +464,45 @@ func SQLCIDArticleListByPage(db *sql.DB, redisDB *redis.Client, nodeID, page, li
 	} else {
 		pageInfo = SQLArticleGetByList(db, redisDB, articleList, tz)
 	}
+	pageInfo.PageNum = page
+	pageInfo.PageNext = page + 1
+	pageInfo.PagePrev = page - 1
+	if len(articleList) == int(limit) {
+		pageInfo.HasNext = true
+	}
+	return pageInfo
+}
+
+// SQLArticleGetByUID 根据创建用户获取帖子列表
+func SQLArticleGetByUID(db *sql.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
+	var rows *sql.Rows
+	var err error
+	var pageInfo ArticlePageInfo
+	var articleList []uint64
+	logger := util.GetLogger()
+	defer rowsClose(rows)
+
+	rows, err = db.Query(
+		"SELECT id FROM topic WHERE user_id = ? ORDER BY created_at DESC limit ? offset ?",
+		uid, limit, (page-1)*limit,
+	)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return pageInfo
+	}
+	for rows.Next() {
+		var aid uint64
+		err = rows.Scan(&aid) //不scan会导致连接不释放
+		if err != nil {
+			fmt.Printf("Scan failed,err:%v", err)
+			continue
+		}
+		articleList = append(articleList, aid)
+	}
+
+	logger.Debug("Get article list", page, limit, articleList)
+	pageInfo = SQLArticleGetByList(db, redisDB, articleList, tz)
+
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1
 	pageInfo.PagePrev = page - 1
@@ -537,11 +576,7 @@ func SQLCIDArticleList(db *sql.DB, redisDB *redis.Client, nodeID, start uint64, 
 		}
 	}
 
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
+	defer rowsClose(rows)
 	if err != nil {
 		logger.Errorf("Query failed,err:%v", err)
 		return ArticlePageInfo{}
