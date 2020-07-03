@@ -15,7 +15,13 @@ variables:
   CGO_ENABLED: 0
   GOOS: linux 
 
+
 steps:
+# force get submodules
+- checkout: self
+  persistCredentials: true
+  submodules: true
+
 - script: |
     pwd
     echo "$(System.DefaultWorkingDirectory)"
