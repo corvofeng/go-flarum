@@ -3,6 +3,7 @@ db.json
 index/
 venv/
 goyoubbs
+zoe
 
 static/flarum
 static/avatar
