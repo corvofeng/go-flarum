@@ -654,11 +654,12 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 // FlarumUser flarum用户查询
 func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
-	currentUser := ctx.currentUser
+	// currentUser := ctx.currentUser
 	h := ctx.h
 	sqlDB := h.App.MySQLdb
-	uid := pat.Param(r, "uid")
+	inAPI := ctx.inAPI
 
+	uid := pat.Param(r, "uid")
 	user, err := model.SQLUserGetByName(sqlDB, uid)
 
 	if err != nil {
@@ -677,11 +678,76 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument
-	if user.ID == currentUser.ID {
-		apiDoc.SetData(model.FlarumCreateCurrentUser(*currentUser))
-	} else {
-		// TODO: 当前用户暂时无法获取其他用户的信息
+	// if user.ID == currentUser.ID {
+	apiDoc.SetData(model.FlarumCreateCurrentUser(user))
+	// } else {
+	// 	// TODO: 当前用户暂时无法获取其他用户的信息
+	// }
+	if inAPI {
+		h.jsonify(w, apiDoc)
+		return
 	}
-	h.jsonify(w, apiDoc)
+	tpl := h.CurrentTpl(r)
+	evn := &pageData{}
+	evn.FlarumInfo = coreData
+
+	h.Render(w, tpl, evn, "layout.html", "index.html")
+	return
+}
+
+// FlarumUserPage flarum用户查询
+func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	// currentUser := ctx.currentUser
+	h := ctx.h
+	sqlDB := h.App.MySQLdb
+	inAPI := ctx.inAPI
+
+	username := pat.Param(r, "username")
+	user, err := model.SQLUserGetByName(sqlDB, username)
+
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误"+err.Error()))
+		return
+	}
+
+	coreData := flarum.NewCoreData()
+
+	// 添加主站点信息
+	redisDB := h.App.RedisDB
+	si := model.GetSiteInfo(redisDB)
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, si, []flarum.Resource{}))
+
+	apiDoc := &coreData.APIDocument
+
+	// if user.ID == currentUser.ID {
+	u := model.FlarumCreateCurrentUser(user)
+	coreData.AppendResourcs(u)
+	apiDoc.SetData(u)
+	currentUser := ctx.currentUser
+	// coreData.AppendResourcs(model.FlarumCreateCurrentUser(*ctx.currentUser))
+	// 添加当前用户的session信息
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
+
+	// } else {
+	// u := model.FlarumCreateCurrentUser(*currentUser)
+	// apiDoc.SetData(u)
+	// coreData.AppendResourcs(u)
+	// }
+	apiDoc.Links["first"] = ""
+	apiDoc.Links["next"] = ""
+
+	tpl := h.CurrentTpl(r)
+	evn := &pageData{}
+	evn.SiteCf = h.App.Cf.Site
+	evn.FlarumInfo = coreData
+
+	h.Render(w, tpl, evn, "layout.html", "index.html")
 	return
 }

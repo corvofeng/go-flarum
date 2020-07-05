@@ -119,7 +119,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)
 
 	// user
-	sp.HandleFunc(pat.Get("/u/:username"), h.UserDetail)
+	sp.HandleFunc(pat.Get("/u/:username"), ct.FlarumUserPage)
 
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
