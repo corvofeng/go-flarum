@@ -10,7 +10,7 @@ Main:
     ViewDir: "view/default"
     Youdb: "mydata.db"
     LocaleDir: "view/locale"
-    BaseURL:"http://127.0.0.1:8082"
+    BaseURL: "http://127.0.0.1:8082"
     ServerStyle: "youbbs"  # "flarum" | "youbbs"
     ServerName: "GoYouBBS"
     CookieSecure: false
