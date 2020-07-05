@@ -580,16 +580,18 @@ func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
-			logger.Warning("Can't get user id for ", _userID)
+			logger.Error("Can't get user id for ", _userID)
 			break
 		}
 		if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
+			logger.Error("Can't get user by err: ", err)
 			break
 		}
 		break
 	}
+
 	if user.ID == 0 {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for"+_userID))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID))
 		return
 	}
 
@@ -608,7 +610,6 @@ func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println(userID, _type, _limit, _sort, limit, user, comments)
 	// 如果是API直接进行返回
 	if inAPI {
-		logger.Debug("flarum api return")
 		h.jsonify(w, coreData.APIDocument)
 		return
 	}

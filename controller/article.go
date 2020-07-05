@@ -864,7 +864,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	// 如果是API直接进行返回
 	if inAPI {
-		logger.Debug("flarum api return")
 		h.jsonify(w, coreData.APIDocument)
 		return
 	}
