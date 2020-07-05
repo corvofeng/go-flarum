@@ -39,7 +39,11 @@ type Application struct {
 // LoadConfig 从文件中初始化程序配置
 func LoadConfig(filename string) *config.Engine {
 	c := &config.Engine{}
-	c.Load(filename)
+	err := c.Load(filename)
+	logger := util.GetLogger()
+	if err != nil {
+		logger.Error("读取配置文件失败:", err)
+	}
 	return c
 }
 
