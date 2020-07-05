@@ -3,9 +3,9 @@ Main:
     HttpsPort: 443
     HttpsOn: false
     Domain: ""
-    MySQLURL: "user:pass@tcp(127.0.0.1:3306)/db"
-    MongoURL: "mongodb://localhost"
-    RedisURL: "redis://:@localhost:6379"
+    MySQLURL: "corvo:fengyuhao@tcp(172.17.0.1:3308)/collipa"
+    MongoURL: "mongodb://172.17.0.1"
+    RedisURL: "redis://:@172.17.0.1:6379"
     PubDir: "static"
     ViewDir: "view/default"
     Youdb: "mydata.db"
@@ -25,7 +25,7 @@ Site:
     Desc: "Yet another bbs in go"
     AdminEmail: ""
     MainDomain: "http://127.0.0.1:8082"  # 主站对应的地址
-    CDNBaseURL: "http://127.0.0.1:9000/webpack" # 静态文件所对应的地址
+    CDNBaseURL: "" # 静态文件所对应的地址
     MainNodeIds: "1,2,3,4,5,6,7,8,9,10"
     TimeZone: 8
     HomeShowNum: 20
@@ -59,3 +59,4 @@ Site:
     UpyunBucket: ""
     UpyunUser: ""
     UpyunPw: ""
+

@@ -1,10 +1,18 @@
-# goyoubbs
+# zoe
 
-## 快速使用
+## 本地快速启动
 
 ```bash
-CGO_ENABLED=0 GOOS=linux go build
-docker build . -t yiqi:dev
+yarn build
+go run main.go
+```
 
-docker stack deploy --compose-file docker-compose.yaml yiqi
+## 本地使用docker构建
+
+```bash
+yarn build
+CGO_ENABLED=0 GOOS=linux go build -o zoe
+docker build . -t zoe:dev
+
+docker stack deploy --compose-file docker-compose.yaml zoe
 ```

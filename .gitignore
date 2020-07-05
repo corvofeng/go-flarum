@@ -10,6 +10,7 @@ static/avatar
 static/captcha
 config/
 !config/config.yaml-tpl
+!config/config.yaml-docker
 !static/captcha/readme.txt
 mydata.db
 vendor
