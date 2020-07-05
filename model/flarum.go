@@ -88,7 +88,7 @@ func FlarumCreateDiscussion(article ArticleListItem, lastComment Comment) flarum
 
 	obj.BindRelations(
 		"User",
-		flarum.RelationDict{Data: flarum.InitBaseResources(article.CID, "users")},
+		flarum.RelationDict{Data: flarum.InitBaseResources(article.UID, "users")},
 	)
 	obj.BindRelations(
 		"Tags",
