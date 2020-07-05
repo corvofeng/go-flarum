@@ -45,7 +45,6 @@ WORKDIR /home/zoe
 
 ## BOF CLEAN
 # 下面的内容仅在本地调试时使用，线上构建时会将其删除
-# sed '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile
 COPY ./config/config.yaml-docker config.yml
 COPY ./static static
 COPY ./view view
