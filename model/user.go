@@ -233,6 +233,8 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 			logger.Errorf("Scan failed,err:%v", err)
 			return obj, errors.New("No result")
 		}
+	} else {
+		return obj, errors.New("No result")
 	}
 	return obj, nil
 }
