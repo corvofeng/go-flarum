@@ -170,14 +170,15 @@ func SQLUserListByFlag(sqlDB *sql.DB, db *youdb.DB, cmd, tb, key string, limit i
 // SQLUserGetByID 获取数据库用户
 func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 	obj := User{}
+	logger := util.GetLogger()
 
 	rows, err := db.Query(
-		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id =  ?",
+		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id = ?",
 		uid,
 	)
 	defer rowsClose(rows)
 	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
+		logger.Errorf("Query failed,err:%v", err)
 		return obj, err
 	}
 	for rows.Next() {
@@ -195,7 +196,7 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 		)
 
 		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
+			logger.Errorf("Scan failed,err:%v", err)
 			return obj, errors.New("No result")
 		}
 	}
@@ -206,18 +207,14 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 // SQLUserGetByName 获取数据库中用户
 func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	obj := User{}
+	logger := util.GetLogger()
 
 	rows, err := db.Query(
 		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE name =  ?",
 		name)
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
-
+	defer rowsClose(rows)
 	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
+		logger.Errorf("Query failed,err:%v", err)
 		return obj, err
 	}
 	if rows.Next() {
@@ -232,10 +229,12 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 			&obj.Token,
 			&obj.RegTime,
 		)
-
-		return obj, nil
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
 	}
-	return obj, errors.New("No result")
+	return obj, nil
 }
 
 // StrID 返回string类型的ID值
