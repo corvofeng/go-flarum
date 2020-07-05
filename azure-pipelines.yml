@@ -11,6 +11,7 @@ pool: Digital
 variables:
   WORKDIR: /home/azure/zoe-build
   PROJ: zoe
+  DOCKERHUB: corvofeng
   # for go build in alpine
   CGO_ENABLED: 0
   GOOS: linux 
@@ -49,6 +50,8 @@ steps:
     echo "$(System.DefaultWorkingDirectory)"
     sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
     docker build . -t '$(PROJ):v$(Build.BuildId)'
+    docker tag '$(PROJ):v$(Build.BuildId)' $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
+    docker push $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
   workingDirectory: '$(WORKDIR)'
   displayName: 'Build zoe image'
 
