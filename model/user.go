@@ -7,7 +7,6 @@ import (
 
 	"goyoubbs/util"
 
-	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -58,7 +57,7 @@ type UserPageInfo struct {
  * key (string): TODO
  * limit (int): TODO
  */
-func SQLUserListByFlag(sqlDB *sql.DB, db *youdb.DB, cmd, tb, key string, limit int) UserPageInfo {
+func SQLUserListByFlag(sqlDB *sql.DB, cmd, tb, key string, limit int) UserPageInfo {
 	var items []User
 	// var keys [][]byte
 	var hasPrev, hasNext bool
@@ -237,7 +236,7 @@ func (user *User) CanEdit(aobjBase *ArticleBase) bool {
 }
 
 // SaveAvatar 更新用户头像
-func (user *User) SaveAvatar(sqlDB *sql.DB, cntDB *youdb.DB, redisDB *redis.Client, avatar string) {
+func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string) {
 	logger := util.GetLogger()
 
 	if user == nil {

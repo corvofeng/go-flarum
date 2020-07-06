@@ -114,7 +114,7 @@ func (h *BaseHandler) UserSettingPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 存储到数据库时, 需要带上前面的'/', 保证为绝对路径
-		currentUser.SaveAvatar(sqlDB, h.App.Db, h.App.RedisDB, "/"+avatarPath)
+		currentUser.SaveAvatar(sqlDB, h.App.RedisDB, "/"+avatarPath)
 
 		http.Redirect(w, r, "/setting#2", http.StatusSeeOther)
 		return
