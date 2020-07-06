@@ -262,7 +262,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(btn)
 
-	db := h.App.Db
+	// db := h.App.Db
 	redisDB := h.App.RedisDB
 	sqlDB := h.App.MySQLdb
 	scf := h.App.Cf.Site
@@ -270,13 +270,14 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	uid := pat.Param(r, "uid")
 	uidi, err := strconv.ParseUint(uid, 10, 64)
 	if err != nil {
-		uid = model.UserGetIDByName(db, strings.ToLower(uid))
-		if uid == "" {
-			w.Write([]byte(`{"retcode":400,"retmsg":"uid type err"}`))
-			return
-		}
-		http.Redirect(w, r, "/member/"+uid, 301)
-		return
+		// u, _ := model.SQLUserGetByName(sqlDB, strings.ToLower(uid))
+		// uid := u.ID
+		// if uid == "" {
+		// 	w.Write([]byte(`{"retcode":400,"retmsg":"uid type err"}`))
+		// 	return
+		// }
+		// http.Redirect(w, r, "/member/"+uid, 301)
+		// return
 	}
 
 	// cmd := "rscan"

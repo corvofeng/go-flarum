@@ -3,9 +3,6 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
-	"goji.io/pat"
 	"goyoubbs/model"
 	"goyoubbs/util"
 	"io"
@@ -13,6 +10,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
+	"goji.io/pat"
 )
 
 func (h *BaseHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
@@ -33,9 +34,8 @@ func (h *BaseHandler) UserEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.App.Db
-
-	uobj, err := model.UserGetByID(db, uidI)
+	sqlDB := h.App.MySQLdb
+	uobj, err := model.SQLUserGetByID(sqlDB, uidI)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -84,8 +84,8 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := h.App.Db
-
-	uobj, err := model.UserGetByID(db, uidI)
+	sqlDB := h.App.MySQLdb
+	uobj, err := model.SQLUserGetByID(sqlDB, uidI)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -132,7 +132,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 
 		if uobj.Avatar == "0" || len(uobj.Avatar) == 0 {
 			uobj.Avatar = uid
-			model.UserUpdate(db, uobj)
+			// model.UserUpdate(db, uobj)
 		}
 
 		http.Redirect(w, r, "/admin/user/edit/"+uid, http.StatusSeeOther)
@@ -213,7 +213,7 @@ func (h *BaseHandler) UserEditPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isChanged {
-		model.UserUpdate(db, uobj)
+		// model.UserUpdate(db, uobj)
 	}
 
 	type response struct {

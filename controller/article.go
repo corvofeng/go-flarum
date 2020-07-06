@@ -228,37 +228,38 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// @ somebody in content
-	sbs := util.GetMention(rec.Content,
-		[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
+	// sbs := util.GetMention(rec.Content,
+	// 	[]string{currentUser.Name, strconv.FormatUint(currentUser.ID, 10)})
 
-	aid := strconv.FormatUint(newAid, 10)
-	for _, sb := range sbs {
-		var sbObj model.User
-		sbu, err := strconv.ParseUint(sb, 10, 64)
-		if err != nil {
-			// @ user name
-			sbObj, err = model.UserGetByName(db, strings.ToLower(sb))
-		} else {
-			// @ user id
-			sbObj, err = model.UserGetByID(db, sbu)
-		}
+	// aid := strconv.FormatUint(newAid, 10)
 
-		if err == nil {
-			if len(sbObj.Notice) > 0 {
-				aidList := util.SliceUniqStr(strings.Split(aid+","+sbObj.Notice, ","))
-				if len(aidList) > 100 {
-					aidList = aidList[:100]
-				}
-				sbObj.Notice = strings.Join(aidList, ",")
-				sbObj.NoticeNum = len(aidList)
-			} else {
-				sbObj.Notice = aid
-				sbObj.NoticeNum = 1
-			}
-			jb, _ := json.Marshal(sbObj)
-			db.Hset("user", youdb.I2b(sbObj.ID), jb)
-		}
-	}
+	// for _, sb := range sbs {
+	// 	var sbObj model.User
+	// 	// sbu, err := strconv.ParseUint(sb, 10, 64)
+	// 	if err != nil {
+	// 		// @ user name
+	// 		// sbObj, err = model.UserGetByName(db, strings.ToLower(sb))
+	// 	} else {
+	// 		// @ user id
+	// 		// sbObj, err = model.UserGetByID(db, sbu)
+	// 	}
+
+	// 	if err == nil {
+	// 		if len(sbObj.Notice) > 0 {
+	// 			aidList := util.SliceUniqStr(strings.Split(aid+","+sbObj.Notice, ","))
+	// 			if len(aidList) > 100 {
+	// 				aidList = aidList[:100]
+	// 			}
+	// 			sbObj.Notice = strings.Join(aidList, ",")
+	// 			sbObj.NoticeNum = len(aidList)
+	// 		} else {
+	// 			sbObj.Notice = aid
+	// 			sbObj.NoticeNum = 1
+	// 		}
+	// 		jb, _ := json.Marshal(sbObj)
+	// 		db.Hset("user", youdb.I2b(sbObj.ID), jb)
+	// 	}
+	// }
 
 	h.DelCookie(w, "token")
 

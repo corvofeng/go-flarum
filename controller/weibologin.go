@@ -2,15 +2,16 @@ package controller
 
 import (
 	"encoding/json"
+	"goyoubbs/lib/weiboOAuth"
 	"goyoubbs/model"
 	"goyoubbs/util"
-	"goyoubbs/lib/weiboOAuth"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
 )
 
 func (h *BaseHandler) WeiboOauthHandler(w http.ResponseWriter, r *http.Request) {
@@ -75,22 +76,22 @@ func (h *BaseHandler) WeiboOauthCallback(w http.ResponseWriter, r *http.Request)
 	db := h.App.Db
 	rs := db.Hget("oauth_weibo", []byte(wbUserID))
 	if rs.State == "ok" {
-		// login
-		obj := model.QQ{}
-		json.Unmarshal(rs.Data[0], &obj)
-		uobj, err := model.UserGetByID(db, obj.UID)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			return
-		}
-		sessionid := xid.New().String()
-		uobj.LastLoginTime = timeStamp
-		uobj.Session = sessionid
-		jb, _ := json.Marshal(uobj)
-		db.Hset("user", youdb.I2b(uobj.ID), jb)
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
+		// // login
+		// obj := model.QQ{}
+		// json.Unmarshal(rs.Data[0], &obj)
+		// uobj, err := model.UserGetByID(db, obj.UID)
+		// if err != nil {
+		// 	w.Write([]byte(err.Error()))
+		// 	return
+		// }
+		// sessionid := xid.New().String()
+		// uobj.LastLoginTime = timeStamp
+		// uobj.Session = sessionid
+		// jb, _ := json.Marshal(uobj)
+		// db.Hset("user", youdb.I2b(uobj.ID), jb)
+		// h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
+		// http.Redirect(w, r, "/", http.StatusSeeOther)
+		// return
 	}
 
 	profile, err := weibo.GetUserInfo(token.AccessToken, wbUserID)

@@ -5,12 +5,13 @@ import (
 	"goyoubbs/lib/qqOAuth"
 	"goyoubbs/model"
 	"goyoubbs/util"
-	"github.com/ego008/youdb"
-	"github.com/rs/xid"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ego008/youdb"
+	"github.com/rs/xid"
 )
 
 func (h *BaseHandler) QQOauthHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,12 +78,13 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 	timeStamp := uint64(time.Now().UTC().Unix())
 
 	db := h.App.Db
+	sqlDB := h.App.MySQLdb
 	rs := db.Hget("oauth_qq", []byte(openid.OpenID))
 	if rs.State == "ok" {
 		// login
 		obj := model.QQ{}
 		json.Unmarshal(rs.Data[0], &obj)
-		uobj, err := model.UserGetByID(db, obj.UID)
+		uobj, err := model.SQLUserGetByID(sqlDB, obj.UID)
 		if err != nil {
 			w.Write([]byte(err.Error()))
 			return

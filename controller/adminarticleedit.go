@@ -77,7 +77,7 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		aobj.Hidden = true
 		jb, _ := json.Marshal(aobj)
 		db.Hset("article", aidB, jb)
-		uobj, _ := model.UserGetByID(db, aobj.UID)
+		uobj, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
 		if uobj.Articles > 0 {
 			uobj.Articles--
 		}
