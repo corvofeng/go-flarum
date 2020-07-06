@@ -163,19 +163,30 @@ func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
 	return obj
 }
 
-// FlarumCreateUser 创建用户资源
-func FlarumCreateUser(article ArticleListItem) flarum.Resource {
-	obj := flarum.NewResource(flarum.EBaseUser, article.UID)
-	data := obj.Attributes.(*flarum.BaseUser)
-	data.Username = article.Cname
-	data.Displayname = article.Cname
-	data.AvatarURL = article.Avatar
+// // FlarumCreateUser 创建用户资源
+// func FlarumCreateUser(article ArticleListItem) flarum.Resource {
+// 	obj := flarum.NewResource(flarum.EBaseUser, article.UID)
+// 	data := obj.Attributes.(*flarum.BaseUser)
+// 	data.Username = article.Cname
+// 	data.Displayname = article.Cname
+// 	data.AvatarURL = article.Avatar
 
-	return obj
-}
+// 	obj.BindRelations(
+// 		"Groups",
+// 		flarum.RelationArray{
+// 			Data: []flarum.BaseRelation{},
+// 		},
+// 	)
+// 	return obj
+// }
 
 // FlarumCreateCurrentUser 创建用户资源
 func FlarumCreateCurrentUser(user User) flarum.Resource {
+	return FlarumCreateUser(user)
+}
+
+// FlarumCreateUser 创建用户资源
+func FlarumCreateUser(user User) flarum.Resource {
 	obj := flarum.NewResource(flarum.ECurrentUser, user.ID)
 	data := obj.Attributes.(*flarum.CurrentUser)
 	data.Username = user.Name

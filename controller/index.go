@@ -111,8 +111,6 @@ func createFlarumPageAPIDoc(
 	appConf model.AppConf, siteInfo model.SiteInfo,
 	currentUser *model.User,
 	inAPI bool,
-	// page uint64,
-	// cid uint64,
 	df dissFilter,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -143,6 +141,15 @@ func createFlarumPageAPIDoc(
 
 	var res []flarum.Resource
 	allUsers := make(map[uint64]bool)
+	// 添加当前用户的session信息
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		allUsers[user.GetID()] = true
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
 
 	// 添加当前页面的的帖子与用户信息, 已经去重
 	for _, article := range pageInfo.Items {
@@ -154,28 +161,20 @@ func createFlarumPageAPIDoc(
 		res = append(res, diss)
 		coreData.AppendResourcs(diss)
 
-		if currentUser != nil && article.UID == currentUser.ID { // 当前用户单独进行添加
-			continue
-		}
-
 		// 用户不存在则添加, 已经存在的用户不会考虑
+		// TODO: 多次执行SQL可能会有性能问题
 		if _, ok := allUsers[article.UID]; !ok {
-			user := model.FlarumCreateUser(article)
-			// apiDoc.AppendResourcs(user)
-			allUsers[article.UID] = true
-			coreData.AppendResourcs(user)
+			u, err := model.SQLUserGetByID(sqlDB, article.UID)
+			if err != nil {
+				logger.Warningf("Get user %d error: %s", article.UID, err)
+			} else {
+				user := model.FlarumCreateUser(u)
+				allUsers[article.UID] = true
+				coreData.AppendResourcs(user)
+			}
 		}
 	}
 	apiDoc.SetData(res)
-
-	// 添加当前用户的session信息
-	if currentUser != nil {
-		user := model.FlarumCreateCurrentUser(*currentUser)
-		coreData.AddCurrentUser(user)
-		if !inAPI { // 做API请求时, 不更新csrf信息
-			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-		}
-	}
 
 	scf := appConf.Site
 	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
