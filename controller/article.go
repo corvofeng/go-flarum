@@ -2,7 +2,6 @@ package controller
 
 import (
 	"crypto/md5"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,8 +17,6 @@ import (
 	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
-	"github.com/go-redis/redis/v7"
-	"github.com/op/go-logging"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
@@ -746,91 +743,6 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func createFlarumArticleAPIDoc(
-	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
-	appConf model.AppConf,
-	siteInfo model.SiteInfo,
-	currentUser *model.User,
-	inAPI bool,
-	aid uint64, tz int,
-) (flarum.CoreData, error) {
-
-	var err error
-	coreData := flarum.NewCoreData()
-	apiDoc := &coreData.APIDocument
-	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
-	if err != nil {
-		logger.Error("Get article error", err)
-		return coreData, err
-	}
-
-	diss := model.FlarumCreateDiscussionFromArticle(article)
-	pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, tz)
-
-	// 获取该文章下面所有的评论信息
-	postArr := []flarum.Resource{}
-	allUsers := make(map[uint64]bool)
-	for _, comment := range pageInfo.Items {
-		post := model.FlarumCreatePost(comment)
-		apiDoc.AppendResourcs(post)
-		postArr = append(postArr, post)
-
-		// 当前用户会在后面统一添加
-		if currentUser != nil && currentUser.ID == comment.UID {
-			continue
-		}
-
-		// 用户不存在则添加, 已经存在的用户不会考虑
-		if _, ok := allUsers[comment.UID]; !ok {
-			user := model.FlarumCreateUserFromComments(comment)
-			apiDoc.AppendResourcs(user)
-			allUsers[comment.UID] = true
-		}
-	}
-
-	// 获取评论的作者
-	if len(pageInfo.Items) == 0 {
-		logger.Errorf("Can't get any comment for %d", article.ID)
-	}
-
-	// 文章当前的分类
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
-
-	if err != nil {
-		logger.Error("Get all categories error", err)
-		return coreData, err
-	}
-
-	// 添加所有分类的信息
-	var flarumTags []flarum.Resource
-	for _, category := range categories {
-		tag := model.FlarumCreateTag(category)
-		flarumTags = append(flarumTags, tag)
-	}
-
-	postRelation := model.FlarumCreatePostRelations(postArr)
-	diss.BindRelations("Posts", postRelation)
-	apiDoc.SetData(diss)
-
-	apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-	apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-
-	// coreData.APIDocument = apiDoc
-	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
-
-	// 添加当前用户的session信息
-	if currentUser != nil {
-		user := model.FlarumCreateCurrentUser(*currentUser)
-		coreData.AddCurrentUser(user)
-		if !inAPI { // 做API请求时, 不更新csrf信息
-			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-		}
-	}
-
-	return coreData, nil
-}
-
 // FlarumArticleDetail 获取flarum中的某篇帖子
 func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
@@ -856,7 +768,12 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, ctx.inAPI, aid, scf.TimeZone)
+	rf := replyFilter{
+		FT:  eArticle,
+		AID: aid,
+	}
+	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, inAPI, rf, scf.TimeZone)
+
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -946,7 +863,13 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	si := model.GetSiteInfo(redisDB)
 
-	coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
+	// coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
+	rf := replyFilter{
+		FT:  eArticle,
+		AID: aobj.ID,
+	}
+	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, rf, scf.TimeZone)
+
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

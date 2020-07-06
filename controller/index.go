@@ -93,6 +93,8 @@ type filterType string
 const (
 	eUser     filterType = "user"
 	eCategory filterType = "category"
+	eArticle  filterType = "article"
+	eReply    filterType = "reply"
 )
 
 type dissFilter struct {

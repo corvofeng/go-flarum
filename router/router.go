@@ -163,7 +163,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 			ct.MustAuthMiddleware,
 			ct.InAPIMiddleware,
 		},
-		ct.FlarumUserComments,
+		ct.FlarumComments,
 	))
 
 	// 创建一篇评论

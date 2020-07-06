@@ -544,77 +544,7 @@ func createFlarumUserAPIDoc(
 	}
 
 	return coreData, err
-}
 
-// FlarumUserComments 获取用户的评论
-func FlarumUserComments(w http.ResponseWriter, r *http.Request) {
-	ctx := GetRetContext(r)
-	logger := ctx.GetLogger()
-	h := ctx.h
-
-	parm := r.URL.Query()
-	_userID := parm.Get("filter[user]")
-	// _type := parm.Get("filter[type]")
-	_limit := parm.Get("page[limit]")
-	// _sort := parm.Get("sort")
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
-	inAPI := ctx.inAPI
-
-	var limit uint64
-	var userID uint64
-	var err error
-	var user model.User
-
-	if len(_limit) > 0 {
-		limit, err = strconv.ParseUint(_limit, 10, 64)
-		if err != nil {
-			return
-		}
-	}
-	limit = 20
-
-	// 尝试获取用户
-	for true {
-		if user, err = model.SQLUserGetByName(sqlDB, _userID); err == nil {
-			break
-		}
-		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
-			logger.Error("Can't get user id for ", _userID)
-			break
-		}
-		if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
-			logger.Error("Can't get user by err: ", err)
-			break
-		}
-		break
-	}
-
-	if user.ID == 0 {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID))
-		return
-	}
-
-	pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, user.ID, limit, h.App.Cf.Site.TimeZone)
-	if err != nil {
-		logger.Warning("Can't get comments for  user", user.Name)
-	}
-
-	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB),
-		ctx.currentUser, ctx.inAPI, &pageInfo.Items, h.App.Cf.Site.TimeZone)
-	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
-		return
-	}
-
-	// fmt.Println(userID, _type, _limit, _sort, limit, user, comments)
-	// 如果是API直接进行返回
-	if inAPI {
-		h.jsonify(w, coreData.APIDocument)
-		return
-	}
-
-	return
 }
 
 // FlarumUserLogout flarum用户注销
