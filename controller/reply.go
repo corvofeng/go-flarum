@@ -74,7 +74,10 @@ type replyFilter struct {
 	Limit uint64
 }
 
-// 获取一条评论的信息
+// 获取评论的信息
+// eArticle: 获取一条帖子下方的评论信息
+// eUser: 获取用户的最新评论
+// eReply: 获取一条评论信息
 func createFlarumReplyAPIDoc(
 	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
