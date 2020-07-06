@@ -87,174 +87,96 @@ func createFlarumReplyAPIDoc(
 	rf replyFilter,
 	tz int,
 ) (flarum.CoreData, error) {
-	// var err error
+	var err error
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument
-	// var pageInfo model.CommentPageInfo
+
+	// 当前全部的评论资源: 数据库中得到
+	var comments []model.CommentListItem
+	// 当前全部的评论资源: API返回
+	var flarumPosts []flarum.Resource
+
+	// 所有分类的信息, 用于整个站点的信息
+	var flarumTags []flarum.Resource
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
+		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
+		comments = pageInfo.Items
+	} else if rf.FT == eUserPost {
+		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)
+		comments = pageInfo.Items
+	} else {
+		return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
+	}
+
+	if len(comments) == 0 {
+		logger.Errorf("Can't get any comment for %d", rf.AID)
+	}
+
+	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
+	allDiscussions := make(map[uint64]bool) // 用于保存已经添加的帖子, 进行去重
+
+	// 添加当前用户, 以及session信息
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		allUsers[user.GetID()] = true
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
+
+	for _, comment := range comments {
+		post := model.FlarumCreatePost(comment)
+		apiDoc.AppendResourcs(post)
+		flarumPosts = append(flarumPosts, post)
+
+		if _, ok := allUsers[comment.UID]; !ok {
+			user := model.FlarumCreateUserFromComments(comment)
+			apiDoc.AppendResourcs(user)
+			allUsers[comment.UID] = true
+		}
+
+		if _, ok := allDiscussions[comment.AID]; !ok {
+			article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
+			if err != nil {
+				logger.Warning("Can't get article: ", comment.AID, err)
+			} else {
+				apiDoc.AppendResourcs(model.FlarumCreateDiscussionFromArticle(article))
+			}
+			allDiscussions[comment.AID] = true
+		}
+	}
+
+	// 全部分类
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	if err != nil {
+		logger.Error("Get all categories error", err)
+	}
+
+	for _, category := range categories {
+		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
+	}
+
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+
+	if rf.FT == eArticle {
 		article, err := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
-		if err != nil {
-			logger.Error("Get article error", err)
-			return coreData, err
-		}
-
-		diss := model.FlarumCreateDiscussionFromArticle(article)
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, tz)
-
-		// 获取该文章下面所有的评论信息
-		postArr := []flarum.Resource{}
-		allUsers := make(map[uint64]bool)
-		for _, comment := range pageInfo.Items {
-			post := model.FlarumCreatePost(comment)
-			apiDoc.AppendResourcs(post)
-			postArr = append(postArr, post)
-
-			// 当前用户会在后面统一添加
-			if currentUser != nil && currentUser.ID == comment.UID {
-				continue
-			}
-
-			// 用户不存在则添加, 已经存在的用户不会考虑
-			if _, ok := allUsers[comment.UID]; !ok {
-				user := model.FlarumCreateUserFromComments(comment)
-				apiDoc.AppendResourcs(user)
-				allUsers[comment.UID] = true
-			}
-		}
-
-		// 获取评论的作者
-		if len(pageInfo.Items) == 0 {
-			logger.Errorf("Can't get any comment for %d", article.ID)
-		}
-
-		// 文章当前的分类
-		categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
-
-		if err != nil {
-			logger.Error("Get all categories error", err)
-			return coreData, err
-		}
-
-		// 添加所有分类的信息
-		var flarumTags []flarum.Resource
-		for _, category := range categories {
-			tag := model.FlarumCreateTag(category)
-			flarumTags = append(flarumTags, tag)
-		}
-
-		postRelation := model.FlarumCreatePostRelations(postArr)
-		diss.BindRelations("Posts", postRelation)
-		apiDoc.SetData(diss)
-
-		apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-		apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-
-		// coreData.APIDocument = apiDoc
-		// 添加主站点信息
-		coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
-
-		// 添加当前用户的session信息
-		if currentUser != nil {
-			user := model.FlarumCreateCurrentUser(*currentUser)
-			coreData.AddCurrentUser(user)
-			if !inAPI { // 做API请求时, 不更新csrf信息
-				coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-			}
-		}
-
-		return coreData, nil
-
-	} else if rf.FT == eReply { // 获取其中一条评论
-		comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
-		if err != nil {
-			logger.Error("Get comment error:", err)
-			return coreData, err
-		}
-		commentListItem := model.CommentListItem{Comment: comment}
-
-		article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
 		if err != nil {
 			logger.Error("Get article error:", err)
 			return coreData, err
 		}
-
 		diss := model.FlarumCreateDiscussionFromArticle(article)
-		post := model.FlarumCreatePost(commentListItem)
-		apiDoc.SetData(post)
-
-		if currentUser != nil && comment.UID == currentUser.ID { // 当前用户单独进行添加
-			user := model.FlarumCreateCurrentUser(*currentUser)
-			apiDoc.AppendResourcs(user)
-		} else {
-			user := model.FlarumCreateUserFromComments(commentListItem)
-			apiDoc.AppendResourcs(user)
-		}
-
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, article.ID, tz)
-
-		postArr := []flarum.Resource{}
-		for _, comment := range pageInfo.Items {
-			post := model.FlarumCreatePost(comment)
-			postArr = append(postArr, post)
-		}
-
-		postRelation := model.FlarumCreatePostRelations(postArr)
+		postRelation := model.FlarumCreatePostRelations(flarumPosts)
 		diss.BindRelations("Posts", postRelation)
-		apiDoc.AppendResourcs(diss)
-
-		return coreData, nil
-	} else if rf.FT == eUser {
-		var err error
-		coreData := flarum.NewCoreData()
-		apiDoc := &coreData.APIDocument
-		postArr := []flarum.Resource{}
-
-		allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
-		allDiscussions := make(map[uint64]bool) // 用于保存已经添加的帖子, 进行去重
-		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)
-		if err != nil {
-			logger.Warning("Can't get comments for  user", rf.UID)
-		}
-		for _, comment := range pageInfo.Items {
-			post := model.FlarumCreatePost(comment)
-			apiDoc.AppendResourcs(post)
-			postArr = append(postArr, post)
-
-			// 当前用户会在后面统一添加
-			if currentUser == nil || currentUser.ID != comment.UID {
-				if _, ok := allUsers[comment.UID]; !ok {
-					user := model.FlarumCreateUserFromComments(comment)
-					apiDoc.AppendResourcs(user)
-					allUsers[comment.UID] = true
-				}
-			}
-
-			if _, ok := allDiscussions[comment.AID]; !ok {
-				article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
-				if err != nil {
-					logger.Warning("Can't get article: ", comment.AID, err)
-				} else {
-					apiDoc.AppendResourcs(model.FlarumCreateDiscussionFromArticle(article))
-				}
-				allDiscussions[comment.AID] = true
-			}
-		}
-		apiDoc.SetData(postArr)
-
-		// 添加当前用户的session信息
-		if currentUser != nil {
-			user := model.FlarumCreateCurrentUser(*currentUser)
-			coreData.AddCurrentUser(user)
-			if !inAPI { // 做API请求时, 不更新csrf信息
-				coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-			}
-		}
-
-		return coreData, err
+		apiDoc.SetData(diss) // 主要信息为当前帖子
+	} else if rf.FT == eUserPost {
+		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
+	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
+	// apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 
-	return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
+	return coreData, nil
 }
 
 // FlarumAPICreatePost flarum进行评论的接口
@@ -313,7 +235,8 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rf := replyFilter{
-		CID: comment.ID,
+		FT:  eArticle,
+		AID: comment.AID,
 	}
 
 	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, rf, scf.TimeZone)
@@ -422,7 +345,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rf := replyFilter{
-		FT:    eUser,
+		FT:    eUserPost,
 		UID:   user.ID,
 		Limit: limit,
 	}

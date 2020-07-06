@@ -91,7 +91,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 type filterType string
 
 const (
-	eUser     filterType = "user"
+	eUserPost filterType = "userpost"
 	eCategory filterType = "category"
 	eArticle  filterType = "article"
 	eReply    filterType = "reply"
@@ -124,7 +124,7 @@ func createFlarumPageAPIDoc(
 
 	if df.FT == eCategory {
 		pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, df.CID, page, 20, tz)
-	} else if df.FT == eUser {
+	} else if df.FT == eUserPost {
 		pageInfo = model.SQLArticleGetByUID(sqlDB, redisDB, df.UID, page, 20, tz)
 	}
 
@@ -295,7 +295,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			df := dissFilter{
-				FT:   eUser,
+				FT:   eUserPost,
 				Page: page,
 				UID:  user.ID,
 			}
