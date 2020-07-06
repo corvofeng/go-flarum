@@ -76,8 +76,8 @@ type replyFilter struct {
 
 // 获取评论的信息
 // eArticle: 获取一条帖子下方的评论信息
-// eUser: 获取用户的最新评论
-// eReply: 获取一条评论信息
+// eUserPost: 获取用户的最新评论
+// ePost: 获取一条评论信息
 func createFlarumReplyAPIDoc(
 	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
@@ -99,7 +99,7 @@ func createFlarumReplyAPIDoc(
 	// 所有分类的信息, 用于整个站点的信息
 	var flarumTags []flarum.Resource
 
-	if rf.FT == eArticle { // 获取一个帖子的所有评论
+	if rf.FT == eArticle || rf.FT == ePost { // 获取一个帖子的所有评论
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
@@ -170,6 +170,14 @@ func createFlarumReplyAPIDoc(
 		postRelation := model.FlarumCreatePostRelations(flarumPosts)
 		diss.BindRelations("Posts", postRelation)
 		apiDoc.SetData(diss) // 主要信息为当前帖子
+	} else if rf.FT == ePost {
+		comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
+		if err != nil {
+			logger.Error("Get comment error:", err)
+		}
+		commentListItem := model.CommentListItem{Comment: comment}
+		post := model.FlarumCreatePost(commentListItem)
+		apiDoc.SetData(post) // 主要信息为这条评论
 	} else if rf.FT == eUserPost {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
@@ -234,9 +242,11 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())
 		return
 	}
+
 	rf := replyFilter{
-		FT:  eArticle,
+		FT:  ePost,
 		AID: comment.AID,
+		CID: comment.ID,
 	}
 
 	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, rf, scf.TimeZone)
@@ -295,7 +305,7 @@ func FlarumConfirmUserAndPost(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// FlarumComments 获取用户的评论
+// FlarumComments 获取评论
 func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	logger := ctx.GetLogger()
@@ -303,6 +313,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 
 	parm := r.URL.Query()
 	_userID := parm.Get("filter[user]")
+	_disscussionID := parm.Get("filter[discussion]")
 	// _type := parm.Get("filter[type]")
 	_limit := parm.Get("page[limit]")
 	// _sort := parm.Get("sort")
@@ -314,6 +325,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	var userID uint64
 	var err error
 	var user model.User
+	var coreData flarum.CoreData
 
 	if len(_limit) > 0 {
 		limit, err = strconv.ParseUint(_limit, 10, 64)
@@ -322,35 +334,48 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	limit = 20
+	var rf replyFilter
 
-	// 尝试获取用户
-	for true {
-		if user, err = model.SQLUserGetByName(sqlDB, _userID); err == nil {
+	if _userID != "" {
+		// 尝试获取用户
+		for true {
+			if user, err = model.SQLUserGetByName(sqlDB, _userID); err == nil {
+				break
+			}
+			if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
+				logger.Error("Can't get user id for ", _userID)
+				break
+			}
+			if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
+				logger.Error("Can't get user by err: ", err)
+				break
+			}
 			break
 		}
-		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
-			logger.Error("Can't get user id for ", _userID)
-			break
+
+		if user.ID == 0 {
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID))
+			return
 		}
-		if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
-			logger.Error("Can't get user by err: ", err)
-			break
+
+		rf = replyFilter{
+			FT:    eUserPost,
+			UID:   user.ID,
+			Limit: limit,
 		}
-		break
-	}
+	} else if _disscussionID != "" {
+		aid, err := strconv.ParseUint(_disscussionID, 10, 64)
+		if err != nil {
+			logger.Error("Can't get discussion id for ", _disscussionID)
+		}
 
-	if user.ID == 0 {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID))
-		return
+		rf = replyFilter{
+			FT:    eArticle,
+			AID:   aid,
+			Limit: limit,
+		}
 	}
-
-	rf := replyFilter{
-		FT:    eUserPost,
-		UID:   user.ID,
-		Limit: limit,
-	}
-
-	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err = createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
