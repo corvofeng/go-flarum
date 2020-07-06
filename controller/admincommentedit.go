@@ -34,7 +34,6 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.App.Db
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
@@ -42,7 +41,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	aobj, _ := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 
 	// comment
-	cobj, err := model.CommentGetByKey(db, aid, cidI)
+	cobj, err := model.SQLGetCommentByID(sqlDB, redisDB, cidI, h.App.Cf.Site.TimeZone)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -52,7 +51,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 
 	if act == "del" {
 		// remove
-		model.CommentDelByKey(db, aid, cidI)
+		// model.CommentDelByKey(db, aid, cidI)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -105,10 +104,11 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.App.Db
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
 
 	// comment
-	cobj, err := model.CommentGetByKey(db, aid, cidI)
+	cobj, err := model.SQLGetCommentByID(sqlDB, redisDB, cidI, h.App.Cf.Site.TimeZone)
 	if err != nil {
 		w.Write([]byte(`{"retcode":404,"retmsg":"` + err.Error() + `"}`))
 		return
@@ -149,7 +149,7 @@ func (h *BaseHandler) CommentEditPost(w http.ResponseWriter, r *http.Request) {
 
 	cobj.Content = rec.Content
 
-	model.CommentSetByKey(db, aid, cidI, cobj)
+	// model.CommentSetByKey(db, aid, cidI, cobj)
 
 	h.DelCookie(w, "token")
 

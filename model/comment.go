@@ -2,8 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"strconv"
@@ -12,7 +10,6 @@ import (
 
 	"goyoubbs/util"
 
-	"github.com/ego008/youdb"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -458,108 +455,4 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func CommentGetByKey(db *youdb.DB, aid uint64, cid uint64) (Comment, error) {
-	obj := Comment{}
-	rs := db.Hget("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid))
-	if rs.State == "ok" {
-		json.Unmarshal(rs.Data[0], &obj)
-		return obj, nil
-	}
-	return obj, errors.New(rs.State)
-}
-
-func CommentSetByKey(db *youdb.DB, aid uint64, cid uint64, obj Comment) error {
-	jb, _ := json.Marshal(obj)
-	return db.Hset("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid), jb)
-}
-
-func CommentDelByKey(db *youdb.DB, aid uint64, cid uint64) error {
-	return db.Hdel("article_comment:"+strconv.Itoa(int(aid)), youdb.I2b(cid))
-}
-
-func CommentList(db *youdb.DB, cmd, tb, key string, limit, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var citems []Comment
-	userMap := map[uint64]UserMini{}
-	var userKeys [][]byte
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-
-	keyStart := youdb.DS2b(key)
-	if cmd == "hrscan" {
-		rs := db.Hrscan(tb, keyStart, limit)
-		if rs.State == "ok" {
-			for i := len(rs.Data) - 2; i >= 0; i -= 2 {
-				item := Comment{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				citems = append(citems, item)
-				userMap[item.UID] = UserMini{}
-				userKeys = append(userKeys, youdb.I2b(item.UID))
-			}
-		}
-	} else if cmd == "hscan" {
-		rs := db.Hscan(tb, keyStart, limit)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := Comment{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				citems = append(citems, item)
-				userMap[item.UID] = UserMini{}
-				userKeys = append(userKeys, youdb.I2b(item.UID))
-			}
-		}
-	}
-
-	if len(citems) > 0 {
-		rs := db.Hmget("user", userKeys)
-		if rs.State == "ok" {
-			for i := 0; i < (len(rs.Data) - 1); i += 2 {
-				item := UserMini{}
-				json.Unmarshal(rs.Data[i+1], &item)
-				userMap[item.ID] = item
-			}
-		}
-
-		for _, citem := range citems {
-			user := userMap[citem.UID]
-			item := CommentListItem{
-				Comment: Comment{
-					CommentBase: CommentBase{
-						ID:      citem.ID,
-						AID:     citem.AID,
-						UID:     citem.UID,
-						AddTime: citem.AddTime,
-					},
-					Avatar:     user.Avatar,
-					AddTimeFmt: util.TimeFmt(citem.AddTime, "2006-01-02 15:04", tz),
-					ContentFmt: template.HTML(util.ContentFmt(citem.Content)),
-				},
-				Name: user.Name,
-			}
-			items = append(items, item)
-			if firstKey == 0 {
-				firstKey = item.ID
-			}
-			lastKey = item.ID
-		}
-
-		rs = db.Hrscan(tb, youdb.I2b(firstKey), 1)
-		if rs.State == "ok" {
-			hasPrev = true
-		}
-		rs = db.Hscan(tb, youdb.I2b(lastKey), 1)
-		if rs.State == "ok" {
-			hasNext = true
-		}
-	}
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
 }
