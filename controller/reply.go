@@ -99,7 +99,13 @@ func createFlarumReplyAPIDoc(
 	// 所有分类的信息, 用于整个站点的信息
 	var flarumTags []flarum.Resource
 
-	if rf.FT == eArticle || rf.FT == ePost { // 获取一个帖子的所有评论
+	// 当前的话题信息
+	var curDisscussion *flarum.Resource
+
+	if rf.FT == eArticle { // 获取一个帖子的所有评论
+		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
+		comments = pageInfo.Items
+	} else if rf.FT == ePost {
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
@@ -126,6 +132,19 @@ func createFlarumReplyAPIDoc(
 		}
 	}
 
+	// 针对某个话题时, 这里直接进行添加
+	if rf.FT == eArticle || rf.FT == ePost {
+		article, err := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
+		if err != nil {
+			logger.Warning("Can't get article: ", rf.AID, err)
+		} else {
+			diss := model.FlarumCreateDiscussionFromArticle(article)
+			curDisscussion = &diss
+			apiDoc.AppendResourcs(*curDisscussion)
+		}
+		allDiscussions[rf.AID] = true
+	}
+
 	for _, comment := range comments {
 		post := model.FlarumCreatePost(comment)
 		apiDoc.AppendResourcs(post)
@@ -147,29 +166,24 @@ func createFlarumReplyAPIDoc(
 			allDiscussions[comment.AID] = true
 		}
 	}
+	// 针对当前的话题, 补全其关系信息
+	if curDisscussion != nil {
+		postRelation := model.FlarumCreatePostRelations(flarumPosts)
+		curDisscussion.BindRelations("Posts", postRelation)
+	}
 
-	// 全部分类
+	// 添加当前站点信息
 	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
 	if err != nil {
 		logger.Error("Get all categories error", err)
 	}
-
 	for _, category := range categories {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
-
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
 
 	if rf.FT == eArticle {
-		article, err := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
-		if err != nil {
-			logger.Error("Get article error:", err)
-			return coreData, err
-		}
-		diss := model.FlarumCreateDiscussionFromArticle(article)
-		postRelation := model.FlarumCreatePostRelations(flarumPosts)
-		diss.BindRelations("Posts", postRelation)
-		apiDoc.SetData(diss) // 主要信息为当前帖子
+		apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
 	} else if rf.FT == ePost {
 		comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
 		if err != nil {
