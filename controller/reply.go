@@ -336,7 +336,6 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	inAPI := ctx.inAPI
 
 	var limit uint64
-	var userID uint64
 	var err error
 	var user model.User
 	var coreData flarum.CoreData
@@ -351,24 +350,9 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	var rf replyFilter
 
 	if _userID != "" {
-		// 尝试获取用户
-		for true {
-			if user, err = model.SQLUserGetByName(sqlDB, _userID); err == nil {
-				break
-			}
-			if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
-				logger.Error("Can't get user id for ", _userID)
-				break
-			}
-			if user, err = model.SQLUserGetByID(sqlDB, userID); err != nil {
-				logger.Error("Can't get user by err: ", err)
-				break
-			}
-			break
-		}
-
-		if user.ID == 0 {
-			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID))
+		user, err = model.SQLUserGet(sqlDB, _userID)
+		if user.ID == 0 || err != nil {
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID+err.Error()))
 			return
 		}
 

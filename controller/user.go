@@ -585,35 +585,22 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 // FlarumUser flarum用户查询
 func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
-	// currentUser := ctx.currentUser
 	h := ctx.h
 	sqlDB := h.App.MySQLdb
 	inAPI := ctx.inAPI
 
-	uid := pat.Param(r, "uid")
-	user, err := model.SQLUserGetByName(sqlDB, uid)
+	_userID := pat.Param(r, "uid")
+	user, err := model.SQLUserGet(sqlDB, _userID)
 
 	if err != nil {
-		uidi, err := strconv.ParseUint(uid, 10, 64)
-		if err != nil { // 说明当前的
-			h.flarumErrorJsonify(w, createSimpleFlarumError("解析uid参数错误"+err.Error()))
-			return
-		}
-		user, err = model.SQLUserGetByID(sqlDB, uidi)
-	}
-
-	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误"+err.Error()))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误: "+err.Error()))
 		return
 	}
 
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument
-	// if user.ID == currentUser.ID {
 	apiDoc.SetData(model.FlarumCreateCurrentUser(user))
-	// } else {
-	// 	// TODO: 当前用户暂时无法获取其他用户的信息
-	// }
+
 	if inAPI {
 		h.jsonify(w, apiDoc)
 		return

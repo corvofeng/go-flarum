@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"goyoubbs/util"
 
@@ -72,21 +74,64 @@ func SQLUserListByFlag(sqlDB *sql.DB, cmd, tb, key string, limit int) UserPageIn
 	}
 }
 
-// SQLUserGetByID 获取数据库用户
-func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
-	obj := User{}
+// SQLUserGet 获取用户
+// 当你不确定用户传来的是用户名还是用户id时, 可以调用该函数获取用户
+func SQLUserGet(sqlDB *sql.DB, _userID string) (User, error) {
+	var err error
+	var user User
+	var userID uint64
 	logger := util.GetLogger()
 
-	rows, err := db.Query(
-		"SELECT id, name, password, reputation, email, avatar, website, description, token, created_at FROM user WHERE id = ?",
-		uid,
-	)
+	for true {
+		// 如果通过用户名可以获取到用户, 那么马上退出并返回
+		if user, err = SQLUserGetByName(sqlDB, _userID); err == nil {
+			break
+		}
+
+		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
+			logger.Error("Can't get user id for ", _userID)
+			break
+		}
+		if user, err = SQLUserGetByID(sqlDB, userID); err != nil {
+			logger.Error("Can't get user by err: ", err)
+			break
+		}
+		break
+	}
+	return user, err
+}
+
+func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (users []User) {
+	var err error
+	var rows *sql.Rows
+	var userListStr []string
+	logger := util.GetLogger()
 	defer rowsClose(rows)
+
+	if len(userIDList) == 0 {
+		logger.Warning("sqlGetUserByList: Can't process the empty user list")
+		return
+	}
+
+	for _, v := range userIDList {
+		userListStr = append(userListStr, strconv.FormatInt(int64(v), 10))
+	}
+	qFieldList := []string{
+		"id", "name", "password", "reputation",
+		"email", "avatar", "website",
+		"description", "token", "created_at",
+	}
+	sql := fmt.Sprintf("select %s from user where id in (%s)",
+		strings.Join(qFieldList, ","),
+		strings.Join(userListStr, ","))
+
+	rows, err = db.Query(sql)
 	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return obj, err
+		logger.Errorf("Query failed,err: %v", err)
+		return
 	}
 	for rows.Next() {
+		obj := User{}
 		err = rows.Scan(
 			&obj.ID,
 			&obj.Name,
@@ -102,38 +147,39 @@ func SQLUserGetByID(db *sql.DB, uid uint64) (User, error) {
 
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)
-			return obj, errors.New("No result")
+			continue
 		}
+		users = append(users, obj)
 	}
 
-	return obj, nil
+	return users
+}
+
+// SQLUserGetByID 获取数据库用户
+func SQLUserGetByID(sqlDB *sql.DB, uid uint64) (User, error) {
+	obj := User{}
+	users := sqlGetUserByList(sqlDB, nil, []uint64{uid})
+	if len(users) == 0 {
+		return obj, fmt.Errorf("Can't find user %d", uid)
+	}
+	return users[0], nil
 }
 
 // SQLUserGetByName 获取数据库中用户
-func SQLUserGetByName(db *sql.DB, name string) (User, error) {
+func SQLUserGetByName(sqlDB *sql.DB, name string) (User, error) {
+	var uid uint64
 	obj := User{}
 	logger := util.GetLogger()
 
-	rows, err := db.Query(
-		"SELECT id, name, password, reputation, email, avatar, website, token, created_at FROM user WHERE name =  ?",
-		name)
+	rows, err := sqlDB.Query("SELECT id FROM user WHERE name =  ?", name)
 	defer rowsClose(rows)
 	if err != nil {
 		logger.Errorf("Query failed,err:%v", err)
 		return obj, err
 	}
+
 	if rows.Next() {
-		err = rows.Scan(
-			&obj.ID,
-			&obj.Name,
-			&obj.Password,
-			&obj.Reputation,
-			&obj.Email,
-			&obj.Avatar,
-			&obj.URL,
-			&obj.Token,
-			&obj.RegTime,
-		)
+		err = rows.Scan(&uid)
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)
 			return obj, errors.New("No result")
@@ -141,7 +187,8 @@ func SQLUserGetByName(db *sql.DB, name string) (User, error) {
 	} else {
 		return obj, errors.New("No result")
 	}
-	return obj, nil
+
+	return SQLUserGetByID(sqlDB, uid)
 }
 
 // StrID 返回string类型的ID值
