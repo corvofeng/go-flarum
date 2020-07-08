@@ -38,7 +38,7 @@ func tracker(next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		logger.Noticef("Track service %s time %s", r.URL.Path, time.Since(start))
+		logger.Noticef("Track [%6s] %s %s", r.Method, r.URL.Path, time.Since(start))
 	}
 	return http.HandlerFunc(f)
 }
