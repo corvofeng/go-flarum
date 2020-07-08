@@ -81,6 +81,8 @@ type ArticleListItem struct {
 	 * we need tell users that we do not return a random list.
 	 */
 	HighlightContent template.HTML `json:"highlight_content"`
+
+	LastComment *CommentListItem
 }
 
 // ArticlePageInfo data in every list page
@@ -179,9 +181,11 @@ func (article *Article) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 			editTime = time.Unix(now.Unix()-2*24*3600, 0)
 		}
 	}
+	if article.ClickCnt == 0 { // 避免出现0的情况
+		article.ClickCnt = 1
+	}
 	qAge := now.Sub(editTime).Hours()
 	weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
-
 	return weight
 }
 
@@ -227,6 +231,7 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 // CreateFlarumDiscussion 创建flarum的帖子
 func (article *Article) CreateFlarumDiscussion(db *sql.DB, tags flarum.RelationArray) (bool, error) {
 	tx, err := db.Begin()
+	logger := util.GetLogger()
 	defer clearTransaction(tx)
 	if err != nil {
 		return false, err
@@ -234,6 +239,7 @@ func (article *Article) CreateFlarumDiscussion(db *sql.DB, tags flarum.RelationA
 	if ok, err := article.sqlCreateTopic(tx); !ok {
 		return false, err
 	}
+	logger.Debugf("Create article %d success", article.ID)
 
 	comment := Comment{
 		CommentBase: CommentBase{
@@ -257,7 +263,7 @@ func (article *Article) CreateFlarumDiscussion(db *sql.DB, tags flarum.RelationA
 	if ok, err := article.updateFlarumTag(tx, tags); !ok {
 		return false, err
 	}
-	// TODO: update article tags
+	logger.Debugf("Update article post and tag %d success", article.ID)
 
 	if err := tx.Commit(); err != nil {
 		logger := util.GetLogger()
@@ -346,12 +352,22 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, redisDB *redis.Client) bool
 	return true
 }
 
-func (ab *ArticleBase) toArticleListItem(db *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
+func (ab *ArticleBase) ToArticleListItem(sqlDB *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
 	item := ArticleListItem{
 		ArticleBase: *ab,
 	}
 	item.EditTimeFmt = util.TimeFmt(item.EditTime, util.TIME_FMT, tz)
-	item.Cname = GetCategoryNameByCID(db, redisDB, item.CID)
+	item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
+	if item.LastPostID != 0 {
+		lastComment, err := SQLGetCommentByID(sqlDB, redisDB, item.LastPostID, tz)
+		if err != nil {
+			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
+		} else {
+			lc := lastComment.toCommentListItem(sqlDB, redisDB, tz)
+			item.LastComment = &lc
+		}
+	}
+
 	return item
 }
 
@@ -364,7 +380,7 @@ func SQLArticleGetByList(db *sql.DB, redisDB *redis.Client, articleList []uint64
 	m := make(map[uint64]ArticleListItem)
 
 	for _, articleBase := range articleBaseList {
-		m[articleBase.ID] = articleBase.toArticleListItem(db, redisDB, tz)
+		m[articleBase.ID] = articleBase.ToArticleListItem(db, redisDB, tz)
 	}
 
 	for _, id := range articleList {
@@ -442,8 +458,8 @@ func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []ui
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
 func SQLArticleGetByCID(db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
-	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	var pageInfo ArticlePageInfo
+	articleList := GetTopicListByPageNum(nodeID, page, limit)
 	logger := util.GetLogger()
 	logger.Debug("Get article list", page, limit, articleList)
 	if len(articleList) == 0 {

@@ -77,7 +77,8 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 }
 
 // FlarumCreateDiscussion 创建帖子资源
-func FlarumCreateDiscussion(article ArticleListItem, lastComment Comment) flarum.Resource {
+func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
+	lastComment := article.LastComment
 	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
 	data := obj.Attributes.(*flarum.Discussion)
 	data.Title = article.Title
@@ -120,46 +121,7 @@ func FlarumCreateDiscussion(article ArticleListItem, lastComment Comment) flarum
 				Data: flarum.InitBaseResources(lastComment.UID, "users"),
 			},
 		)
-
 	}
-
-	return obj
-}
-
-// FlarumCreateDiscussionFromArticle 创建帖子资源
-func FlarumCreateDiscussionFromArticle(article Article) flarum.Resource {
-	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
-	data := obj.Attributes.(*flarum.Discussion)
-	data.Title = article.Title
-	// data.CommentCount = article.Comments
-	data.CommentCount = 1
-	data.ParticipantCount = 1
-	data.LastPostNumber = 1
-	data.CreatedAt = "2019-05-30T14:26:02+00:00"
-	// data.LastReadAt = "2020-05-31T14:26:02+00:00"
-	// data.LastPostedAt = "2019-06-29T11:20:01Z"
-	data.LastPostedAt = "2020-05-31T12:49:51+00:00"
-	// data.CanRename = true
-	data.CanReply = true
-	// data.IsApproved = true
-	// data.IsSticky = true
-
-	obj.BindRelations(
-		"User",
-		flarum.RelationDict{Data: flarum.InitBaseResources(article.UID, "users")},
-	)
-	obj.BindRelations(
-		"Tags",
-		flarum.RelationArray{
-			Data: []flarum.BaseRelation{},
-		},
-	)
-	obj.BindRelations(
-		"Posts",
-		flarum.RelationArray{
-			Data: []flarum.BaseRelation{},
-		},
-	)
 
 	return obj
 }

@@ -135,6 +135,7 @@ func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []
 	}
 	return
 }
+
 func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comment {
 	c := Comment{
 		CommentBase: *cb,
@@ -183,6 +184,7 @@ func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, 
 	}
 	return
 }
+
 func sqlCommentListByUserID(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
