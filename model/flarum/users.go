@@ -12,8 +12,8 @@ type BaseUser struct {
 	Displayname string `json:"displayName"`
 	AvatarURL   string `json:"avatarUrl"`
 
-	// JoinTime        string `json:"joinTime"`
-	// DiscussionCount int    `json:"discussionCount"`
+	JoinTime        string `json:"joinTime"`
+	DiscussionCount int    `json:"discussionCount"`
 	// CommentCount    int    `json:"commentCount"`
 	// CanEdit         bool   `json:"canEdit"`
 	// CanDelete       bool   `json:"canDelete"`

@@ -12,7 +12,6 @@ import (
 
 	"goyoubbs/model"
 	"goyoubbs/system"
-	"goyoubbs/util"
 
 	"github.com/ego008/youdb"
 	"github.com/weint/httpclient"
@@ -102,26 +101,26 @@ func (h *BaseHandler) GetLocal() error {
 							continue
 						}
 						obj := model.User{
-							ID:            youdb.DS2i(t.ID),
-							Name:          t.Name,
-							Flag:          int(youdb.DS2i(t.Flag)),
-							Avatar:        t.Avatar,
-							Password:      t.Password,
-							Email:         t.Email,
-							URL:           t.URL,
-							Articles:      youdb.DS2i(t.Articles),
-							Replies:       youdb.DS2i(t.Replies),
-							RegTime:       youdb.DS2i(t.RegTime),
-							LastPostTime:  youdb.DS2i(t.LastPostTime),
-							LastReplyTime: youdb.DS2i(t.LastReplyTime),
-							LastLoginTime: youdb.DS2i(t.LastLoginTime),
-							About:         t.About,
-							Notice:        strings.Trim(t.Notice, ","),
-							Hidden:        false,
+							ID:       youdb.DS2i(t.ID),
+							Name:     t.Name,
+							Flag:     int(youdb.DS2i(t.Flag)),
+							Avatar:   t.Avatar,
+							Password: t.Password,
+							Email:    t.Email,
+							URL:      t.URL,
+							Articles: youdb.DS2i(t.Articles),
+							Replies:  youdb.DS2i(t.Replies),
+							RegTime:  youdb.DS2i(t.RegTime),
+							// LastPostTime:  youdb.DS2i(t.LastPostTime),
+							// LastReplyTime: youdb.DS2i(t.LastReplyTime),
+							// LastLoginTime: youdb.DS2i(t.LastLoginTime),
+							About: t.About,
+							// Notice: strings.Trim(t.Notice, ","),
+							Hidden: false,
 						}
-						if len(obj.Notice) > 0 {
-							obj.NoticeNum = len(util.SliceUniqStr(strings.Split(obj.Notice, ",")))
-						}
+						// if len(obj.Notice) > 0 {
+						// 	obj.NoticeNum = len(util.SliceUniqStr(strings.Split(obj.Notice, ",")))
+						// }
 						jb, _ := json.Marshal(obj)
 						db.Hset("user", youdb.I2b(obj.ID), jb)
 						db.HsetSequence("user", obj.ID)

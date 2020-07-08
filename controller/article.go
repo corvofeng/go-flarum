@@ -150,13 +150,13 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	now := uint64(time.Now().UTC().Unix())
 	scf := h.App.Cf.Site
 
-	// 控制发帖间隔, 不能太短
-	if !currentUser.IsAdmin() && currentUser.LastPostTime > 0 {
-		if (now - currentUser.LastPostTime) < uint64(scf.PostInterval) {
-			w.Write([]byte(`{"retcode":403,"retmsg":"PostInterval limited"}`))
-			return
-		}
-	}
+	// // 控制发帖间隔, 不能太短
+	// if !currentUser.IsAdmin() && currentUser.LastPostTime > 0 {
+	// 	if (now - currentUser.LastPostTime) < uint64(scf.PostInterval) {
+	// 		w.Write([]byte(`{"retcode":403,"retmsg":"PostInterval limited"}`))
+	// 		return
+	// 	}
+	// }
 
 	if rec.CID == 0 || len(rec.Title) == 0 {
 		w.Write([]byte(`{"retcode":400,"retmsg":"missed args"}`))
@@ -212,7 +212,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 	// 分类下文章数
 	db.Zincr("category_article_num", youdb.I2b(aobj.CID), 1)
 
-	currentUser.LastPostTime = now
+	// currentUser.LastPostTime = now
 	currentUser.Articles++
 
 	jb, _ = json.Marshal(currentUser)
@@ -656,10 +656,10 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 			w.Write([]byte(`{"retcode":403,"retmsg":"forbidden"}`))
 			return
 		}
-		if (timeStamp - currentUser.LastReplyTime) < uint64(h.App.Cf.Site.CommentInterval) {
-			w.Write([]byte(`{"retcode":403,"retmsg":"out off comment interval"}`))
-			return
-		}
+		// if (timeStamp - currentUser.LastReplyTime) < uint64(h.App.Cf.Site.CommentInterval) {
+		// 	w.Write([]byte(`{"retcode":403,"retmsg":"out off comment interval"}`))
+		// 	return
+		// }
 		// 获取当前的话题
 		aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 		if err != nil {
@@ -697,7 +697,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		jb2, _ := json.Marshal(aobj)
 		cntDB.Hset("article", youdb.I2b(aobj.ID), jb2)
 
-		currentUser.LastReplyTime = timeStamp
+		// currentUser.LastReplyTime = timeStamp
 		currentUser.Replies++
 		jb3, _ := json.Marshal(currentUser)
 		cntDB.Hset("user", youdb.I2b(currentUser.ID), jb3)

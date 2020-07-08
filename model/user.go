@@ -14,35 +14,48 @@ import (
 
 // User store in database
 type User struct {
-	ID            uint64 `json:"id"`
-	Name          string `json:"name"`
-	Gender        string `json:"gender"`
-	Flag          int    `json:"flag"`
-	Avatar        string `json:"avatar"`
-	Password      string `json:"password"`
-	Email         string `json:"email"`
-	URL           string `json:"url"`
-	Articles      uint64 `json:"articles"`
-	Replies       uint64 `json:"replies"`
-	RegTime       uint64 `json:"regtime"`
-	LastPostTime  uint64 `json:"lastposttime"`
-	LastReplyTime uint64 `json:"lastreplytime"`
-	LastLoginTime uint64 `json:"lastlogintime"`
-	About         string `json:"about"`
-	Notice        string `json:"notice"`
-	NoticeNum     int    `json:"noticenum"`
-	Hidden        bool   `json:"hidden"`
-	Session       string `json:"session"`
-	Token         string `json:"token"`
-	Reputation    uint64 `json:"reputation"`
+	ID         uint64 `json:"id"`
+	Name       string `json:"name"`
+	Gender     string `json:"gender"`
+	Flag       int    `json:"flag"`
+	Avatar     string `json:"avatar"`
+	Password   string `json:"password"`
+	Email      string `json:"email"`
+	URL        string `json:"url"`
+	Articles   uint64 `json:"articles"`
+	Replies    uint64 `json:"replies"`
+	RegTime    uint64 `json:"regtime"`
+	About      string `json:"about"`
+	Hidden     bool   `json:"hidden"`
+	Session    string `json:"session"`
+	Token      string `json:"token"`
+	Reputation uint64 `json:"reputation"` // 声望值
 }
 
+// UserListItem 用户信息
+type UserListItem struct {
+	User
+	RegTimeFmt string `json:"regtime"`
+
+	Notice    string `json:"notice"`
+	NoticeNum uint64 `json:"noticenum"`
+
+	LastPostTime     uint64
+	LastReplyTime    uint64
+	LastLoginTime    uint64
+	LastPostTimeFmt  string `json:"lastposttime"`
+	LastReplyTimeFmt string `json:"lastreplytime"`
+	LastLoginTimeFmt string `json:"lastlogintime"`
+}
+
+// UserMini 简单用户
 type UserMini struct {
 	ID     uint64 `json:"id"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 }
 
+// UserPageInfo 用户页面
 type UserPageInfo struct {
 	Items    []User `json:"items"`
 	HasPrev  bool   `json:"hasprev"`
@@ -153,6 +166,14 @@ func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (u
 	}
 
 	return users
+}
+
+func (user *User) toUserListItem(db *sql.DB, redisDB *redis.Client, tz int) UserListItem {
+	item := UserListItem{
+		User: *user,
+	}
+	item.RegTimeFmt = util.TimeFmt(item.RegTime, util.TIME_FMT, tz)
+	return item
 }
 
 // SQLUserGetByID 获取数据库用户

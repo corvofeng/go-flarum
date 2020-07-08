@@ -131,12 +131,12 @@ func (h *BaseHandler) AdminUserListPost(w http.ResponseWriter, r *http.Request) 
 	flag := 5
 
 	uobj := model.User{
-		ID:            userID,
-		Name:          rec.Name,
-		Password:      rec.Password,
-		Flag:          flag,
-		RegTime:       timeStamp,
-		LastLoginTime: timeStamp,
+		ID:       userID,
+		Name:     rec.Name,
+		Password: rec.Password,
+		Flag:     flag,
+		RegTime:  timeStamp,
+		// LastLoginTime: timeStamp,
 	}
 
 	uidStr := strconv.FormatUint(userID, 10)

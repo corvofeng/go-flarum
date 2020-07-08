@@ -2,6 +2,7 @@ package model
 
 import (
 	"goyoubbs/model/flarum"
+	"goyoubbs/util"
 )
 
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo
@@ -193,6 +194,7 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.Displayname = user.Name
 	data.AvatarURL = user.Avatar
 	data.IsEmailConfirmed = true
+	data.JoinTime = util.TimeFmt(user.RegTime, util.TIME_FMT, 0)
 	obj.BindRelations(
 		"Groups",
 		flarum.RelationArray{

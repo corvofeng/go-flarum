@@ -140,15 +140,15 @@ func (h *BaseHandler) WeiboOauthCallback(w http.ResponseWriter, r *http.Request)
 	}
 
 	uobj := model.User{
-		ID:            userID,
-		Name:          name,
-		About:         profile.Description,
-		URL:           profile.URL,
-		Gender:        gender,
-		Flag:          flag,
-		RegTime:       timeStamp,
-		LastLoginTime: timeStamp,
-		Session:       xid.New().String(),
+		ID:      userID,
+		Name:    name,
+		About:   profile.Description,
+		URL:     profile.URL,
+		Gender:  gender,
+		Flag:    flag,
+		RegTime: timeStamp,
+		// LastLoginTime: timeStamp,
+		Session: xid.New().String(),
 	}
 
 	uidStr := strconv.FormatUint(userID, 10)

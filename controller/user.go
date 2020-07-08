@@ -143,7 +143,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sessionid := xid.New().String()
-		uobj.LastLoginTime = timeStamp
+		// uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
 		uobj.CachedToRedis(redisDB)
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
@@ -171,11 +171,11 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		uobj := model.User{
-			Name:          rec.Name,
-			Password:      rec.Password,
-			RegTime:       timeStamp,
-			LastLoginTime: timeStamp,
-			Session:       xid.New().String(),
+			Name:     rec.Name,
+			Password: rec.Password,
+			RegTime:  timeStamp,
+			// LastLoginTime: timeStamp,
+			Session: xid.New().String(),
 		}
 		uobj.SQLRegister(sqlDB)
 
@@ -450,7 +450,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	timeStamp := uint64(time.Now().UTC().Unix())
+	// timeStamp := uint64(time.Now().UTC().Unix())
 
 	uobj, err := model.SQLUserGetByName(sqlDB, rec.Identification)
 	if err != nil {
@@ -470,7 +470,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sessionid := xid.New().String()
-	uobj.LastLoginTime = timeStamp
+	// uobj.LastLoginTime = timeStamp
 	uobj.Session = sessionid
 
 	uobj.CachedToRedis(redisDB)

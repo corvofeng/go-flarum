@@ -90,7 +90,7 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sessionid := xid.New().String()
-		uobj.LastLoginTime = timeStamp
+		// uobj.LastLoginTime = timeStamp
 		uobj.Session = sessionid
 		jb, _ := json.Marshal(uobj)
 		db.Hset("user", youdb.I2b(uobj.ID), jb)
@@ -149,13 +149,13 @@ func (h *BaseHandler) QQOauthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uobj := model.User{
-		ID:            userID,
-		Name:          name,
-		Flag:          flag,
-		Gender:        gender,
-		RegTime:       timeStamp,
-		LastLoginTime: timeStamp,
-		Session:       xid.New().String(),
+		ID:      userID,
+		Name:    name,
+		Flag:    flag,
+		Gender:  gender,
+		RegTime: timeStamp,
+		// LastLoginTime: timeStamp,
+		Session: xid.New().String(),
 	}
 
 	uidStr := strconv.FormatUint(userID, 10)
