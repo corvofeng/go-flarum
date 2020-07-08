@@ -527,7 +527,7 @@ func createFlarumUserAPIDoc(
 				if err != nil {
 					logger.Warning("Can't get article: ", comment.AID, err)
 				} else {
-					apiDoc.AppendResourcs(model.FlarumCreateDiscussionFromArticle(article))
+					apiDoc.AppendResourcs(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
 				}
 				allDiscussions[comment.AID] = true
 			}

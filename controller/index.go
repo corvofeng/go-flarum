@@ -154,11 +154,7 @@ func createFlarumPageAPIDoc(
 
 	// 添加当前页面的的帖子与用户信息, 已经去重
 	for _, article := range pageInfo.Items {
-		lastComent, err := model.SQLGetCommentByID(sqlDB, redisDB, article.LastPostID, tz)
-		if err != nil {
-			logger.Warningf("Can't get article comment(%d, %d) err: %s", article.ID, article.LastPostID, err.Error())
-		}
-		diss := model.FlarumCreateDiscussion(article, lastComent)
+		diss := model.FlarumCreateDiscussion(article)
 		res = append(res, diss)
 		coreData.AppendResourcs(diss)
 
@@ -240,7 +236,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	logger := h.App.Logger
 	coreData := flarum.NewCoreData()
-	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+	// apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	// 需要返回的relations TODO: use it
 	_include := r.FormValue("include")
@@ -259,13 +255,14 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		data, err := strconv.ParseUint(_offset, 10, 64)
 		if err != nil {
 			logger.Error("Parse offset err:", err)
-			h.jsonify(w, apiDoc)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get offset"+err.Error()))
 			return
 		}
 		page = data / 20
 	}
 	page = page + 1
 	si := model.GetSiteInfo(redisDB)
+	logger.Debugf("Get _filter: `%s`, page: `%d`", _filter, page)
 
 	if _filter == "" {
 		df := dissFilter{

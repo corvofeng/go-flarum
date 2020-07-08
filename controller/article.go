@@ -745,6 +745,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 }
 
 // FlarumArticleDetail 获取flarum中的某篇帖子
+// TODO: #12
 func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
@@ -754,9 +755,10 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
-	// _filter := r.URL.Query()["filter"]
-	// _filter)
-	// return
+	// _filter := r.FormValue("filter")
+	// fmt.Println(_filter)
+	// _near := r.FormValue("page[near]")
+	// fmt.Println(_near)
 
 	_aid := pat.Param(r, "aid")
 	aid, err := strconv.ParseUint(_aid, 10, 64)
@@ -875,6 +877,10 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
 	}
+
+	// 刷新当前的页面展示
+	// TODO: 优化逻辑, 不进行全局处理
+	model.TimelyResort()
 
 	h.jsonify(w, coreData.APIDocument)
 }

@@ -138,7 +138,7 @@ func createFlarumReplyAPIDoc(
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
 		} else {
-			diss := model.FlarumCreateDiscussionFromArticle(article)
+			diss := model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz))
 			curDisscussion = &diss
 			apiDoc.AppendResourcs(*curDisscussion)
 		}
@@ -161,7 +161,7 @@ func createFlarumReplyAPIDoc(
 			if err != nil {
 				logger.Warning("Can't get article: ", comment.AID, err)
 			} else {
-				apiDoc.AppendResourcs(model.FlarumCreateDiscussionFromArticle(article))
+				apiDoc.AppendResourcs(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
 			}
 			allDiscussions[comment.AID] = true
 		}
