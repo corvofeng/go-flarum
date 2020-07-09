@@ -84,9 +84,12 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	data.Title = article.Title
 	data.CommentCount = article.Comments
 	data.LastPostID = article.LastPostID
-	data.LastPostNumber = lastComment.Number
 	data.FirstPostID = article.FirstPostID
-	data.LastPostedAt = lastComment.AddTimeFmt
+	data.CanReply = true
+	if lastComment != nil {
+		data.LastPostNumber = lastComment.Number
+		data.LastPostedAt = lastComment.AddTimeFmt
+	}
 
 	obj.BindRelations(
 		"User",
