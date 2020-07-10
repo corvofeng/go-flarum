@@ -510,7 +510,7 @@ func SQLArticleGetByUID(db *sql.DB, redisDB *redis.Client, uid, page, limit uint
 		var aid uint64
 		err = rows.Scan(&aid) //不scan会导致连接不释放
 		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
+			logger.Errorf("Scan failed,err:%v", err)
 			continue
 		}
 		articleList = append(articleList, aid)
