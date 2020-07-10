@@ -122,9 +122,9 @@ func createFlarumPageAPIDoc(
 	page := df.Page
 
 	if df.FT == eCategory {
-		pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, df.CID, page, 20, tz)
+		pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, df.CID, page, df.Limit, tz)
 	} else if df.FT == eUserPost {
-		pageInfo = model.SQLArticleGetByUID(sqlDB, redisDB, df.UID, page, 20, tz)
+		pageInfo = model.SQLArticleGetByUID(sqlDB, redisDB, df.UID, page, df.Limit, tz)
 	}
 
 	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
@@ -174,9 +174,9 @@ func createFlarumPageAPIDoc(
 	apiDoc.SetData(res)
 
 	scf := appConf.Site
-	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=20"
+	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=" + fmt.Sprintf("%d", df.Limit)
 	if page != 1 {
-		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*20)
+		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*df.Limit)
 	}
 
 	if pageInfo.HasNext {
@@ -203,9 +203,10 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	si := model.GetSiteInfo(redisDB)
 
 	df := dissFilter{
-		FT:   eCategory,
-		CID:  0,
-		Page: page,
+		FT:    eCategory,
+		CID:   0,
+		Page:  page,
+		Limit: 10,
 	}
 	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 	if err != nil {
@@ -236,6 +237,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	logger := h.App.Logger
 	coreData := flarum.NewCoreData()
+	const pageLimit = 10
 	// apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	// 需要返回的relations TODO: use it
@@ -258,7 +260,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get offset"+err.Error()))
 			return
 		}
-		page = data / 20
+		page = data / pageLimit
 	}
 	page = page + 1
 	si := model.GetSiteInfo(redisDB)
@@ -266,9 +268,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	if _filter == "" {
 		df := dissFilter{
-			FT:   eCategory,
-			Page: page,
-			CID:  0,
+			FT:    eCategory,
+			Page:  page,
+			Limit: pageLimit,
+			CID:   0,
 		}
 		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 	} else {
@@ -280,9 +283,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			df := dissFilter{
-				FT:   eCategory,
-				Page: page,
-				CID:  cate.ID,
+				FT:    eCategory,
+				Page:  page,
+				CID:   cate.ID,
+				Limit: pageLimit,
 			}
 			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 		} else if strings.HasPrefix(data, "author:") {
@@ -292,9 +296,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			df := dissFilter{
-				FT:   eUserPost,
-				Page: page,
-				UID:  user.ID,
+				FT:    eUserPost,
+				Page:  page,
+				UID:   user.ID,
+				Limit: pageLimit,
 			}
 			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
 		} else {
