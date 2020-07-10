@@ -16,6 +16,7 @@ import (
 type User struct {
 	ID         uint64 `json:"id"`
 	Name       string `json:"name"`
+	Nickname   string `json:"nickname"`
 	Gender     string `json:"gender"`
 	Flag       int    `json:"flag"`
 	Avatar     string `json:"avatar"`
@@ -130,7 +131,7 @@ func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (u
 		userListStr = append(userListStr, strconv.FormatInt(int64(v), 10))
 	}
 	qFieldList := []string{
-		"id", "name", "password", "reputation",
+		"id", "name", "nickname", "password", "reputation",
 		"email", "avatar", "website",
 		"description", "token", "created_at",
 	}
@@ -148,6 +149,7 @@ func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (u
 		err = rows.Scan(
 			&obj.ID,
 			&obj.Name,
+			&obj.Nickname,
 			&obj.Password,
 			&obj.Reputation,
 			&obj.Email,
@@ -157,7 +159,6 @@ func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (u
 			&obj.Token,
 			&obj.RegTime,
 		)
-
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)
 			continue
