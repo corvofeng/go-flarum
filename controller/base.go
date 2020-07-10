@@ -170,6 +170,7 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	rawUID := z[0]
 
 	user, err = model.RedisGetUserByID(redisDB, rawUID)
+	// user, err = model.SQLUserGetByID(sqlDB, user.ID)
 	if util.CheckError(err, "获取用户") {
 		return user, err
 	}

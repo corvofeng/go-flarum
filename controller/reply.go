@@ -151,9 +151,14 @@ func createFlarumReplyAPIDoc(
 		flarumPosts = append(flarumPosts, post)
 
 		if _, ok := allUsers[comment.UID]; !ok {
-			user := model.FlarumCreateUserFromComments(comment)
-			apiDoc.AppendResourcs(user)
-			allUsers[comment.UID] = true
+			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
+			if err != nil {
+				logger.Warningf("Get user %d error: %s", comment.UID, err)
+			} else {
+				user := model.FlarumCreateUser(u)
+				allUsers[comment.UID] = true
+				coreData.AppendResourcs(user)
+			}
 		}
 
 		if _, ok := allDiscussions[comment.AID]; !ok {

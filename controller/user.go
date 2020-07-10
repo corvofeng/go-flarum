@@ -506,6 +506,14 @@ func createFlarumUserAPIDoc(
 
 	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
 	allDiscussions := make(map[uint64]bool) // 用于保存已经添加的帖子, 进行去重
+	if currentUser != nil {
+		user := model.FlarumCreateCurrentUser(*currentUser)
+		allUsers[user.GetID()] = true
+		coreData.AddCurrentUser(user)
+		if !inAPI { // 做API请求时, 不更新csrf信息
+			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
+		}
+	}
 
 	if comments != nil {
 		for _, comment := range *comments {
@@ -514,11 +522,14 @@ func createFlarumUserAPIDoc(
 			postArr = append(postArr, post)
 
 			// 当前用户会在后面统一添加
-			if currentUser == nil || currentUser.ID != comment.UID {
-				if _, ok := allUsers[comment.UID]; !ok {
-					user := model.FlarumCreateUserFromComments(comment)
-					apiDoc.AppendResourcs(user)
+			if _, ok := allUsers[comment.UID]; !ok {
+				u, err := model.SQLUserGetByID(sqlDB, comment.UID)
+				if err != nil {
+					logger.Warningf("Get user %d error: %s", comment.UID, err)
+				} else {
+					user := model.FlarumCreateUser(u)
 					allUsers[comment.UID] = true
+					coreData.AppendResourcs(user)
 				}
 			}
 
