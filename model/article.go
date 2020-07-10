@@ -499,7 +499,7 @@ func SQLArticleGetByUID(db *sql.DB, redisDB *redis.Client, uid, page, limit uint
 	defer rowsClose(rows)
 
 	rows, err = db.Query(
-		"SELECT id FROM topic WHERE user_id = ? ORDER BY created_at DESC limit ? offset ?",
+		"SELECT id FROM topic WHERE user_id = ? and active = 1 ORDER BY created_at DESC limit ? offset ?",
 		uid, limit, (page-1)*limit,
 	)
 	if err != nil {
