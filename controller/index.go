@@ -62,7 +62,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 	// 获取贴子列表
 	pageInfo := model.SQLArticleList(sqlDB, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
-	categories, err := model.SQLGetAllCategory(sqlDB)
+	categories, err := model.SQLGetAllCategory(sqlDB, redisDB)
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}

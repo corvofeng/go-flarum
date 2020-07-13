@@ -68,7 +68,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 		pageInfo.HasPrev = true
 	}
 
-	categories, err := model.SQLGetAllCategory(sqlDB)
+	categories, err := model.SQLGetAllCategory(sqlDB, redisDB)
 	evn.Cobj = cobj
 	evn.PageInfo = pageInfo
 

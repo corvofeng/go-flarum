@@ -24,6 +24,8 @@ type (
 		Position    uint64 `json:"position"`
 		Description string `json:"description"`
 		Hidden      bool   `json:"hidden"`
+		Color       string `json:"color"`
+		IconIMG     string `json:"icon_img"`
 	}
 
 	// CategoryMini 帖子分类
@@ -43,26 +45,27 @@ type (
 )
 
 // SQLGetAllCategory 获取所有分类
-func SQLGetAllCategory(db *sql.DB) ([]Category, error) {
-	var categories []Category
-	rows, err := db.Query("SELECT id, name, urlname, description FROM tags order by topic_count desc limit 30")
+func SQLGetAllCategory(db *sql.DB, redisDB *redis.Client) (categories []Category, err error) {
+	rows, err := db.Query("SELECT id FROM tags where is_hidden = 0")
 	defer rowsClose(rows)
+	logger := util.GetLogger()
 
 	if err != nil {
-		fmt.Printf("Query failed,err:%v", err)
+		logger.Errorf("Query failed,err:%v", err)
+		return
 	}
+	var categoryList []uint64
 	for rows.Next() {
-		obj := Category{}
-		err = rows.Scan(&obj.ID, &obj.Name, &obj.URLName, &obj.Description) // 不scan会导致连接不释放
-
+		var item uint64
+		err = rows.Scan(&item)
 		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			return categories, errors.New("No result")
+			logger.Errorf("Scan failed,err:%v", err)
+			continue
 		}
-		categories = append(categories, obj)
+		categoryList = append(categoryList, item)
 	}
-
-	return categories, nil
+	categories = sqlGetCategoryByList(db, redisDB, categoryList)
+	return
 }
 
 // SQLGetNotEmptyCategory 获取非空的分类
@@ -87,6 +90,7 @@ func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Cat
 	}
 	categories = sqlGetCategoryByList(db, redisDB, categoryList)
 	return
+
 }
 
 func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint64) (items []Category) {
@@ -105,6 +109,7 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 	qFieldList := []string{
 		"id", "name", "urlname",
 		"description", "is_hidden", "parent_id", "position",
+		"color", "icon_img",
 	}
 	sql := fmt.Sprintf("SELECT %s FROM tags WHERE id IN (%s)",
 		strings.Join(qFieldList, ","),
@@ -121,6 +126,7 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 			&item.ID, &item.Name, &item.URLName,
 			&item.Description, &item.Hidden,
 			&item.ParentID, &item.Position,
+			&item.Color, &item.IconIMG,
 		)
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)
@@ -184,14 +190,14 @@ func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Catego
 }
 
 // SQLCategoryList 获取分类列表
-func SQLCategoryList(db *sql.DB) CategoryPageInfo {
+func SQLCategoryList(db *sql.DB, redisDB *redis.Client) CategoryPageInfo {
 	// tb := "category"
 	var items []Category
 	// var keys [][]byte
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 
-	categrayList, err := SQLGetAllCategory(db)
+	categrayList, err := SQLGetAllCategory(db, redisDB)
 	if !util.CheckError(err, "获取所有category") {
 		for _, cate := range categrayList {
 			fullCategory, err := SQLCategoryGetByName(db, cate.Name)

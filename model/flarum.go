@@ -59,8 +59,8 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 	data.LastPostedAt = "2020-06-10T01:20:37+00:00"
 	data.Position = cat.Position
 
-	data.Color = "#B72A2A"
-	data.Icon = "fas fa-wrench"
+	data.Color = cat.Color
+	data.Icon = cat.IconIMG
 
 	// please refer to #11
 	if cat.ParentID == 0 {

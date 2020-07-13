@@ -80,7 +80,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	evn.Cobj = cobj
 
 	// 当前的主节点就直接从数据库中读取所有节点了
-	evn.MainNodes, _ = model.SQLGetAllCategory(sqlDB)
+	evn.MainNodes, _ = model.SQLGetAllCategory(sqlDB, h.App.RedisDB)
 
 	h.SetCookie(w, "token", xid.New().String(), 1)
 	h.Render(w, tpl, evn, "layout.html", "articlecreate.html")
@@ -325,7 +325,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Get Article List", articleList)
 
 	pageInfo := model.SQLArticleGetByList(sqlDB, redisDB, articleList, scf.TimeZone)
-	categories, err := model.SQLGetAllCategory(sqlDB)
+	categories, err := model.SQLGetAllCategory(sqlDB, redisDB)
 
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}

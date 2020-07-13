@@ -46,7 +46,7 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	pageInfo := model.SQLCategoryList(sqlDB)
+	pageInfo := model.SQLCategoryList(sqlDB, redisDB)
 
 	type pageData struct {
 		PageData
