@@ -83,6 +83,7 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	data := obj.Attributes.(*flarum.Discussion)
 	data.Title = article.Title
 	data.CommentCount = article.Comments
+	data.CreatedAt = article.AddTimeFmt
 	data.LastPostID = article.LastPostID
 	data.FirstPostID = article.FirstPostID
 	data.CanReply = true

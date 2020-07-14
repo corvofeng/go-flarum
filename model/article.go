@@ -73,6 +73,7 @@ type ArticleListItem struct {
 	Cname       string `json:"cname"`
 	Ruid        uint64 `json:"ruid"`
 	Rname       string `json:"rname"`
+	AddTimeFmt  string `json:"addtimefmt"`
 	EditTimeFmt string `json:"edittimefmt"`
 	ClickCnt    uint64 `json:"clickcnt"`
 
@@ -352,11 +353,13 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, redisDB *redis.Client) bool
 	return true
 }
 
+// ToArticleListItem 转换为可以做列表的内容
 func (ab *ArticleBase) ToArticleListItem(sqlDB *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
 	item := ArticleListItem{
 		ArticleBase: *ab,
 	}
 	item.EditTimeFmt = util.TimeFmt(item.EditTime, util.TIME_FMT, tz)
+	item.AddTimeFmt = util.TimeFmt(item.AddTime, util.TIME_FMT, tz)
 	item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
 	if item.LastPostID != 0 {
 		lastComment, err := SQLGetCommentByID(sqlDB, redisDB, item.LastPostID, tz)
