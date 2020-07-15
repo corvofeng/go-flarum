@@ -12,11 +12,13 @@ var (
 	codeRegexp    = regexp.MustCompile("(?s:```(.+?)```)")
 	imgRegexp     = regexp.MustCompile(`(https?://[\w./:]+/[\w./]+\.(jpg|jpe|jpeg|gif|png))`)
 	gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-]+/)?[\d]+)`)
-	mentionRegexp = regexp.MustCompile(`\B@([a-zA-Z0-9\p{Han}]{1,32})\s?`)
+	mentionRegexp = regexp.MustCompile(`\B@([a-zA-Z0-9\p{Han}]{1,32})#?([0-9]*)?\s?`)
 	urlRegexp     = regexp.MustCompile(`([^;"='>])(https?://[^\s<]+[^\s<.)])`)
 	nlineRegexp   = regexp.MustCompile(`\s{2,}`)
 	youku1Regexp  = regexp.MustCompile(`https?://player\.youku\.com/player\.php/sid/([a-zA-Z0-9=]+)/v\.swf`)
 	youku2Regexp  = regexp.MustCompile(`https?://v\.youku\.com/v_show/id_([a-zA-Z0-9=]+)(/|\.html?)?`)
+
+	mentionReplaceStr = `<a href="/d/927/26" class="UserMention" data-id="$2">$1</a>`
 )
 
 // ContentFmt 防止XSS漏洞, 并处理样式
@@ -81,7 +83,7 @@ func ContentRich(input string) string {
 		input = gistRegexp.ReplaceAllString(input, `<script src="$1.js"></script>`)
 	}
 	if strings.Index(input, "@") >= 0 {
-		input = mentionRegexp.ReplaceAllString(input, ` @<a href="/member/$1">$1</a> `)
+		input = mentionRegexp.ReplaceAllString(input, mentionReplaceStr)
 	}
 	if strings.Index(input, "http") >= 0 {
 		//input = urlRegexp.ReplaceAllString(input, `$1<a href="$2">$2</a>`)
