@@ -161,7 +161,6 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	)
 	// sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
 		return user, errors.New("SessionID cookie not found ")
@@ -172,6 +171,8 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (model
 	user, err = model.RedisGetUserByID(redisDB, rawUID)
 	// user, err = model.SQLUserGetByID(sqlDB, user.ID)
 	if util.CheckError(err, "获取用户") {
+		// 程序运行到这里, 表明redis中已经将其删掉, 用户需要重新登录
+		h.DelCookie(w, "SessionID")
 		return user, err
 	}
 

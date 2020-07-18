@@ -65,6 +65,16 @@ type UserPageInfo struct {
 	LastKey  uint64 `json:"lastkey"`
 }
 
+// toKey 作为Redis中的key值存储
+func (user *User) toKey() string {
+	return fmt.Sprintf("%d", user.ID)
+}
+
+// StrID 返回string类型的ID值
+func (user *User) StrID() string {
+	return fmt.Sprintf("%d", user.ID)
+}
+
 // SQLUserListByFlag 从数据库中查找用户列表
 /*
  * db (*youdb.DB): TODO
@@ -213,11 +223,6 @@ func SQLUserGetByName(sqlDB *sql.DB, name string) (User, error) {
 	return SQLUserGetByID(sqlDB, uid)
 }
 
-// StrID 返回string类型的ID值
-func (user *User) StrID() string {
-	return fmt.Sprintf("%d", user.ID)
-}
-
 // SQLUserUpdate 更新用户信息
 func (user *User) SQLUserUpdate(db *sql.DB) bool {
 	_, err := db.Exec(
@@ -318,7 +323,7 @@ func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string
 		return
 	}
 
-	redisDB.HSet("avatar", fmt.Sprintf("%d", user.ID), avatar)
+	redisDB.HSet("avatar", user.toKey(), avatar)
 	logger.Notice("Refresh user avatar", user)
 	return
 }
@@ -339,7 +344,7 @@ func GetAvatarByID(sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
 	}
 	avatar = user.Avatar
 
-	redisDB.HSet("avatar", fmt.Sprintf("%d", uid), avatar)
+	redisDB.HSet("avatar", user.toKey(), avatar)
 	logger.Debugf("avatar not found for %d %s but we refresh!", user.ID, user.Name)
 	return avatar
 }
@@ -360,7 +365,7 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 	}
 	username = user.Name
 
-	redisDB.HSet("username", fmt.Sprintf("%d", uid), username)
+	redisDB.HSet("username", user.toKey(), username)
 	logger.Debugf("username not found for %d %s but we refresh!", user.ID, user.Name)
 	return username
 }
@@ -368,18 +373,26 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 // RefreshCSRF 刷新CSRF token
 func (user *User) RefreshCSRF(redisDB *redis.Client) string {
 	t := util.GetNewToken()
-	redisDB.HSet("csrf", fmt.Sprintf("%d", user.ID), t)
+	redisDB.HSet("csrf", user.toKey(), t)
 	return t
 }
 
 // VerifyCSRFToken 确认用户CSRF token
 func (user *User) VerifyCSRFToken(redisDB *redis.Client, token string) bool {
-	rep, err := redisDB.HGet("csrf", fmt.Sprintf("%d", user.ID)).Result()
+	rep, err := redisDB.HGet("csrf", user.toKey()).Result()
 	if err != nil {
 		util.GetLogger().Warningf("Can't get csrf token for user(%s): %s", user.ID, err)
 		return false
 	}
 	return util.VerifyToken(token, rep)
+}
+
+// RefreshCache 刷新当前用户的信息
+func (user *User) RefreshCache(redisDB *redis.Client) {
+	user.CleareRedisCache(redisDB)
+	user.CachedToRedis(redisDB)
+	redisDB.HDel("avatar", user.toKey())
+	redisDB.HDel("username", user.toKey())
 }
 
 // CachedToRedis 缓存当前用户的信息至Redis
