@@ -157,18 +157,24 @@ func createFlarumPageAPIDoc(
 		diss := model.FlarumCreateDiscussion(article)
 		res = append(res, diss)
 		coreData.AppendResourcs(diss)
-
-		// 用户不存在则添加, 已经存在的用户不会考虑
-		// TODO: 多次执行SQL可能会有性能问题
-		if _, ok := allUsers[article.UID]; !ok {
-			u, err := model.SQLUserGetByID(sqlDB, article.UID)
-			if err != nil {
-				logger.Warningf("Get user %d error: %s", article.UID, err)
-			} else {
-				user := model.FlarumCreateUser(u)
-				allUsers[article.UID] = true
-				coreData.AppendResourcs(user)
+		getUser := func(uid uint64) {
+			// 用户不存在则添加, 已经存在的用户不会考虑
+			// TODO: 多次执行SQL可能会有性能问题
+			if _, ok := allUsers[uid]; !ok {
+				u, err := model.SQLUserGetByID(sqlDB, uid)
+				if err != nil {
+					logger.Warningf("Get user %d error: %s", uid, err)
+				} else {
+					user := model.FlarumCreateUser(u)
+					allUsers[uid] = true
+					coreData.AppendResourcs(user)
+				}
 			}
+		}
+		getUser(article.UID)
+		d := diss.Attributes.(*flarum.Discussion)
+		if d.LastPostID != 0 {
+			getUser(d.LastUserID)
 		}
 	}
 	apiDoc.SetData(res)

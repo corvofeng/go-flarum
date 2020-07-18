@@ -90,6 +90,7 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 	if lastComment != nil {
 		data.LastPostNumber = lastComment.Number
 		data.LastPostedAt = lastComment.AddTimeFmt
+		data.LastUserID = lastComment.UID
 	}
 
 	obj.BindRelations(
