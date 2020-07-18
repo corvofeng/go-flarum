@@ -19,8 +19,6 @@
   {{range $_, $item := .PageInfo.Items}}
   <li>
     <a href="/d/{{$item.ID}}" id="{{$item.ID}}">{{$item.Title}}</a>
-    {{$item.Title}}
-    </a>
   </li>
   {{end}}
 </ul>

@@ -228,6 +228,18 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 
 	evn.FlarumInfo = coreData
 
+	var pageInfo model.ArticlePageInfo
+	for _, item := range coreData.APIDocument.Included {
+		if item.Type == "discussions" {
+			ab := model.ArticleBase{
+				ID:    item.GetID(),
+				Title: item.Attributes.(*flarum.Discussion).Title,
+			}
+			pageInfo.Items = append(pageInfo.Items, model.ArticleListItem{ArticleBase: ab})
+		}
+	}
+	evn.PageInfo = pageInfo
+
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
