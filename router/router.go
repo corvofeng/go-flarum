@@ -103,9 +103,15 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		},
 		ct.FlarumIndex,
 	))
+
+	sp.HandleFunc(pat.Get("/tags"), ct.FlarumIndex)
+
+	// 用户相关
 	sp.HandleFunc(pat.Post("/register"), ct.FlarumUserRegister)
 	sp.HandleFunc(pat.Post("/login"), ct.FlarumUserLogin)
 	sp.HandleFunc(pat.Get("/logout"), ct.FlarumUserLogout)
+
+	// 语言包支持
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
 
 	fs := http.FileServer(http.Dir("static/captcha"))
