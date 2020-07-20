@@ -157,12 +157,12 @@ func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz 
 	return item
 }
 
-func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) (comments []Comment, err error) {
+func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
 	logger := util.GetLogger()
 
-	rows, err = db.Query("SELECT id FROM reply where topic_id = ?", topicID)
+	rows, err = db.Query("SELECT id FROM reply where topic_id = ? LIMIT ?", topicID, limit)
 	if err != nil {
 		logger.Errorf("Query failed,err:%v", err)
 		return
@@ -225,14 +225,14 @@ func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (C
 }
 
 // SQLCommentListByPage 获取帖子的所有评论
-func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, tz int) CommentPageInfo {
+func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comments, err := sqlCommentListByTopicID(db, redisDB, topicID, tz)
+	comments, err := sqlCommentListByTopicID(db, redisDB, topicID, limit, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for %d", topicID)
 	}

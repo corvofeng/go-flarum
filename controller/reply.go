@@ -103,10 +103,10 @@ func createFlarumReplyAPIDoc(
 	var curDisscussion *flarum.Resource
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
+		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == ePost {
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, tz)
+		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
 		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)

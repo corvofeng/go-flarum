@@ -772,8 +772,9 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	rf := replyFilter{
-		FT:  eArticle,
-		AID: aid,
+		FT:    eArticle,
+		AID:   aid,
+		Limit: 20,
 	}
 	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, inAPI, rf, scf.TimeZone)
 
