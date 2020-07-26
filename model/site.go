@@ -26,6 +26,7 @@ type MainConf struct {
 	RedisURL string
 
 	PubDir         string
+	WebpackDir     string
 	LocaleDir      string
 	ViewDir        string
 	Youdb          string // TODO: 废弃

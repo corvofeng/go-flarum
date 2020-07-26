@@ -7,6 +7,7 @@ Main:
     MongoURL: "mongodb://localhost"
     RedisURL: "redis://:@localhost:6379"
     PubDir: "static"
+    WebpackDir: "webpack"
     ViewDir: "view/default"
     Youdb: "mydata.db"
     LocaleDir: "view/locale"

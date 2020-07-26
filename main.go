@@ -96,6 +96,9 @@ func main() {
 	root.Handle(pat.New("/static/*"),
 		http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
 
+	root.Handle(pat.New("/webpack/*"),
+		http.StripPrefix("/webpack/", http.FileServer(http.Dir(mcf.WebpackDir))))
+
 	root.Handle(pat.New("/*"), router.NewRouter(app))
 	root.Use(tracker)
 
