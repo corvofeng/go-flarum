@@ -195,7 +195,7 @@ func (h *BaseHandler) ArticleEditPost(w http.ResponseWriter, r *http.Request) {
 			Html string `json:"html"`
 		}{
 			normalRsp{200, ""},
-			util.ContentFmt(rec.Content),
+			model.ContentFmt(rec.Content),
 		}
 		json.NewEncoder(w).Encode(tmp)
 		return

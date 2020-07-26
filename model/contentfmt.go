@@ -1,4 +1,4 @@
-package util
+package model
 
 import (
 	"crypto/md5"
@@ -13,10 +13,13 @@ var (
 	imgRegexp     = regexp.MustCompile(`(https?://[\w./:]+/[\w./]+\.(jpg|jpe|jpeg|gif|png))`)
 	gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-]+/)?[\d]+)`)
 	mentionRegexp = regexp.MustCompile(`\B@([a-zA-Z0-9\p{Han}]{1,32})#?([0-9]*)?\s?`)
-	urlRegexp     = regexp.MustCompile(`([^;"='>])(https?://[^\s<]+[^\s<.)])`)
-	nlineRegexp   = regexp.MustCompile(`\s{2,}`)
-	youku1Regexp  = regexp.MustCompile(`https?://player\.youku\.com/player\.php/sid/([a-zA-Z0-9=]+)/v\.swf`)
-	youku2Regexp  = regexp.MustCompile(`https?://v\.youku\.com/v_show/id_([a-zA-Z0-9=]+)(/|\.html?)?`)
+	// flarumMentionRegexp = regexp.MustCompile(`&lt;[USER|POST]MENTION(.+?)\/MENTION&gt;`)
+
+	flarumMentionRegexp = regexp.MustCompile(`<(USER|POST)MENTION(.+?)MENTION>`)
+	urlRegexp           = regexp.MustCompile(`([^;"='>])(https?://[^\s<]+[^\s<.)])`)
+	nlineRegexp         = regexp.MustCompile(`\s{2,}`)
+	youku1Regexp        = regexp.MustCompile(`https?://player\.youku\.com/player\.php/sid/([a-zA-Z0-9=]+)/v\.swf`)
+	youku2Regexp        = regexp.MustCompile(`https?://v\.youku\.com/v_show/id_([a-zA-Z0-9=]+)(/|\.html?)?`)
 
 	mentionReplaceStr = `<a href="/d/927/26" class="UserMention" data-id="$2">$1</a>`
 )
@@ -66,9 +69,30 @@ type urlInfo struct {
 func ContentRich(input string) string {
 	input = strings.TrimSpace(input)
 	input = " " + input // fix Has url Prefix
+	inFlrum := false
+
+	replDict := make(map[string]string)
+	//1.  首先预取一次已经渲染好的数据
+	if strings.Index(input, "USERMENTION") >= 0 || strings.Index(input, "POSTMENTION") >= 0 { // flarum 的mention
+		inFlrum = true
+		for _, m := range flarumMentionRegexp.FindAllString(input, -1) {
+			oldData := m
+			m = strings.Replace(m, "<", "&lt;", -1)
+			m = strings.Replace(m, ">", "&gt;", -1)
+
+			//2.  计算出未来增加了&lt;与&gt;之后的结果,
+			replDict[m] = MentionToHTML(oldData)
+		}
+	}
+
 	input = strings.Replace(input, "<", "&lt;", -1)
 	input = strings.Replace(input, ">", "&gt;", -1)
 	input = imgRegexp.ReplaceAllString(input, `<img src="$1" />`)
+
+	// 3. 替换mention数据, 确保用户提交的&lt与&gt, 不会被错误处理
+	for k, v := range replDict {
+		input = strings.ReplaceAll(input, k, v)
+	}
 
 	// video
 	// youku
@@ -82,7 +106,7 @@ func ContentRich(input string) string {
 	if strings.Index(input, "://gist") >= 0 {
 		input = gistRegexp.ReplaceAllString(input, `<script src="$1.js"></script>`)
 	}
-	if strings.Index(input, "@") >= 0 {
+	if !inFlrum && strings.Index(input, "@") >= 0 { // goyoubbs的mention
 		input = mentionRegexp.ReplaceAllString(input, mentionReplaceStr)
 	}
 	if strings.Index(input, "http") >= 0 {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"goyoubbs/model"
 	"goyoubbs/model/flarum"
-	"goyoubbs/util"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -59,7 +58,7 @@ func (h *BaseHandler) ContentPreviewPost(w http.ResponseWriter, r *http.Request)
 
 	if rec.Act == "preview" && len(rec.Content) > 0 {
 		rsp.Retcode = 200
-		rsp.Html = template.HTML(util.ContentFmt(rec.Content))
+		rsp.Html = template.HTML(model.ContentFmt(rec.Content))
 	}
 	json.NewEncoder(w).Encode(rsp)
 
@@ -256,6 +255,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 			AddTime:  now,
 		},
 	}
+	comment.Content = model.PreProcessUserMention(sqlDB, redisDB, scf.TimeZone, comment.Content)
 
 	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
 		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())

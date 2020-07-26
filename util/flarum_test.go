@@ -16,12 +16,3 @@ func TestReadLocale(t *testing.T) {
 		t.Errorf("Get wrong locale")
 	}
 }
-
-func TestMention(t *testing.T) {
-	input := "@corvofeng#70 0715第一条评论"
-	output := `<a href="/d/927" class="UserMention" data-id="70">corvofeng</a>0715第一条评论`
-	input = mentionRegexp.ReplaceAllString(input, mentionReplaceStr)
-	if input != output {
-		t.Errorf("Get wrong mention render data:\n%s\n%s", input, output)
-	}
-}

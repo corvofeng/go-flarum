@@ -13,39 +13,67 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-// CommentBase 会在数据库中保存的信息
-type CommentBase struct {
-	ID       uint64 `json:"id"`
-	AID      uint64 `json:"aid"`
-	UID      uint64 `json:"uid"`
-	Number   uint64 `json:"number"`
-	Content  string `json:"content"`
-	ClientIP string `json:"clientip"`
-	AddTime  uint64 `json:"addtime"`
-}
+type (
+	// CommentBase 会在数据库中保存的信息
+	CommentBase struct {
+		ID       uint64 `json:"id"`
+		AID      uint64 `json:"aid"`
+		UID      uint64 `json:"uid"`
+		Number   uint64 `json:"number"`
+		Content  string `json:"content"`
+		ClientIP string `json:"clientip"`
+		AddTime  uint64 `json:"addtime"`
+	}
 
-// Comment 评论信息
-type Comment struct {
-	CommentBase
-	UserName   string `json:"username"`
-	Avatar     string `json:"avatar"`
-	ContentFmt template.HTML
-	AddTimeFmt string `json:"addtimefmt"`
-}
+	// Comment 评论信息
+	Comment struct {
+		CommentBase
+		UserName   string `json:"username"`
+		Avatar     string `json:"avatar"`
+		ContentFmt template.HTML
+		AddTimeFmt string `json:"addtimefmt"`
+	}
 
-// CommentListItem 页面中的评论
-type CommentListItem struct {
-	Comment
+	// CommentListItem 页面中的评论
+	CommentListItem struct {
+		Comment
 
-	Name string `json:"name"`
-}
+		Name string `json:"name"`
+	}
 
-type CommentPageInfo struct {
-	Items    []CommentListItem `json:"items"`
-	HasPrev  bool              `json:"hasprev"`
-	HasNext  bool              `json:"hasnext"`
-	FirstKey uint64            `json:"firstkey"`
-	LastKey  uint64            `json:"lastkey"`
+	// CommentPageInfo 页面中显示的内容
+	CommentPageInfo struct {
+		Items    []CommentListItem `json:"items"`
+		HasPrev  bool              `json:"hasprev"`
+		HasNext  bool              `json:"hasnext"`
+		FirstKey uint64            `json:"firstkey"`
+		LastKey  uint64            `json:"lastkey"`
+	}
+)
+
+// PreProcessUserMention 预处理用户的引用
+// #14
+func PreProcessUserMention(sqlDB *sql.DB, redisDB *redis.Client, tz int, userComment string) string {
+
+	mentionDict := make(map[string]string)
+	for _, mentionStr := range mentionRegexp.FindAllStringSubmatch(userComment, -1) {
+		cid, err := strconv.ParseUint(mentionStr[2], 10, 64)
+		if err != nil {
+			util.GetLogger().Warning("Can't process mention", mentionStr[0])
+			continue
+		}
+		comment, err := SQLGetCommentByID(sqlDB, redisDB, cid, tz)
+		if err != nil {
+			util.GetLogger().Warningf("Can't comment %d with error %v", cid, err)
+			continue
+		}
+		user, err := SQLUserGetByName(sqlDB, mentionStr[1])
+		replData := makeMention(mentionStr, comment, user)
+		mentionDict[mentionStr[0]] = replData
+	}
+
+	newPost := replaceAllMentions(userComment, mentionDict)
+	return newPost
 }
 
 // sqlSaveComment 在数据库中存储评论
@@ -143,7 +171,7 @@ func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comm
 	c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
 
 	// 预防XSS漏洞
-	c.ContentFmt = template.HTML(util.ContentFmt(cb.Content))
+	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
 
 	c.UserName = GetUserNameByID(db, redisDB, cb.UID)
 	c.Avatar = GetAvatarByID(db, redisDB, cb.UID)
@@ -324,7 +352,7 @@ func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, bt
 
 		// 预防XSS漏洞
 		item.ContentFmt = template.HTML(
-			util.ContentFmt(item.Content))
+			ContentFmt(item.Content))
 
 		items = append(items, item)
 	}

@@ -133,7 +133,7 @@ func (h *BaseHandler) ArticleAddPost(w http.ResponseWriter, r *http.Request) {
 			Html string `json:"html"`
 		}{
 			normalRsp{200, ""},
-			util.ContentFmt(rec.Content),
+			model.ContentFmt(rec.Content),
 		}
 		json.NewEncoder(w).Encode(tmp)
 		return
@@ -524,7 +524,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	} else {
 		evn.Aobj = articleForDetail{
 			Article:     aobj,
-			ContentFmt:  template.HTML(util.ContentFmt(aobj.Content)),
+			ContentFmt:  template.HTML(model.ContentFmt(aobj.Content)),
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
 			Avatar:      author.Avatar,
@@ -648,7 +648,7 @@ func (h *BaseHandler) ArticleDetailPost(w http.ResponseWriter, r *http.Request) 
 		}
 	} else if rec.Act == "comment_preview" {
 		rsp.Retcode = 200
-		rsp.Html = template.HTML(util.ContentFmt(rec.Content))
+		rsp.Html = template.HTML(model.ContentFmt(rec.Content))
 	} else if rec.Act == "comment_submit" {
 		timeStamp := uint64(time.Now().UTC().Unix())
 		currentUser, _ := h.CurrentUser(w, r)
