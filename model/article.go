@@ -195,7 +195,7 @@ func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 		("INSERT INTO `topic` " +
 			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, reply_count, active)" +
 			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?, 0, ?)"),
+			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 		article.CID,
 		article.UID,
 		article.Title,
@@ -203,6 +203,7 @@ func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 		article.AddTime,
 		article.EditTime,
 		article.ClientIP,
+		article.Comments,
 		article.Active,
 	)
 	if err != nil {

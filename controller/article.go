@@ -848,6 +848,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 			UID:      ctx.currentUser.ID,
 			Title:    diss.Data.Attributes.Title,
 			Content:  diss.Data.Attributes.Content,
+			Comments: 1,
 			AddTime:  now,
 			EditTime: now,
 			ClientIP: ctx.realIP,
@@ -874,7 +875,6 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	si := model.GetSiteInfo(redisDB)
 
-	// coreData, err := createFlarumArticleAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, aobj.ID, scf.TimeZone)
 	rf := replyFilter{
 		FT:  eArticle,
 		AID: aobj.ID,
@@ -888,7 +888,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 
 	// 刷新当前的页面展示
 	// TODO: 优化逻辑, 不进行全局处理
-	model.TimelyResort()
+	go model.TimelyResort()
 
 	h.jsonify(w, coreData.APIDocument)
 }
