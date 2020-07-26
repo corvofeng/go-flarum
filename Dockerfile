@@ -51,7 +51,7 @@ COPY ./static static
 
 COPY ./view view
 RUN rm -rf view/extensions view/flarum
-COPY --from=build-static /home/zoe/static webpack
+COPY --from=build-static /home/zoe/static webpack/static
 # COPY --from=build-backend /home/zoe/zoe zoe
 COPY zoe zoe
 
