@@ -47,9 +47,10 @@ WORKDIR /home/zoe
 # 下面的内容仅在本地调试时使用，线上构建时会将其删除
 COPY ./config/config.yaml-docker config.yml
 COPY ./static static
-COPY ./view view
 ## EOF CLEAN
 
+COPY ./view view
+RUN rm -rf view/extensions view/flarum
 COPY --from=build-static /home/zoe/static static
 # COPY --from=build-backend /home/zoe/zoe zoe
 COPY zoe zoe
