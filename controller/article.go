@@ -771,10 +771,17 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	evn.SiteCf = scf
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
+	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	if err != nil {
+		logger.Error("Can't get discussion id for ", aid)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_aid+err.Error()))
+		return
+	}
+
 	rf := replyFilter{
 		FT:    eArticle,
 		AID:   aid,
-		Limit: 20,
+		Limit: article.Comments,
 	}
 	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, inAPI, rf, scf.TimeZone)
 

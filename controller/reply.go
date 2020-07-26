@@ -263,9 +263,10 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rf := replyFilter{
-		FT:  ePost,
-		AID: comment.AID,
-		CID: comment.ID,
+		FT:    ePost,
+		AID:   comment.AID,
+		CID:   comment.ID,
+		Limit: comment.Number,
 	}
 
 	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, rf, scf.TimeZone)
@@ -370,12 +371,20 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		aid, err := strconv.ParseUint(_disscussionID, 10, 64)
 		if err != nil {
 			logger.Error("Can't get discussion id for ", _disscussionID)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the article for: "+_disscussionID+err.Error()))
+			return
+		}
+		article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+		if err != nil {
+			logger.Error("Can't get discussion id for ", aid)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_disscussionID+err.Error()))
+			return
 		}
 
 		rf = replyFilter{
 			FT:    eArticle,
 			AID:   aid,
-			Limit: limit,
+			Limit: article.Comments,
 		}
 	}
 	coreData, err = createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
