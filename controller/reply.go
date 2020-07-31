@@ -145,7 +145,7 @@ func createFlarumReplyAPIDoc(
 	}
 
 	for _, comment := range comments {
-		post := model.FlarumCreatePost(comment)
+		post := model.FlarumCreatePost(comment, currentUser)
 		apiDoc.AppendResourcs(post)
 		flarumPosts = append(flarumPosts, post)
 
@@ -194,7 +194,7 @@ func createFlarumReplyAPIDoc(
 			logger.Error("Get comment error:", err)
 		}
 		commentListItem := model.CommentListItem{Comment: comment}
-		post := model.FlarumCreatePost(commentListItem)
+		post := model.FlarumCreatePost(commentListItem, currentUser)
 		apiDoc.SetData(post) // 主要信息为这条评论
 	} else if rf.FT == eUserPost {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论

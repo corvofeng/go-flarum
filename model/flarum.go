@@ -172,7 +172,7 @@ func FlarumCreateGroup() flarum.Resource {
 }
 
 // FlarumCreatePost 创建评论
-func FlarumCreatePost(comment CommentListItem) flarum.Resource {
+func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resource {
 	obj := flarum.NewResource(flarum.EPost, comment.ID)
 	data := obj.Attributes.(*flarum.Post)
 
@@ -181,10 +181,17 @@ func FlarumCreatePost(comment CommentListItem) flarum.Resource {
 	data.Content = comment.Content
 	data.ContentHTML = comment.ContentFmt
 	data.CreatedAt = comment.AddTimeFmt
-	data.CanLike = true
-	data.IPAddress = "1.2.3.4"
-	data.CanHide = true
-	data.IsApproved = true
+
+	if currentUser != nil {
+		data.CanLike = true
+	}
+
+	if currentUser != nil && currentUser.IsAdmin() {
+		data.CanEdit = true
+		data.CanHide = true
+		data.IsApproved = true
+		data.IPAddress = comment.ClientIP
+	}
 
 	obj.BindRelations(
 		"User",

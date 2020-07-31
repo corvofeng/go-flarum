@@ -517,7 +517,7 @@ func createFlarumUserAPIDoc(
 
 	if comments != nil {
 		for _, comment := range *comments {
-			post := model.FlarumCreatePost(comment)
+			post := model.FlarumCreatePost(comment, currentUser)
 			apiDoc.AppendResourcs(post)
 			postArr = append(postArr, post)
 
