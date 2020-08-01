@@ -10,6 +10,8 @@ require (
 	github.com/go-redis/redis/v7 v7.3.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/go-cmp v0.4.1 // indirect
+	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/gorilla/securecookie v1.1.1
 	github.com/klauspost/compress v1.10.7 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -29,6 +31,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/image v0.0.0-20200618115811-c13761719519 // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
 	golang.org/x/sys v0.0.0-20200602100848-8d3cce7afc34 // indirect
 	google.golang.org/protobuf v1.24.0 // indirect

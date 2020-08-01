@@ -89,6 +89,9 @@ type SiteConf struct {
 	UpyunBucket       string
 	UpyunUser         string
 	UpyunPw           string
+
+	GithubClientID     string
+	GithubClientSecret string
 }
 
 // AppConf 应用配置文件

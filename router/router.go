@@ -117,6 +117,9 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	fs := http.FileServer(http.Dir("static/captcha"))
 	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
+	sp.HandleFunc(pat.Get("/auth/github"), ct.GithubOauthHandler)
+	sp.HandleFunc(pat.Get("/auth/github/callback"), ct.GithubOauthCallbackHandler)
+
 	//	discussion
 	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
 	sp.HandleFunc(pat.Get("/d/:aid/:cid"), ct.FlarumArticleDetail)

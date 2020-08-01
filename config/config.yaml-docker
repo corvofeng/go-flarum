@@ -48,6 +48,8 @@ Site:
     QQClientSecret: ""
     WeiboClientID: 0
     WeiboClientSecret: ""
+    GithubClientID: ""
+    GithubClientSecret: ""
     UploadSuffix: ""
     UploadImgOnly: false
     UploadImgResize: false
