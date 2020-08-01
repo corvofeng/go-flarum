@@ -30,6 +30,7 @@ type MainConf struct {
 	LocaleDir      string
 	ViewDir        string
 	Youdb          string // TODO: 废弃
+	Debug          bool
 	ServerStyle    string // 选择使用的样式
 	ServerName     string
 	CookieSecure   bool
