@@ -10,7 +10,7 @@ type Post struct {
 	CreatedAt   string        `json:"createdAt"`
 	ContentType string        `json:"contentType"`
 	ContentHTML template.HTML `json:"contentHtml"`
-	Content     string        // `json:"content"`
+	Content     string        `json:"content"`
 
 	IPAddress string `json:"ipAddress"`
 	CanEdit   bool   `json:"canEdit"`
