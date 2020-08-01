@@ -114,6 +114,22 @@ func MustCSRFMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	}
 }
 
+// MustAdminUser 必须为管理员才能操作
+func MustAdminUser(inner HTTPHandleFunc) HTTPHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		user := reqCtx.currentUser
+		if !user.IsAdmin() {
+			w.WriteHeader(http.StatusForbidden)
+			reqCtx.h.jsonify(w, response{
+				Retcode: 403,
+				Retmsg:  "此行为仅允许管理员操作",
+			})
+		}
+		inner(w, r)
+	}
+}
+
 func readUserIP(r *http.Request) string {
 	IPAddress := r.Header.Get("X-Real-Ip")
 	if IPAddress == "" {

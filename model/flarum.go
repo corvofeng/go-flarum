@@ -207,9 +207,7 @@ func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resourc
 	)
 	obj.BindRelations(
 		"Likes",
-		flarum.RelationArray{
-			Data: []flarum.BaseRelation{},
-		},
+		FlarumCreateUserLikeRelations(comment.Likes),
 	)
 	obj.BindRelations(
 		"Flags",
@@ -225,6 +223,20 @@ func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resourc
 	)
 
 	return obj
+}
+
+// FlarumCreateUserLikeRelations 点赞关系
+func FlarumCreateUserLikeRelations(userList []uint64) flarum.RelationArray {
+	userLikes := flarum.RelationArray{
+		Data: []flarum.BaseRelation{},
+	}
+
+	for _, userID := range userList {
+		userLikes.Data = append(userLikes.Data,
+			flarum.InitBaseResources(userID, "users"),
+		)
+	}
+	return userLikes
 }
 
 // FlarumCreatePostRelations 创建关系结构

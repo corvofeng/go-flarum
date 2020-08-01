@@ -31,7 +31,8 @@ type (
 		UserName   string `json:"username"`
 		Avatar     string `json:"avatar"`
 		ContentFmt template.HTML
-		AddTimeFmt string `json:"addtimefmt"`
+		AddTimeFmt string   `json:"addtimefmt"`
+		Likes      []uint64 // 点赞的用户
 	}
 
 	// CommentListItem 页面中的评论
@@ -167,6 +168,7 @@ func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []
 func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comment {
 	c := Comment{
 		CommentBase: *cb,
+		Likes:       cb.getUserLikes(db, redisDB),
 	}
 	c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
 
@@ -176,6 +178,30 @@ func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comm
 	c.UserName = GetUserNameByID(db, redisDB, cb.UID)
 	c.Avatar = GetAvatarByID(db, redisDB, cb.UID)
 	return c
+}
+
+func (cb *CommentBase) getUserLikes(db *sql.DB, redisDB *redis.Client) (likes []uint64) {
+	var rows *sql.Rows
+	defer rowsClose(rows)
+	logger := util.GetLogger()
+
+	sql := "SELECT reply_id, user_id FROM `reply_likes` where reply_id=?"
+	rows, err := db.Query(sql, cb.ID)
+	if err != nil {
+		logger.Error("Can't get likes", err.Error())
+		return
+	}
+	for rows.Next() {
+		var cid uint64
+		var uid uint64
+		err = rows.Scan(&cid, &uid)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+		}
+
+		likes = append(likes, uid)
+	}
+	return
 }
 
 func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz int) CommentListItem {
@@ -250,6 +276,29 @@ func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (C
 		return Comment{}, fmt.Errorf("Can't find comment")
 	}
 	return comments[0].toComment(db, redisDB, tz), nil
+}
+
+// SQLCommentListByID 获取某条评论
+func SQLCommentListByID(db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
+	var items []CommentListItem
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+	var err error
+	logger := util.GetLogger()
+
+	comment, err := SQLGetCommentByID(db, redisDB, commentID, tz)
+	if err != nil {
+		logger.Errorf("Query comments failed for cid(%d)", commentID)
+	}
+	items = append(items, comment.toCommentListItem(db, redisDB, tz))
+
+	return CommentPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
 }
 
 // SQLCommentListByPage 获取帖子的所有评论
@@ -485,4 +534,20 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// DoLike 用户的点赞
+func (comment *Comment) DoLike(db *sql.DB, redisDB *redis.Client, user *User, isLiked bool) {
+	sql := ""
+	if isLiked {
+		sql = "INSERT INTO `reply_likes` (`reply_id`, `user_id`) VALUES (?, ?)"
+	} else {
+
+		sql = "DELETE FROM `reply_likes` WHERE `reply_likes`.`reply_id` = ? AND `reply_likes`.`user_id` = ?"
+	}
+	_, err := db.Exec(sql, comment.ID, user.ID)
+	logger := util.GetLogger()
+	if err != nil {
+		logger.Warning("Can't do sql", sql, err.Error())
+	}
 }

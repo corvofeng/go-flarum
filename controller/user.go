@@ -517,9 +517,6 @@ func createFlarumUserAPIDoc(
 
 	if comments != nil {
 		for _, comment := range *comments {
-			post := model.FlarumCreatePost(comment, currentUser)
-			apiDoc.AppendResourcs(post)
-			postArr = append(postArr, post)
 
 			// 当前用户会在后面统一添加
 			if _, ok := allUsers[comment.UID]; !ok {
@@ -542,6 +539,22 @@ func createFlarumUserAPIDoc(
 				}
 				allDiscussions[comment.AID] = true
 			}
+			// 处理用户的like信息
+			for _, userID := range comment.Likes {
+				if _, ok := allUsers[userID]; !ok {
+					u, err := model.SQLUserGetByID(sqlDB, userID)
+					if err != nil {
+						logger.Warningf("Get user %d error: %s", userID, err)
+					} else {
+						user := model.FlarumCreateUser(u)
+						allUsers[user.GetID()] = true
+						coreData.AppendResourcs(user)
+					}
+				}
+			}
+			post := model.FlarumCreatePost(comment, currentUser)
+			apiDoc.AppendResourcs(post)
+			postArr = append(postArr, post)
 		}
 	}
 	apiDoc.SetData(postArr)

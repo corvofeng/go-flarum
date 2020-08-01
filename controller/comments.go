@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	"github.com/op/go-logging"
+	"goji.io/pat"
 )
 
 // ContentPreviewPost 预览主题以及评论
@@ -105,7 +106,7 @@ func createFlarumReplyAPIDoc(
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == ePost {
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByID(sqlDB, redisDB, rf.CID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
 		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)
@@ -145,9 +146,6 @@ func createFlarumReplyAPIDoc(
 	}
 
 	for _, comment := range comments {
-		post := model.FlarumCreatePost(comment, currentUser)
-		apiDoc.AppendResourcs(post)
-		flarumPosts = append(flarumPosts, post)
 
 		if _, ok := allUsers[comment.UID]; !ok {
 			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
@@ -169,6 +167,24 @@ func createFlarumReplyAPIDoc(
 			}
 			allDiscussions[comment.AID] = true
 		}
+
+		// 处理用户的like信息
+		for _, userID := range comment.Likes {
+			if _, ok := allUsers[userID]; !ok {
+				u, err := model.SQLUserGetByID(sqlDB, userID)
+				if err != nil {
+					logger.Warningf("Get user %d error: %s", userID, err)
+				} else {
+					user := model.FlarumCreateUser(u)
+					allUsers[user.GetID()] = true
+					coreData.AppendResourcs(user)
+				}
+			}
+		}
+
+		post := model.FlarumCreatePost(comment, currentUser)
+		apiDoc.AppendResourcs(post)
+		flarumPosts = append(flarumPosts, post)
 	}
 	// 针对当前的话题, 补全其关系信息
 	if curDisscussion != nil {
@@ -189,13 +205,15 @@ func createFlarumReplyAPIDoc(
 	if rf.FT == eArticle {
 		apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
 	} else if rf.FT == ePost {
-		comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
-		if err != nil {
-			logger.Error("Get comment error:", err)
+		// comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
+		// if err != nil {
+		// 	logger.Error("Get comment error:", err)
+		// }
+		// commentListItem := model.CommentListItem{Comment: comment}
+		// post := model.FlarumCreatePost(commentListItem, currentUser)
+		if len(flarumPosts) >= 0 {
+			apiDoc.SetData(flarumPosts[0]) // 主要信息为这条评论
 		}
-		commentListItem := model.CommentListItem{Comment: comment}
-		post := model.FlarumCreatePost(commentListItem, currentUser)
-		apiDoc.SetData(post) // 主要信息为这条评论
 	} else if rf.FT == eUserPost {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
@@ -401,4 +419,66 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	return
+}
+
+// FlarumCommentsUtils 对于评论的一些操作
+func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
+	var err error
+	ctx := GetRetContext(r)
+	logger := ctx.GetLogger()
+	h := ctx.h
+	_cid := pat.Param(r, "cid")
+	cid, err := strconv.ParseUint(_cid, 10, 64)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("cid type error"))
+		return
+	}
+
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	cobj, err := model.SQLGetCommentByID(sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取评论"))
+		return
+	}
+
+	// 用户所做的操作
+	type CommentUtils struct {
+		Data struct {
+			ID         string `json:"id"`
+			Type       string `json:"type"`
+			Attributes map[string]interface{}
+		} `json:"data"`
+	}
+
+	commentUtils := CommentUtils{}
+	err = json.NewDecoder(r.Body).Decode(&commentUtils)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("json Decode err:"+err.Error()))
+		return
+	}
+
+	if val, ok := commentUtils.Data.Attributes["isLiked"]; ok {
+		cobj.DoLike(sqlDB, redisDB, ctx.currentUser, val.(bool))
+	}
+
+	rf := replyFilter{
+		FT:  ePost,
+		CID: cobj.ID,
+		AID: cobj.AID,
+	}
+
+	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
+	if ctx.inAPI {
+		h.jsonify(w, coreData.APIDocument)
+		return
+	} else {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("此接口仅在API中使用"))
+		return
+	}
 }
