@@ -20,18 +20,18 @@ app.initializers.add('flarum-auth-github', () => {
   });
 });
 
-app.initializers.add('saleksin-auth-google', () => {
-  extend(LogInButtons.prototype, 'items', function (items) {
-    items.add('google',
-      <LogInButton
-        className="Button LogInButton--google"
-        icon="fab fa-google"
-        path="/auth/google">
-        {app.translator.trans('saleksin-auth-google.forum.log_in.with_google_button')}
-      </LogInButton>
-    );
-  });
-});
+// app.initializers.add('saleksin-auth-google', () => {
+//   extend(LogInButtons.prototype, 'items', function (items) {
+//     items.add('google',
+//       <LogInButton
+//         className="Button LogInButton--google"
+//         icon="fab fa-google"
+//         path="/auth/google">
+//         {app.translator.trans('saleksin-auth-google.forum.log_in.with_google_button')}
+//       </LogInButton>
+//     );
+//   });
+// });
 
 // 如果想使用Google的验证码, 参考这个代码
 // https://github.com/FriendsOfFlarum/recaptcha/blob/master/js/src/forum/components/Recaptcha.js
