@@ -6,5 +6,6 @@ export * from './tags/js/forum';
 export * from './markdown/js/forum';
 export * from './diff/js/forum';
 export * from './likes/js/forum';
+export * from './auth-github/js/forum';
 
 flarum.extensions["flarum-mentions"] = flarum_mentions;

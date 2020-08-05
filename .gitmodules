@@ -22,3 +22,6 @@
 [submodule "view/extensions/likes"]
 	path = view/extensions/likes
 	url = https://github.com/flarum/likes.git
+[submodule "view/extensions/auth-github"]
+	path = view/extensions/auth-github
+	url = https://github.com/flarum/auth-github.git
