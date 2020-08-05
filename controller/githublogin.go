@@ -22,8 +22,7 @@ func githubOauth(clientID, clientSecret string) *oauth2.Config {
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Scopes:       []string{"user", "email"},
-		// RedirectURL:  "https://flarum.yjzq.fun/auth/github/callback",
-		Endpoint: githuboauth.Endpoint,
+		Endpoint:     githuboauth.Endpoint,
 	}
 	return conf
 
@@ -35,31 +34,8 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	gOauth := githubOauth(h.App.Cf.Site.GithubClientID, h.App.Cf.Site.GithubClientSecret)
 	url := gOauth.AuthCodeURL(oauthStateString)
-
-	// http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-	// if r.FormValue("state") != "" && r.FormValue("code") != "" {
-	// 	gOauth := githubOauth(h.App.Cf.Site.GithubClientID, h.App.Cf.Site.GithubClientSecret)
-	// 	data, err := getUserInfo(gOauth, r.FormValue("state"), r.FormValue("code"))
-	// 	if data == nil || err != nil {
-	// 		fmt.Println(err.Error())
-	// 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-	// 		return
-	// 	}
-	// 	fmt.Println(data)
-	// } else {
-	// https: //github.com/login/oauth/authorize?scope=user%3Aemail&
-	// state=ac79b976fe05010f6e569717a14e75f9
-	// redirect_uri=https%3A%2F%2Fdiscuss.flarum.org.cn%2Fauth%2Fgithub&client_id=810332e645869bef14af&display=popup
-	fmt.Println(url)
-	url += "&display=popup&response_type=code&approval_prompt=auto"
-	w.Header()["Content-Type"] = []string{"text/html; charset=UTF-8"}
-	w.Header()["x-csrf-token"] = []string{"Xz2zpiS2RYANX8Va05aPTB85C7Qo53mVe7QpX9Xg"}
-	w.Header().Del("Content-Length")
-	fmt.Println(w.Header())
-
-	http.Redirect(w, r, url, 302)
+	http.Redirect(w, r, url, http.StatusFound)
 	return
-	// }
 }
 
 // GithubOauthCallbackHandler github用户登录回调
@@ -75,23 +51,19 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sqlDB := h.App.MySQLdb
-	// redisDB := h.App.RedisDB
-	uobj, err := model.SQLUserGetByName(sqlDB, *data.Name)
+	redisDB := h.App.RedisDB
+
+	uobj, err := model.SQLUserGetByName(sqlDB, data.GetLogin())
+	fmt.Println(uobj, data, data.GetName(), data.Name, data.GetLogin())
 	sessionid := xid.New().String()
 	uobj.Session = sessionid
 
-	// uobj.CachedToRedis(redisDB)
-	// h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
+	uobj.CachedToRedis(redisDB)
+	// h.SetCookie(w, "SessionID", uobj.StrID()+":"+sessionid, 365)
 	// uobj.RefreshCSRF(redisDB)
 
-	rsp := response{}
-	rsp.Retcode = 200
-	rsp.Retmsg = "登录成功"
-	fmt.Println(data)
-	w.WriteHeader(200)
-	h.jsonify(w, rsp)
-
-	// http.Redirect(w, r, "/", http.StatusPermanentRedirect)
+	retData := `<script>window.close(); window.opener.app.authenticationComplete({"loggedIn":true});</script>`
+	w.Write([]byte(retData))
 }
 
 func getUserInfo(_oauth *oauth2.Config, state string, code string) (*github.User, error) {

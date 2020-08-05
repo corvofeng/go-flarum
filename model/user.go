@@ -223,6 +223,32 @@ func SQLUserGetByName(sqlDB *sql.DB, name string) (User, error) {
 	return SQLUserGetByID(sqlDB, uid)
 }
 
+// SQLUserGetByEmail 获取数据库中用户
+func SQLUserGetByEmail(sqlDB *sql.DB, email string) (User, error) {
+	var uid uint64
+	obj := User{}
+	logger := util.GetLogger()
+
+	rows, err := sqlDB.Query("SELECT id FROM user WHERE email =  ?", email)
+	defer rowsClose(rows)
+	if err != nil {
+		logger.Errorf("Query failed,err:%v", err)
+		return obj, err
+	}
+
+	if rows.Next() {
+		err = rows.Scan(&uid)
+		if err != nil {
+			logger.Errorf("Scan failed,err:%v", err)
+			return obj, errors.New("No result")
+		}
+	} else {
+		return obj, errors.New("No result")
+	}
+
+	return SQLUserGetByID(sqlDB, uid)
+}
+
 // SQLUserUpdate 更新用户信息
 func (user *User) SQLUserUpdate(db *sql.DB) bool {
 	_, err := db.Exec(

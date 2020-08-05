@@ -474,7 +474,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	uobj.Session = sessionid
 
 	uobj.CachedToRedis(redisDB)
-	h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
+	h.SetCookie(w, "SessionID", uobj.StrID()+":"+sessionid, 365)
 
 	rsp.Retcode = 200
 	rsp.Retmsg = "登录成功"
