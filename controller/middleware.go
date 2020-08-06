@@ -58,13 +58,13 @@ func (h *BaseHandler) InitMiddlewareContext(inner http.Handler) http.Handler {
 // OriginMiddleware 有关跨域问题的处理
 func (h *BaseHandler) OriginMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
-		inner.ServeHTTP(w, r)
 		origin := r.Header.Get("Origin")
 		if strings.Contains(origin, h.App.Cf.Main.Domain) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 		}
+		inner.ServeHTTP(w, r)
 		return
 
 	}
