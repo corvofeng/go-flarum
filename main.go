@@ -22,6 +22,8 @@ import (
 	"goyoubbs/system"
 	"goyoubbs/util"
 
+	ct "goyoubbs/controller"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/xi2/httpgzip"
 	goji "goji.io"
@@ -93,11 +95,18 @@ func main() {
 		staticPath = "static"
 	}
 
+	h := ct.BaseHandler{App: app}
 	root.Handle(pat.New("/static/*"),
-		http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))))
+		h.OriginMiddleware(
+			http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))),
+		),
+	)
 
 	root.Handle(pat.New("/webpack/*"),
-		http.StripPrefix("/webpack/", http.FileServer(http.Dir(mcf.WebpackDir))))
+		h.OriginMiddleware(
+			http.StripPrefix("/webpack/", http.FileServer(http.Dir(mcf.WebpackDir))),
+		),
+	)
 
 	root.Handle(pat.New("/*"), router.NewRouter(app))
 	root.Use(tracker)
