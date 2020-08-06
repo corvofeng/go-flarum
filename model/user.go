@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"goyoubbs/util"
 
 	"github.com/go-redis/redis/v7"
+	"github.com/google/go-github/github"
 )
 
 // User store in database
@@ -73,6 +75,11 @@ func (user *User) toKey() string {
 // StrID 返回string类型的ID值
 func (user *User) StrID() string {
 	return fmt.Sprintf("%d", user.ID)
+}
+
+// IsValid 当前用户是否有效
+func (user *User) IsValid() bool {
+	return user.ID != 0
 }
 
 // SQLUserListByFlag 从数据库中查找用户列表
@@ -289,6 +296,43 @@ func (user *User) SQLRegister(db *sql.DB) bool {
 	user.ID = uint64(uid)
 
 	return true
+}
+
+// SQLGithubRegister github用户注册
+func SQLGithubRegister(sqlDB *sql.DB, gu *github.User) (User, error) {
+	logger := util.GetLogger()
+	user := User{}
+	row, err := sqlDB.Exec(
+		("INSERT INTO `user` " +
+			" (`name`, `email`, `is_email_confirmed`, `urlname`,`nickname`, `password`, `reputation`, `avatar`, `description`, `website`, `created_at`)" +
+			" VALUES " +
+			" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		gu.GetLogin(),
+		gu.GetEmail(),
+		"1",
+		gu.GetLogin(),
+		gu.GetName(),
+		"NoPassWordForGithub",
+		20, // 初始声望值20
+		gu.GetAvatarURL(),
+		gu.GetBio(),
+		gu.GetBlog(),
+		uint64(time.Now().UTC().Unix()),
+	)
+	if util.CheckError(err, "用户注册") {
+		return user, err
+	}
+	uid, err := row.LastInsertId()
+	if err != nil {
+		logger.Error("Get insert id err", err)
+	}
+	logger.Infof("Create user %d-%s success", uid, gu.GetLogin())
+	user, err = SQLUserGetByID(sqlDB, uint64(uid))
+	if err != nil {
+		logger.Error("Get user id err", err)
+	}
+
+	return user, nil
 }
 
 // IsForbid 检查当前用户是否被禁用

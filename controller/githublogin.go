@@ -53,16 +53,25 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 
-	uobj, err := model.SQLUserGetByName(sqlDB, data.GetLogin())
-	fmt.Println(uobj, data, data.GetName(), data.Name, data.GetLogin())
+	uobj, err := model.SQLUserGetByEmail(sqlDB, data.GetEmail())
+
+	fmt.Println(uobj)
+	if !uobj.IsValid() {
+		uobj, err = model.SQLGithubRegister(sqlDB, data)
+	}
+
 	sessionid := xid.New().String()
 	uobj.Session = sessionid
 
 	uobj.CachedToRedis(redisDB)
-	// h.SetCookie(w, "SessionID", uobj.StrID()+":"+sessionid, 365)
-	// uobj.RefreshCSRF(redisDB)
+	h.SetCookie(w, "SessionID", uobj.StrID()+":"+sessionid, 365)
+	var retData string
+	if uobj.IsValid() {
+		retData = `<script>window.close(); window.opener.app.authenticationComplete({"loggedIn":true});</script>`
 
-	retData := `<script>window.close(); window.opener.app.authenticationComplete({"loggedIn":true});</script>`
+	} else {
+		retData = `<script>window.close(); window.opener.app.authenticationComplete({"loggedIn":false});</script>`
+	}
 	w.Write([]byte(retData))
 }
 
