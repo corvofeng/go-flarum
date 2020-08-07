@@ -27,6 +27,7 @@ func FlarumCreateForumInfo(
 	data.BaseURL = mainConf.BaseURL
 	data.CanStartDiscussion = true
 	data.AllowSignUp = true
+	data.ShowLanguageSelector = true
 	data.WelcomeMessage = "这是一个简单的小站"
 	data.WelcomeTitle = "用作测试"
 	data.Debug = appConf.Main.Debug
