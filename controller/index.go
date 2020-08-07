@@ -188,6 +188,7 @@ func createFlarumPageAPIDoc(
 	if pageInfo.HasNext {
 		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
 	}
+	model.FlarumCreateLocale(&coreData)
 
 	return coreData, err
 }
@@ -219,13 +220,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
 		return
 	}
-
 	// 设置语言信息
-	coreData.Locales = make(map[string]string)
-	coreData.Locales["en"] = "English"
-	coreData.Locales["zh"] = "中文"
-	coreData.Locale = "en"
-
 	evn.FlarumInfo = coreData
 
 	var pageInfo model.ArticlePageInfo

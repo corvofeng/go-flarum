@@ -28,3 +28,6 @@
 [submodule "view/extensions/analytics"]
 	path = view/extensions/analytics
 	url = https://github.com/FriendsOfFlarum/analytics.git
+[submodule "view/locale/zh"]
+	path = view/locale/zh
+	url = https://github.com/Littlegolden/flarum-lang-simplified-chinese.git

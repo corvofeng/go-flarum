@@ -6,12 +6,15 @@ import (
 	"goyoubbs/util"
 	"net/http"
 	"path"
+
+	"goji.io/pat"
 )
 
 // GetLocaleData 获取地区对应的语言包
 func (h *BaseHandler) GetLocaleData(w http.ResponseWriter, r *http.Request) {
 	localeDir := path.Join(h.App.Cf.Main.LocaleDir)
-	localeDataArr := util.FlarumReadLocale(localeDir, "en")
+	locale := pat.Param(r, "locale")
+	localeDataArr := util.FlarumReadLocale(localeDir, locale)
 
 	arr, _ := json.Marshal(localeDataArr)
 	retData := fmt.Sprintf(`flarum.core.app.translator.addTranslations(%s);`, arr)

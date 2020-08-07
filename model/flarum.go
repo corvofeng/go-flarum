@@ -46,6 +46,15 @@ func FlarumCreateForumInfo(
 	return obj
 }
 
+// FlarumCreateLocale 生成语言包配置
+func FlarumCreateLocale(coreData *flarum.CoreData) {
+	coreData.Locales = make(map[string]string)
+	coreData.Locales["en"] = "English"
+	coreData.Locales["zh"] = "中文"
+	// coreData.Locale = "en"
+	coreData.Locale = "zh"
+}
+
 // FlarumCreateTag 创建tag资源
 func FlarumCreateTag(cat Category) flarum.Resource {
 	obj := flarum.NewResource(flarum.ETAG, cat.ID)

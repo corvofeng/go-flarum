@@ -31,7 +31,7 @@
 {{/* {{ template "js" . }} */}}
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.js"></script>
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum_ext.js"></script>
-<script src="/locale/en/flarum-lang.js"></script>
+<script src="/locale/{{ .FlarumInfo.Locale }}/flarum-lang.js"></script>
 
 <script>
   document.getElementById('flarum-loading').style.display = 'none';
