@@ -504,59 +504,14 @@ func createFlarumUserAPIDoc(
 	apiDoc := &coreData.APIDocument
 	postArr := []flarum.Resource{}
 
-	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
-	allDiscussions := make(map[uint64]bool) // 用于保存已经添加的帖子, 进行去重
 	if currentUser != nil {
 		user := model.FlarumCreateCurrentUser(*currentUser)
-		allUsers[user.GetID()] = true
 		coreData.AddCurrentUser(user)
 		if !inAPI { // 做API请求时, 不更新csrf信息
 			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
 		}
 	}
 
-	if comments != nil {
-		for _, comment := range *comments {
-
-			// 当前用户会在后面统一添加
-			if _, ok := allUsers[comment.UID]; !ok {
-				u, err := model.SQLUserGetByID(sqlDB, comment.UID)
-				if err != nil {
-					logger.Warningf("Get user %d error: %s", comment.UID, err)
-				} else {
-					user := model.FlarumCreateUser(u)
-					allUsers[comment.UID] = true
-					coreData.AppendResourcs(user)
-				}
-			}
-
-			if _, ok := allDiscussions[comment.AID]; !ok {
-				article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
-				if err != nil {
-					logger.Warning("Can't get article: ", comment.AID, err)
-				} else {
-					apiDoc.AppendResourcs(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
-				}
-				allDiscussions[comment.AID] = true
-			}
-			// 处理用户的like信息
-			for _, userID := range comment.Likes {
-				if _, ok := allUsers[userID]; !ok {
-					u, err := model.SQLUserGetByID(sqlDB, userID)
-					if err != nil {
-						logger.Warningf("Get user %d error: %s", userID, err)
-					} else {
-						user := model.FlarumCreateUser(u)
-						allUsers[user.GetID()] = true
-						coreData.AppendResourcs(user)
-					}
-				}
-			}
-			post := model.FlarumCreatePost(comment, currentUser)
-			apiDoc.AppendResourcs(post)
-			postArr = append(postArr, post)
-		}
-	}
 	apiDoc.SetData(postArr)
 
 	// 添加当前用户的session信息
@@ -569,7 +524,6 @@ func createFlarumUserAPIDoc(
 	}
 
 	return coreData, err
-
 }
 
 // FlarumUserLogout flarum用户注销
