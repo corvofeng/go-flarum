@@ -188,7 +188,7 @@ func createFlarumPageAPIDoc(
 	if pageInfo.HasNext {
 		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
 	}
-	model.FlarumCreateLocale(&coreData)
+	model.FlarumCreateLocale(&coreData, currentUser)
 
 	return coreData, err
 }

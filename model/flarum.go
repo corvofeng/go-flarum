@@ -47,12 +47,16 @@ func FlarumCreateForumInfo(
 }
 
 // FlarumCreateLocale 生成语言包配置
-func FlarumCreateLocale(coreData *flarum.CoreData) {
+func FlarumCreateLocale(coreData *flarum.CoreData, currentUser *User) {
 	coreData.Locales = make(map[string]string)
 	coreData.Locales["en"] = "English"
 	coreData.Locales["zh"] = "中文"
 	// coreData.Locale = "en"
-	coreData.Locale = "zh"
+	if currentUser != nil && currentUser.Preferences != nil && currentUser.Preferences.Locale != "" {
+		coreData.Locale = currentUser.Preferences.Locale
+	} else {
+		coreData.Locale = "en"
+	}
 }
 
 // FlarumCreateTag 创建tag资源
@@ -156,6 +160,9 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.Email = user.Email
 	data.IsEmailConfirmed = true
 	data.JoinTime = util.TimeFmt(user.RegTime, util.TIME_FMT, 0)
+	if user.Preferences != nil {
+		data.Preferences = *user.Preferences
+	}
 	obj.BindRelations(
 		"Groups",
 		flarum.RelationArray{

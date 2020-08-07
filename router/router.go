@@ -194,6 +194,14 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumAPICreatePost,
 	))
 
+	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.InAPIMiddleware,
+		},
+		ct.FlarumUserUpdate,
+	))
+
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users"), ct.InAPIMiddleware(ct.FlarumConfirmUserAndPost))
 
 	return sp

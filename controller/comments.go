@@ -219,7 +219,7 @@ func createFlarumReplyAPIDoc(
 	}
 	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	// apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-	model.FlarumCreateLocale(&coreData)
+	model.FlarumCreateLocale(&coreData, currentUser)
 
 	return coreData, nil
 }

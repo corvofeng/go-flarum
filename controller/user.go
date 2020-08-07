@@ -693,3 +693,44 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 	return
 }
+
+// FlarumUserUpdate flarum用户更新配置信息
+func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
+	_uid := pat.Param(r, "uid")
+	ctx := GetRetContext(r)
+	h := ctx.h
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	if ctx.currentUser.StrID() != _uid {
+		h.flarumErrorMsg(w, "当期仅允许修改自己的配置")
+		return
+	}
+
+	type UserUpdate struct {
+		Data struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			Attributes struct {
+				Preferences flarum.Preferences `json:"preferences"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	userUpdateInfo := UserUpdate{}
+	err := json.NewDecoder(r.Body).Decode(&userUpdateInfo)
+	if err != nil {
+		h.flarumErrorMsg(w, "解析json错误:"+err.Error())
+		return
+	}
+	ctx.currentUser.SetPreference(
+		sqlDB, redisDB,
+		userUpdateInfo.Data.Attributes.Preferences,
+	)
+	coreData := flarum.NewCoreData()
+	apiDoc := &coreData.APIDocument
+	apiDoc.SetData(model.FlarumCreateCurrentUser(*ctx.currentUser))
+
+	if ctx.inAPI {
+		h.jsonify(w, apiDoc)
+		return
+	}
+}

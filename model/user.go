@@ -2,12 +2,14 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"goyoubbs/model/flarum"
 	"goyoubbs/util"
 
 	"github.com/go-redis/redis/v7"
@@ -33,6 +35,8 @@ type User struct {
 	Session    string `json:"session"`
 	Token      string `json:"token"`
 	Reputation uint64 `json:"reputation"` // 声望值
+
+	Preferences *flarum.Preferences
 }
 
 // UserListItem 用户信息
@@ -438,6 +442,57 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 	redisDB.HSet("username", user.toKey(), username)
 	logger.Debugf("username not found for %d %s but we refresh!", user.ID, user.Name)
 	return username
+}
+
+// GetPreference 获取用户定义配置
+func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
+	logger := util.GetLogger()
+	rows, err := sqlDB.Query(
+		"SELECT `preferences` FROM `user` WHERE id=?",
+		user.ID,
+	)
+	if err != nil {
+		logger.Error("Get preferences", err.Error())
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var data []byte
+		rows.Scan(&data)
+		err = json.Unmarshal(data, &user.Preferences)
+		if err != nil {
+			logger.Error("Load preferences", err.Error(), data)
+		}
+	}
+	return
+}
+
+// SetPreference 更新用户配置信息
+func (user *User) SetPreference(sqlDB *sql.DB, redisDB *redis.Client, preference flarum.Preferences) {
+	logger := util.GetLogger()
+	if user.Preferences == nil {
+		logger.Warning("Can't process user with no preferences", user.ID, user.Name)
+		return
+	}
+
+	data, err := json.Marshal(preference)
+	if err != nil {
+		logger.Error("Convert preferences to json error", err.Error(), user.Preferences)
+		return
+	}
+
+	_, err = sqlDB.Exec(
+		"UPDATE `user` "+
+			"set preferences=?"+
+			" where id=?",
+		string(data),
+		user.ID,
+	)
+
+	if err != nil {
+		logger.Error("Update user preferences error", err.Error(), user.Preferences)
+	}
+	user.GetPreference(sqlDB, redisDB)
 }
 
 // RefreshCSRF 刷新CSRF token

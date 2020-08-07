@@ -38,7 +38,7 @@ type Preferences struct {
 	DiscloseOnline               bool `json:"discloseOnline"`
 	IndexProfile                 bool `json:"indexProfile"`
 
-	Locale interface{} `json:"locale"`
+	Locale string `json:"locale"`
 }
 
 // CurrentUser 当前用户信息

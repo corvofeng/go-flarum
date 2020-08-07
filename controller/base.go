@@ -154,7 +154,7 @@ func (h *BaseHandler) flarumErrorMsg(w http.ResponseWriter, errMsg string) error
 // CurrentUser 当前用户
 // 原有的策略是保存用户到文件中, 现在经过重新改写, 将从数据库中获取用户,
 func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (user model.User, err error) {
-	// sqlDB := h.App.MySQLdb
+	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
@@ -170,6 +170,7 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (user 
 		h.DelCookie(w, "SessionID")
 		return user, err
 	}
+	user.GetPreference(sqlDB, redisDB)
 
 	return user, nil
 }
