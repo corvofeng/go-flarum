@@ -17,7 +17,7 @@ func recursiveRead(localeData map[string]interface{}, prefix string, localeDataA
 
 		switch v := element.(type) {
 		// case int:
-		// 	// v is an int here, so e.g. v + 1 is possible.
+		// 	// 	// v is an int here, so e.g. v + 1 is possible.
 		// 	fmt.Printf("Integer: %v", v)
 		// case float64:
 		// 	// v is a float64 here, so e.g. v + 1.0 is possible.
@@ -27,8 +27,22 @@ func recursiveRead(localeData map[string]interface{}, prefix string, localeDataA
 			// logger.Debugf("%s: %s\n", key, v)
 			(*localeDataArr)[fmt.Sprintf("%s.%s", prefix[1:], key)] = v
 		case map[string]interface{}:
-			// case map[interface{}]interface{}:
 			recursiveRead(v, fmt.Sprintf("%s.%s", prefix, key), localeDataArr)
+		case map[interface{}]interface{}:
+			newDict := make(map[string]interface{})
+			for _k, _v := range v {
+				_key := ""
+				switch _kdata := _k.(type) {
+				case int:
+					_key = fmt.Sprintf("%d", _kdata)
+				case string:
+					_key = _kdata
+				default:
+					logger.Errorf("Can't parse type %+v, %s", _k, reflect.TypeOf(_k))
+				}
+				newDict[_key] = _v
+			}
+			recursiveRead(newDict, fmt.Sprintf("%s.%s", prefix, key), localeDataArr)
 		default:
 			logger.Errorf("Can't parse type %+v, %s", v, reflect.TypeOf(v))
 		}
