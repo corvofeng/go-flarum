@@ -129,6 +129,8 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), ct.FlarumUserPage)
+	// 获取用户的设置 GET请求
+	sp.HandleFunc(pat.Get("/settings"), ct.MustAuthMiddleware(ct.FlarumUserSettings))
 
 	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{

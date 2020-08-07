@@ -496,13 +496,13 @@ func createFlarumUserAPIDoc(
 	siteInfo model.SiteInfo,
 	currentUser *model.User,
 	inAPI bool,
-	comments *[]model.CommentListItem, // 需要返回的评论信息
 	tz int,
 ) (flarum.CoreData, error) {
 	var err error
 	coreData := flarum.NewCoreData()
-	apiDoc := &coreData.APIDocument
-	postArr := []flarum.Resource{}
+
+	// 所有分类的信息, 用于整个站点的信息
+	var flarumTags []flarum.Resource
 
 	if currentUser != nil {
 		user := model.FlarumCreateCurrentUser(*currentUser)
@@ -511,17 +511,16 @@ func createFlarumUserAPIDoc(
 			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
 		}
 	}
-
-	apiDoc.SetData(postArr)
-
-	// 添加当前用户的session信息
-	if currentUser != nil {
-		user := model.FlarumCreateCurrentUser(*currentUser)
-		coreData.AddCurrentUser(user)
-		if !inAPI { // 做API请求时, 不更新csrf信息
-			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
-		}
+	// 添加当前站点信息
+	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	if err != nil {
+		logger.Error("Get all categories error", err)
 	}
+	for _, category := range categories {
+		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
+	}
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+	model.FlarumCreateLocale(&coreData, currentUser)
 
 	return coreData, err
 }
@@ -591,6 +590,35 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// FlarumUserSettings flarum用户查询
+func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	scf := h.App.Cf.Site
+	si := model.GetSiteInfo(redisDB)
+	// inAPI := ctx.inAPI
+	// coreData := flarum.NewCoreData()
+	// apiDoc := &coreData.APIDocument
+	// apiDoc.SetData(model.FlarumCreateCurrentUser(*ctx.currentUser))
+	logger := ctx.GetLogger()
+
+	tpl := h.CurrentTpl(r)
+	evn := &pageData{}
+
+	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
+	}
+	evn.FlarumInfo = coreData
+	evn.SiteCf = h.App.Cf.Site
+	evn.FlarumInfo = coreData
+
+	h.Render(w, tpl, evn, "layout.html", "index.html")
+	return
+}
+
 // FlarumUserPage flarum用户查询
 func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
@@ -612,6 +640,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	// 添加主站点信息
 	redisDB := h.App.RedisDB
 	si := model.GetSiteInfo(redisDB)
+
 	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, si, []flarum.Resource{}))
 
 	apiDoc := &coreData.APIDocument
