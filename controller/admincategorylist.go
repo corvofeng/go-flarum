@@ -49,7 +49,7 @@ func (h *BaseHandler) AdminCategoryList(w http.ResponseWriter, r *http.Request) 
 	pageInfo := model.SQLCategoryList(sqlDB, redisDB)
 
 	type pageData struct {
-		PageData
+		BasePageData
 		PageInfo model.CategoryPageInfo
 		Cobj     model.Category
 	}

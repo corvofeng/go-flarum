@@ -56,7 +56,7 @@ func (h *BaseHandler) CommentEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Aobj model.Article
 		Cobj model.Comment
 	}

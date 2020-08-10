@@ -478,8 +478,8 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 	if ctx.inAPI {
 		h.jsonify(w, coreData.APIDocument)
 		return
-	} else {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("此接口仅在API中使用"))
-		return
 	}
+
+	h.flarumErrorJsonify(w, createSimpleFlarumError("此接口仅在API中使用"))
+	return
 }

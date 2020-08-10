@@ -51,7 +51,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	tpl := h.CurrentTpl(r)
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Cobj     model.Category
 		PageInfo model.ArticlePageInfo
 	}

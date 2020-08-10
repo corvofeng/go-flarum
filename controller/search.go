@@ -99,7 +99,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Q        string
 		PageInfo model.ArticlePageInfo
 	}

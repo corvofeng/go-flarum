@@ -32,8 +32,8 @@ type (
 		Keywords      string
 		Description   string
 		IsMobile      bool
-		CurrentUser   model.User
-		PageName      string // index/post_add/post_detail/...
+		CurrentUser   model.User // 历史原因: 这里切换成指针有太多的报错, 暂时不处理
+		PageName      string     // index/post_add/post_detail/...
 		ShowPostTopAd bool
 		ShowPostBotAd bool
 		ShowSideAd    bool
@@ -74,9 +74,13 @@ type (
 	// PageData 每个页面中的全部信息
 	PageData struct {
 		BasePageData
-		SiteInfo   model.SiteInfo
+
+		// 此处的变量为兼容旧的youbbs变量
 		PageInfo   model.ArticlePageInfo
 		Links      []model.Link
+		Cobj       model.Category
+		Aobj       model.Article
+		MainNodes  []model.CategoryMini
 		FlarumInfo interface{}
 	}
 )
@@ -86,10 +90,23 @@ const (
 )
 
 // InitPageData 初始化返回页面
-func InitPageData(r *http.Request) PageData {
-	pd := PageData{}
+func InitPageData(r *http.Request) *PageData {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	redisDB := h.App.RedisDB
 
-	return pd
+	pd := PageData{
+		BasePageData: BasePageData{
+			SiteCf:      h.App.Cf.Site,
+			Title:       h.App.Cf.Site.Name,
+			Description: h.App.Cf.Site.Desc,
+			CurrentUser: *ctx.currentUser,
+			SiteInfo:    model.GetSiteInfo(redisDB),
+		},
+		// SiteInfo: model.GetSiteInfo(redisDB),
+	}
+
+	return &pd
 }
 
 // GetRetContext 获取当前上线信息中的自有的context

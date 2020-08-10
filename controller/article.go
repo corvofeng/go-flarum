@@ -767,10 +767,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	evn := &PageData{}
-	evn.SiteCf = scf
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
-
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 	if err != nil {
 		logger.Error("Can't get discussion id for ", aid)
@@ -783,7 +779,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		AID:   aid,
 		Limit: article.Comments,
 	}
-	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, evn.SiteInfo, ctx.currentUser, inAPI, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, inAPI, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
@@ -797,11 +793,8 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tpl := h.CurrentTpl(r)
-	type pageData struct {
-		BasePageData
-		FlarumInfo interface{}
-	}
 
+	evn := InitPageData(r)
 	evn.FlarumInfo = coreData
 	h.Render(w, tpl, evn, "layout.html", "article.html")
 }

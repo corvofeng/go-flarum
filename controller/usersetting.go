@@ -24,7 +24,7 @@ func (h *BaseHandler) UserSetting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Uobj model.User
 		Now  int64
 	}

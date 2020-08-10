@@ -97,22 +97,14 @@ func (h *BaseHandler) ArticleEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type pageData struct {
-		PageData
-		Cobj      model.Category
-		MainNodes []model.CategoryMini
-		Aobj      model.Article
-	}
-
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
+	// evn := &pageData{}
+	evn := InitPageData(r)
 	evn.SiteCf = h.App.Cf.Site
 	evn.Title = "修改文章"
 	evn.IsMobile = tpl == "mobile"
-	evn.CurrentUser = currentUser
 	evn.ShowSideAd = true
 	evn.PageName = "article_edit"
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
 	evn.Cobj = cobj
 	// evn.MainNodes = model.CategoryGetMain(db, cobj)

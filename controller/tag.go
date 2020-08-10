@@ -44,8 +44,9 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 		Name   string
 		Number uint64
 	}
+	// TODO: Delete this
 	type pageData struct {
-		PageData
+		BasePageData
 		Tag      tagDetail
 		PageInfo model.ArticlePageInfo
 	}

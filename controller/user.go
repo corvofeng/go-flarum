@@ -583,7 +583,7 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tpl := h.CurrentTpl(r)
-	evn := &PageData{}
+	evn := InitPageData(r)
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
@@ -605,14 +605,12 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	logger := ctx.GetLogger()
 
 	tpl := h.CurrentTpl(r)
-	evn := &PageData{}
 
 	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
 	}
-	evn.FlarumInfo = coreData
-	evn.SiteCf = h.App.Cf.Site
+	evn := InitPageData(r)
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
@@ -669,8 +667,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	apiDoc.Links["next"] = ""
 
 	tpl := h.CurrentTpl(r)
-	evn := &PageData{}
-	evn.SiteCf = h.App.Cf.Site
+	evn := InitPageData(r)
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")

@@ -41,13 +41,13 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 
 	scf := h.App.Cf.Site
 
-	type pageData struct {
-		BasePageData
-		SiteInfo   model.SiteInfo
-		PageInfo   model.ArticlePageInfo
-		Links      []model.Link
-		FlarumInfo interface{}
-	}
+	// type pageData struct {
+	// 	BasePageData
+	// 	SiteInfo   model.SiteInfo
+	// 	PageInfo   model.ArticlePageInfo
+	// 	Links      []model.Link
+	// 	FlarumInfo interface{}
+	// }
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
@@ -65,20 +65,14 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	categories, err := model.SQLGetAllCategory(sqlDB, redisDB)
 
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
-	evn.SiteCf = scf
-	evn.Title = scf.Name
+	evn := InitPageData(r)
 	evn.Keywords = evn.Title
-	evn.Description = scf.Desc
 	evn.IsMobile = tpl == "mobile"
-	currentUser, _ := h.CurrentUser(w, r)
-	evn.CurrentUser = currentUser
 	evn.ShowSideAd = false
 	evn.PageName = "home"
 	evn.NewestNodes = categories
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
@@ -205,8 +199,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	page := uint64(1)
 
 	tpl := h.CurrentTpl(r)
-	evn := &PageData{}
-	evn.SiteCf = scf
 	si := model.GetSiteInfo(redisDB)
 
 	df := dissFilter{
@@ -221,7 +213,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 设置语言信息
-	evn.FlarumInfo = coreData
 
 	var pageInfo model.ArticlePageInfo
 	for _, item := range coreData.APIDocument.Included {
@@ -233,6 +224,8 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 			pageInfo.Items = append(pageInfo.Items, model.ArticleListItem{ArticleBase: ab})
 		}
 	}
+	evn := InitPageData(r)
+	evn.FlarumInfo = coreData
 	evn.PageInfo = pageInfo
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")

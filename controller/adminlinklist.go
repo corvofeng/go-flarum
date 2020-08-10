@@ -44,7 +44,7 @@ func (h *BaseHandler) AdminLinkList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Items []model.Link
 		Lobj  model.Link
 	}

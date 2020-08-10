@@ -53,7 +53,7 @@ func (h *BaseHandler) AdminUserList(w http.ResponseWriter, r *http.Request) {
 	// evn.PageInfo = pageInfo
 
 	type pageData struct {
-		PageData
+		BasePageData
 		PageInfo model.UserPageInfo
 		Flag     string
 	}
