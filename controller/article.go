@@ -61,7 +61,7 @@ func (h *BaseHandler) ArticleAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Cobj model.Category
 
 		// 可能是想获取当前节点的父节点下的所有子节点
@@ -282,7 +282,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	logger := h.App.Logger
 
 	type pageData struct {
-		PageData
+		BasePageData
 		SiteInfo model.SiteInfo
 		PageInfo model.ArticlePageInfo
 		Links    []model.Link
@@ -482,7 +482,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		Aobj       articleForDetail
 		Author     model.User
 		Cobj       model.Category
@@ -767,7 +767,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	evn := &pageData{}
+	evn := &PageData{}
 	evn.SiteCf = scf
 	evn.SiteInfo = model.GetSiteInfo(redisDB)
 
@@ -798,7 +798,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	tpl := h.CurrentTpl(r)
 	type pageData struct {
-		PageData
+		BasePageData
 		FlarumInfo interface{}
 	}
 

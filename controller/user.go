@@ -23,7 +23,7 @@ import (
 // UserLogin 用户登录与注册页面
 func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	type pageData struct {
-		PageData
+		BasePageData
 		Act       string
 		Token     string
 		CaptchaID string
@@ -210,7 +210,7 @@ func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type pageData struct {
-		PageData
+		BasePageData
 		PageInfo model.ArticlePageInfo
 	}
 
@@ -316,7 +316,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 		RegTimeFmt string
 	}
 	type pageData struct {
-		PageData
+		BasePageData
 		Act      string
 		Uobj     userDetail
 		PageInfo model.ArticlePageInfo
@@ -583,7 +583,7 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
+	evn := &PageData{}
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
@@ -605,7 +605,7 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	logger := ctx.GetLogger()
 
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
+	evn := &PageData{}
 
 	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, scf.TimeZone)
 	if err != nil {
@@ -669,7 +669,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	apiDoc.Links["next"] = ""
 
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
+	evn := &PageData{}
 	evn.SiteCf = h.App.Cf.Site
 	evn.FlarumInfo = coreData
 

@@ -25,8 +25,8 @@ type (
 		App *system.Application
 	}
 
-	// PageData 每个页面中的基础信息
-	PageData struct {
+	// BasePageData 每个页面中的基础信息
+	BasePageData struct {
 		SiteCf        *model.SiteConf
 		Title         string
 		Keywords      string
@@ -71,8 +71,9 @@ type (
 		err         error
 	}
 
-	pageData struct {
-		PageData
+	// PageData 每个页面中的全部信息
+	PageData struct {
+		BasePageData
 		SiteInfo   model.SiteInfo
 		PageInfo   model.ArticlePageInfo
 		Links      []model.Link
@@ -83,6 +84,13 @@ type (
 const (
 	ckRequest ContextKey = iota
 )
+
+// InitPageData 初始化返回页面
+func InitPageData(r *http.Request) PageData {
+	pd := PageData{}
+
+	return pd
+}
 
 // GetRetContext 获取当前上线信息中的自有的context
 func GetRetContext(r *http.Request) *ReqContext {

@@ -42,7 +42,7 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 
 	type pageData struct {
-		PageData
+		BasePageData
 		SiteInfo   model.SiteInfo
 		PageInfo   model.ArticlePageInfo
 		Links      []model.Link
@@ -205,7 +205,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	page := uint64(1)
 
 	tpl := h.CurrentTpl(r)
-	evn := &pageData{}
+	evn := &PageData{}
 	evn.SiteCf = scf
 	si := model.GetSiteInfo(redisDB)
 
