@@ -8,6 +8,7 @@ import (
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo
 // tags 当前站点具有的标签集合, TODO: 缓存
 func FlarumCreateForumInfo(
+	user *User,
 	appConf AppConf,
 	siteInfo SiteInfo,
 	tags []flarum.Resource,
@@ -22,7 +23,9 @@ func FlarumCreateForumInfo(
 	data.Title = siteConf.Name
 	data.Description = siteConf.Desc
 	data.APIURL = FlarumAPIPath
-	data.AdminURL = "/admin"
+	if user.IsAdmin() {
+		data.AdminURL = "/admin"
+	}
 	// data.BasePath = "http://192.168.101.35:8082"
 	data.BaseURL = mainConf.BaseURL
 	data.CanStartDiscussion = true

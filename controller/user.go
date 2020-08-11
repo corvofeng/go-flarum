@@ -519,7 +519,10 @@ func createFlarumUserAPIDoc(
 	for _, category := range categories {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+		currentUser,
+		appConf, siteInfo, flarumTags,
+	))
 	model.FlarumCreateLocale(&coreData, currentUser)
 
 	return coreData, err
@@ -639,7 +642,11 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	si := model.GetSiteInfo(redisDB)
 
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(*h.App.Cf, si, []flarum.Resource{}))
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+		ctx.currentUser,
+		*h.App.Cf, si,
+		[]flarum.Resource{},
+	))
 
 	apiDoc := &coreData.APIDocument
 

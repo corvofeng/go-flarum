@@ -132,7 +132,10 @@ func createFlarumPageAPIDoc(
 	}
 
 	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+		currentUser,
+		appConf, siteInfo, flarumTags,
+	))
 
 	var res []flarum.Resource
 	allUsers := make(map[uint64]bool)

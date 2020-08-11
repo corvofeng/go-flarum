@@ -200,7 +200,11 @@ func createFlarumReplyAPIDoc(
 	for _, category := range categories {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(appConf, siteInfo, flarumTags))
+	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+		currentUser,
+		appConf, siteInfo,
+		flarumTags,
+	))
 
 	if rf.FT == eArticle {
 		apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
