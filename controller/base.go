@@ -100,10 +100,12 @@ func InitPageData(r *http.Request) *PageData {
 			SiteCf:      h.App.Cf.Site,
 			Title:       h.App.Cf.Site.Name,
 			Description: h.App.Cf.Site.Desc,
-			CurrentUser: *ctx.currentUser,
 			SiteInfo:    model.GetSiteInfo(redisDB),
 		},
 		// SiteInfo: model.GetSiteInfo(redisDB),
+	}
+	if ctx.currentUser != nil {
+		pd.CurrentUser = *ctx.currentUser
 	}
 
 	return &pd
