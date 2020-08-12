@@ -302,6 +302,35 @@ func (user *User) SQLRegister(db *sql.DB) bool {
 	return true
 }
 
+// SQLGithubSync github用户同步信息
+func (user *User) SQLGithubSync(sqlDB *sql.DB, gu *github.User) {
+	logger := util.GetLogger()
+	if user.Email != gu.GetEmail() {
+		logger.Errorf("Wanna modify %s, but give %s", user.Email, gu.GetEmail())
+		return
+	}
+	if user.About == "" {
+		user.UpdateField(sqlDB, "description", gu.GetBio())
+	}
+	if user.URL == "" {
+		user.UpdateField(sqlDB, "website", gu.GetBlog())
+	}
+	if user.Avatar == "" {
+		user.UpdateField(sqlDB, "avatar", gu.GetAvatarURL())
+	}
+	*user, _ = SQLUserGetByID(sqlDB, user.ID)
+}
+
+// UpdateField 用户更新数据
+func (user *User) UpdateField(sqlDB *sql.DB, field string, value string) {
+	_, err := sqlDB.Exec(
+		fmt.Sprintf("UPDATE `user` set %s=? where id=?", field),
+		value,
+		user.ID,
+	)
+	util.CheckError(err, fmt.Sprintf("更新用户信息%d (%s:%s)", user.ID, field, value))
+}
+
 // SQLGithubRegister github用户注册
 func SQLGithubRegister(sqlDB *sql.DB, gu *github.User) (User, error) {
 	logger := util.GetLogger()

@@ -55,10 +55,10 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	uobj, err := model.SQLUserGetByEmail(sqlDB, data.GetEmail())
 
-	fmt.Println(uobj)
 	if !uobj.IsValid() {
 		uobj, err = model.SQLGithubRegister(sqlDB, data)
 	}
+	uobj.SQLGithubSync(sqlDB, data)
 
 	sessionid := xid.New().String()
 	uobj.Session = sessionid
