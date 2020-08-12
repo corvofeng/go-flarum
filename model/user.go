@@ -451,10 +451,11 @@ func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
 		"SELECT `preferences` FROM `user` WHERE id=?",
 		user.ID,
 	)
+	defer rows.Close()
 	if err != nil {
 		logger.Error("Get preferences", err.Error())
+		return
 	}
-	defer rows.Close()
 
 	if rows.Next() {
 		var data []byte
