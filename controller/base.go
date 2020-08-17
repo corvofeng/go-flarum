@@ -82,6 +82,8 @@ type (
 		Aobj       model.Article
 		MainNodes  []model.CategoryMini
 		FlarumInfo interface{}
+
+		PluginHTML map[string]string
 	}
 )
 
@@ -102,6 +104,7 @@ func InitPageData(r *http.Request) *PageData {
 			Description: h.App.Cf.Site.Desc,
 			SiteInfo:    model.GetSiteInfo(redisDB),
 		},
+		PluginHTML: make(map[string]string),
 		// SiteInfo: model.GetSiteInfo(redisDB),
 	}
 	if ctx.currentUser != nil {
@@ -143,6 +146,12 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 		"marshal": func(v interface{}) template.JS {
 			a, _ := json.Marshal(v)
 			return template.JS(a)
+		},
+		// 将html中的内容直接进行渲染
+		// https://stackoverflow.com/a/44222211
+		// https://stackoverflow.com/a/42055211
+		"safeHTML": func(str string) template.HTML {
+			return template.HTML(str)
 		},
 	})
 	for _, tpath := range tplPath {

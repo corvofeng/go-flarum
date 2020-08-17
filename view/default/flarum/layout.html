@@ -15,7 +15,9 @@
 
 
   {{/* {{ template "header" . }} */}}
-  {{/* */}}
+  {{range $_, $item := .PluginHTML }}
+    {{ safeHTML $item }}
+  {{end}}
 </head>
 
 {{ template "layout" . }}
