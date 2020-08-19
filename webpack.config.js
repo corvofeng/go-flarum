@@ -20,6 +20,9 @@ let OUTPUT_PATH = path.resolve(process.cwd(), 'static', 'flarum');
 let FLARUM_DIR = path.resolve(process.cwd(), 'view', 'flarum');
 let EXT_DIR = path.resolve(process.cwd(), "view", "extensions");
 
+config['module'].rules[0].test = /\.(tsx?|js)$/;
+config['module'].rules[0].use.options.presets.push('@babel/preset-typescript');
+
 module.exports = [
   // flarum.core配置
   {
@@ -42,7 +45,11 @@ module.exports = [
     },
     module: config.module,
     devtool: config.devtool,
-    devServer: devServer
+    devServer: devServer,
+    // temporary TS configuration
+    resolve: {
+      extensions: ['.ts', '.tsx', '.js', '.json'],
+    },
   },
   // flarum的一些扩展功能
   {
