@@ -2,8 +2,10 @@ package controller
 
 import (
 	"context"
+	"goyoubbs/util"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // 与中间件相关的函数
@@ -55,6 +57,17 @@ func (h *BaseHandler) InitMiddlewareContext(inner http.Handler) http.Handler {
 	return http.HandlerFunc(mw)
 }
 
+// TrackerMiddleware 记录请求时间
+func TrackerMiddleware(inner http.Handler) http.Handler {
+	logger := util.GetLogger()
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		inner.ServeHTTP(w, r)
+		logger.Noticef("Track [%6s] %s %s", r.Method, r.URL.Path, time.Since(start))
+	}
+	return http.HandlerFunc(mw)
+}
+
 // OriginMiddleware 有关跨域问题的处理
 func (h *BaseHandler) OriginMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +79,6 @@ func (h *BaseHandler) OriginMiddleware(inner http.Handler) http.Handler {
 		}
 		inner.ServeHTTP(w, r)
 		return
-
 	}
 	return http.HandlerFunc(mw)
 }

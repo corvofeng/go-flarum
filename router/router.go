@@ -15,6 +15,8 @@ import (
 // NewRouter create the router
 func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
+	sp.Use(ct.TrackerMiddleware)
+
 	if app.IsFlarum() {
 		NewFlarumRouter(app, sp)
 	} else {

@@ -34,17 +34,6 @@ import (
 	// "github.com/go-redis/redis/v7"
 )
 
-func tracker(next http.Handler) http.Handler {
-
-	logger := util.GetLogger()
-	f := func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		logger.Noticef("Track [%6s] %s %s", r.Method, r.URL.Path, time.Since(start))
-	}
-	return http.HandlerFunc(f)
-}
-
 func main() {
 	util.InitLogger()
 	logger := util.GetLogger()
@@ -109,7 +98,6 @@ func main() {
 	)
 
 	root.Handle(pat.New("/*"), router.NewRouter(app))
-	root.Use(tracker)
 
 	// normal http
 	// http.ListenAndServe(listenAddr, root)
