@@ -100,14 +100,14 @@ type AppConf struct {
 	Site *SiteConf
 }
 
-// SiteInfo 存储在数据库中的信息
+// SiteInfo 当前站点的一些集合类信息
 type SiteInfo struct {
-	Days     uint64
-	UserNum  uint64
-	NodeNum  uint64
-	TagNum   uint64
-	PostNum  uint64
-	ReplyNum uint64
+	Days     uint64 // 创建的天数
+	UserNum  uint64 // 用户数量
+	NodeNum  uint64 // 节点数量
+	TagNum   uint64 // tag数量
+	PostNum  uint64 // 帖子数量
+	ReplyNum uint64 // 回复数量
 }
 
 // GetDays 获取从建站开始, 到目前的天数, 用于主页中的显示

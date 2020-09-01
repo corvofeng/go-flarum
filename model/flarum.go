@@ -50,16 +50,11 @@ func FlarumCreateForumInfo(
 }
 
 // FlarumCreateLocale 生成语言包配置
-func FlarumCreateLocale(coreData *flarum.CoreData, currentUser *User) {
+func FlarumCreateLocale(coreData *flarum.CoreData, locale string) {
 	coreData.Locales = make(map[string]string)
 	coreData.Locales["en"] = "English"
 	coreData.Locales["zh"] = "中文"
-	// coreData.Locale = "en"
-	if currentUser != nil && currentUser.Preferences != nil && currentUser.Preferences.Locale != "" {
-		coreData.Locale = currentUser.Preferences.Locale
-	} else {
-		coreData.Locale = "en"
-	}
+	coreData.Locale = locale
 }
 
 // FlarumCreateTag 创建tag资源

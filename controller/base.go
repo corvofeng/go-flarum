@@ -68,6 +68,7 @@ type (
 		inAPI       bool
 		h           *BaseHandler
 		realIP      string
+		locale      string
 		err         error
 	}
 

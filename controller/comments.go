@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v7"
-	"github.com/op/go-logging"
 	"goji.io/pat"
 )
 
@@ -79,17 +78,19 @@ type replyFilter struct {
 // eUserPost: 获取用户的最新评论
 // ePost: 获取一条评论信息
 func createFlarumReplyAPIDoc(
-	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
+	reqctx *ReqContext,
+	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	siteInfo model.SiteInfo,
-	currentUser *model.User,
-	inAPI bool,
 	rf replyFilter,
 	tz int,
 ) (flarum.CoreData, error) {
 	var err error
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument
+	inAPI := reqctx.inAPI
+	currentUser := reqctx.currentUser
+	logger := reqctx.GetLogger()
 
 	// 当前全部的评论资源: 数据库中得到
 	var comments []model.CommentListItem
@@ -223,7 +224,7 @@ func createFlarumReplyAPIDoc(
 	}
 	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	// apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
-	model.FlarumCreateLocale(&coreData, currentUser)
+	model.FlarumCreateLocale(&coreData, reqctx.locale)
 
 	return coreData, nil
 }
@@ -236,7 +237,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
 	si := model.GetSiteInfo(redisDB)
-	logger := ctx.GetLogger()
+	// logger := ctx.GetLogger()
 
 	type PostedReply struct {
 		Data struct {
@@ -292,7 +293,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		Limit: comment.Number,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, rf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询评论出现错误:"+err.Error())
 		return
@@ -410,7 +411,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			Limit: article.Comments,
 		}
 	}
-	coreData, err = createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -430,7 +431,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx := GetRetContext(r)
-	logger := ctx.GetLogger()
+	// logger := ctx.GetLogger()
 	h := ctx.h
 	_cid := pat.Param(r, "cid")
 	cid, err := strconv.ParseUint(_cid, 10, 64)
@@ -473,7 +474,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 		AID: cobj.AID,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), ctx.currentUser, ctx.inAPI, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

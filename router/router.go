@@ -97,6 +97,10 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)
 	sp.Use(ct.RealIPMiddleware)
+	sp.Use(ct.AdjustLocaleMiddleware)
+
+	apiSP := goji.SubMux()
+	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
 
 	sp.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
@@ -134,7 +138,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// 获取用户的设置 GET请求
 	sp.HandleFunc(pat.Get("/settings"), ct.MustAuthMiddleware(ct.FlarumUserSettings))
 
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Get("/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.InAPIMiddleware,
@@ -144,14 +148,14 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	// API handler
 	// 获取全部的帖子信息
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
+	apiSP.HandleFunc(pat.Get("/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
 
 	// 获取某个帖子的详细信息 GET请求
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
+	apiSP.HandleFunc(pat.Get("/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
 
 	// 获取帖子的详细信息, POST请求
 	// 与上面不同的是, 这里的请求中可能携带有当前登录用户阅读到的位置, 将其进行记录
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/discussions/:aid"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Post("/discussions/:aid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.InAPIMiddleware,
@@ -160,7 +164,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	))
 
 	// 创建一篇帖子
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/discussions"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Post("/discussions"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
@@ -169,7 +173,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumAPICreateDiscussion,
 	))
 
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts/:cid"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Post("/posts/:cid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
@@ -178,9 +182,9 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumCommentsUtils,
 	))
 
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/new_captcha"), ct.InAPIMiddleware(ct.NewCaptcha))
+	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.InAPIMiddleware(ct.NewCaptcha))
 
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/posts"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Get("/posts"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.InAPIMiddleware,
@@ -189,7 +193,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	))
 
 	// 创建一篇评论
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/posts"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Post("/posts"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
@@ -198,7 +202,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumAPICreatePost,
 	))
 
-	sp.HandleFunc(pat.Post(model.FlarumAPIPath+"/users/:uid"), ct.MiddlewareArrayToChains(
+	apiSP.HandleFunc(pat.Post("/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.InAPIMiddleware,
@@ -206,7 +210,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumUserUpdate,
 	))
 
-	sp.HandleFunc(pat.Get(model.FlarumAPIPath+"/users"), ct.InAPIMiddleware(ct.FlarumConfirmUserAndPost))
+	apiSP.HandleFunc(pat.Get("/users"), ct.InAPIMiddleware(ct.FlarumConfirmUserAndPost))
 
 	return sp
 }

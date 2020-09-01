@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/go-redis/redis/v7"
-	"github.com/op/go-logging"
 )
 
 // ArticleHomeList 文章主页
@@ -101,11 +100,9 @@ type dissFilter struct {
 }
 
 func createFlarumPageAPIDoc(
-	logger *logging.Logger,
+	reqctx *ReqContext,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf, siteInfo model.SiteInfo,
-	currentUser *model.User,
-	inAPI bool,
 	df dissFilter,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -114,6 +111,10 @@ func createFlarumPageAPIDoc(
 	coreData := flarum.NewCoreData()
 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 	page := df.Page
+
+	inAPI := reqctx.inAPI
+	currentUser := reqctx.currentUser
+	logger := reqctx.GetLogger()
 
 	if df.FT == eCategory {
 		pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, df.CID, page, df.Limit, tz)
@@ -185,7 +186,7 @@ func createFlarumPageAPIDoc(
 	if pageInfo.HasNext {
 		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
 	}
-	model.FlarumCreateLocale(&coreData, currentUser)
+	model.FlarumCreateLocale(&coreData, reqctx.locale)
 
 	return coreData, err
 }
@@ -198,7 +199,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	logger := ctx.GetLogger()
+	// logger := ctx.GetLogger()
 	page := uint64(1)
 
 	tpl := h.CurrentTpl(r)
@@ -210,7 +211,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		Page:  page,
 		Limit: 10,
 	}
-	coreData, err := createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
+	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, df, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
 		return
@@ -283,7 +284,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			Limit: pageLimit,
 			CID:   0,
 		}
-		coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
+		coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, df, scf.TimeZone)
 	} else {
 		data := strings.Trim(_filter, " ")
 		if strings.HasPrefix(data, "tag:") {
@@ -298,7 +299,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				CID:   cate.ID,
 				Limit: pageLimit,
 			}
-			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, df, scf.TimeZone)
 		} else if strings.HasPrefix(data, "author:") {
 			user, err := model.SQLUserGetByName(sqlDB, data[7:])
 			if err != nil {
@@ -311,7 +312,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				UID:   user.ID,
 				Limit: pageLimit,
 			}
-			coreData, err = createFlarumPageAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, df, scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, df, scf.TimeZone)
 		} else {
 			logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))

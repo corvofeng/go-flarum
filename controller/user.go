@@ -15,7 +15,6 @@ import (
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"
-	"github.com/op/go-logging"
 	"github.com/rs/xid"
 	"goji.io/pat"
 )
@@ -491,15 +490,17 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 }
 
 func createFlarumUserAPIDoc(
-	logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client,
+	reqctx *ReqContext,
+	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	siteInfo model.SiteInfo,
-	currentUser *model.User,
-	inAPI bool,
 	tz int,
 ) (flarum.CoreData, error) {
 	var err error
 	coreData := flarum.NewCoreData()
+	inAPI := reqctx.inAPI
+	currentUser := reqctx.currentUser
+	logger := reqctx.GetLogger()
 
 	// 所有分类的信息, 用于整个站点的信息
 	var flarumTags []flarum.Resource
@@ -523,7 +524,7 @@ func createFlarumUserAPIDoc(
 		currentUser,
 		appConf, siteInfo, flarumTags,
 	))
-	model.FlarumCreateLocale(&coreData, currentUser)
+	model.FlarumCreateLocale(&coreData, reqctx.locale)
 
 	return coreData, err
 }
@@ -605,11 +606,11 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	// coreData := flarum.NewCoreData()
 	// apiDoc := &coreData.APIDocument
 	// apiDoc.SetData(model.FlarumCreateCurrentUser(*ctx.currentUser))
-	logger := ctx.GetLogger()
+	// logger := ctx.GetLogger()
 
 	tpl := h.CurrentTpl(r)
 
-	coreData, err := createFlarumUserAPIDoc(logger, sqlDB, redisDB, *h.App.Cf, si, ctx.currentUser, ctx.inAPI, scf.TimeZone)
+	coreData, err := createFlarumUserAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
 	}

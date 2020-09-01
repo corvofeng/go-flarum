@@ -57,6 +57,25 @@ func (h *BaseHandler) InitMiddlewareContext(inner http.Handler) http.Handler {
 	return http.HandlerFunc(mw)
 }
 
+// AdjustLocaleMiddleware 调整用户的语言设置
+func AdjustLocaleMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		reqCtx.locale = "en"
+		// 未登录用户, 根据cookie来选择
+		if cookie, err := r.Cookie("locale"); err == nil {
+			reqCtx.locale = cookie.Value
+		}
+		// 已经登录过的用户, 根据自己的配置
+		user := reqCtx.currentUser
+		if user != nil && user.Preferences != nil && user.Preferences.Locale != "" {
+			reqCtx.locale = user.Preferences.Locale
+		}
+		inner.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(mw)
+}
+
 // TrackerMiddleware 记录请求时间
 func TrackerMiddleware(inner http.Handler) http.Handler {
 	logger := util.GetLogger()
