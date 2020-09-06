@@ -301,6 +301,26 @@ func SQLCommentListByID(db *sql.DB, redisDB *redis.Client, commentID uint64, lim
 	}
 }
 
+// SQLCommentListByList 获取某条评论
+func SQLCommentListByList(db *sql.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
+	var items []CommentListItem
+	var hasPrev, hasNext bool
+	var firstKey, lastKey uint64
+	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	for _, bc := range baseComments {
+		c := bc.toComment(db, redisDB, tz)
+		items = append(items, c.toCommentListItem(db, redisDB, tz))
+	}
+
+	return CommentPageInfo{
+		Items:    items,
+		HasPrev:  hasPrev,
+		HasNext:  hasNext,
+		FirstKey: firstKey,
+		LastKey:  lastKey,
+	}
+}
+
 // SQLCommentListByPage 获取帖子的所有评论
 func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem

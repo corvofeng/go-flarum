@@ -71,6 +71,9 @@ type replyFilter struct {
 	UID   uint64 // 某个用户创建的评论
 	Page  uint64
 	Limit uint64
+	IDS   []uint64
+
+	RenderLimit uint64 // 当前页面会显示的评论数量, 一般只显示几条
 }
 
 // 获取评论的信息
@@ -92,6 +95,7 @@ func createFlarumReplyAPIDoc(
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
 
+	rf.RenderLimit = 5
 	// 当前全部的评论资源: 数据库中得到
 	var comments []model.CommentListItem
 	// 当前全部的评论资源: API返回
@@ -112,6 +116,13 @@ func createFlarumReplyAPIDoc(
 	} else if rf.FT == eUserPost {
 		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)
 		comments = pageInfo.Items
+	} else if rf.FT == ePosts { // 根据post列表获取评论
+		pageInfo := model.SQLCommentListByList(sqlDB, redisDB, rf.IDS, tz)
+		rf.RenderLimit = uint64(len(rf.IDS))
+		comments = pageInfo.Items
+		if len(comments) != 0 {
+			rf.AID = comments[0].AID
+		}
 	} else {
 		return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
 	}
@@ -132,9 +143,10 @@ func createFlarumReplyAPIDoc(
 			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
 		}
 	}
+	hasUpdateComments := make(chan bool)
 
 	// 针对某个话题时, 这里直接进行添加
-	if rf.FT == eArticle || rf.FT == ePost {
+	if rf.FT == eArticle || rf.FT == ePost || rf.FT == ePosts {
 		article, err := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
@@ -144,10 +156,12 @@ func createFlarumReplyAPIDoc(
 			apiDoc.AppendResourcs(*curDisscussion)
 		}
 		allDiscussions[rf.AID] = true
+		if rf.FT == eArticle { // 查询当前帖子的信息时, 更新redis中的帖子的评论信息
+			go article.CacheCommentList(redisDB, comments, hasUpdateComments)
+		}
 	}
 
-	for _, comment := range comments {
-
+	for _, comment := range comments[0:rf.RenderLimit] {
 		if _, ok := allUsers[comment.UID]; !ok {
 			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
 			if err != nil {
@@ -187,9 +201,14 @@ func createFlarumReplyAPIDoc(
 		apiDoc.AppendResourcs(post)
 		flarumPosts = append(flarumPosts, post)
 	}
+
 	// 针对当前的话题, 补全其关系信息
 	if curDisscussion != nil {
-		postRelation := model.FlarumCreatePostRelations(flarumPosts)
+		if rf.FT == eArticle { // 如果是查询全部评论, 等待一下
+			<-hasUpdateComments
+		}
+		article, _ := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
+		postRelation := model.FlarumCreatePostRelations([]flarum.Resource{}, article.GetCommentList(redisDB))
 		curDisscussion.BindRelations("Posts", postRelation)
 	}
 
@@ -219,7 +238,7 @@ func createFlarumReplyAPIDoc(
 		if len(flarumPosts) >= 0 {
 			apiDoc.SetData(flarumPosts[0]) // 主要信息为这条评论
 		}
-	} else if rf.FT == eUserPost {
+	} else if rf.FT == eUserPost || rf.FT == ePosts {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
 	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
@@ -360,6 +379,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	_disscussionID := parm.Get("filter[discussion]")
 	// _type := parm.Get("filter[type]")
 	_limit := parm.Get("page[limit]")
+	_ids := parm.Get("filter[id]")
 	// _sort := parm.Get("sort")
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
@@ -409,6 +429,21 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			FT:    eArticle,
 			AID:   aid,
 			Limit: article.Comments,
+		}
+	} else if _ids != "" {
+		postIds := strings.Split(_ids, ",")
+		var _ids64 []uint64
+		for _, _id := range postIds {
+			_id64, err := strconv.ParseUint(_id, 10, 64)
+			if err != nil {
+				logger.Error("Can't get post id for", _id)
+				continue
+			}
+			_ids64 = append(_ids64, _id64)
+		}
+		rf = replyFilter{
+			FT:  ePosts,
+			IDS: _ids64,
 		}
 	}
 	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)

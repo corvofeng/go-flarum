@@ -86,6 +86,7 @@ type filterType string
 const (
 	eUserPost filterType = "userpost"
 	ePost     filterType = "post"
+	ePosts    filterType = "posts"
 	eCategory filterType = "category"
 	eArticle  filterType = "article"
 	eReply    filterType = "reply"

@@ -255,12 +255,21 @@ func FlarumCreateUserLikeRelations(userList []uint64) flarum.RelationArray {
 }
 
 // FlarumCreatePostRelations 创建关系结构
-func FlarumCreatePostRelations(postArr []flarum.Resource) flarum.IRelation {
+func FlarumCreatePostRelations(postArr []flarum.Resource, comments []uint64) flarum.IRelation {
 	var obj flarum.RelationArray
 	for _, p := range postArr {
 		obj.Data = append(
 			obj.Data,
 			flarum.InitBaseResources(p.GetID(), p.Type),
+		)
+	}
+
+	p := flarum.Post{}
+	p.DoInit(0)
+	for _, cid := range comments {
+		obj.Data = append(
+			obj.Data,
+			flarum.InitBaseResources(cid, p.Type),
 		)
 	}
 

@@ -858,3 +858,31 @@ func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
 
 	return items
 }
+
+func (article *Article) toKeyForComments() string {
+	return fmt.Sprintf("comments-article-%d", article.ID)
+}
+
+// CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
+// 注意这里是有顺序的, 顺序为发帖时间
+func (article *Article) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+	for _, c := range comments {
+		_, err := rankRedisDB.ZAddNX(article.toKeyForComments(), &redis.Z{
+			Score:  float64(c.AddTime),
+			Member: c.ID},
+		).Result()
+		util.CheckError(err, "更新redis中的话题的评论信息")
+	}
+	done <- true
+	return nil
+}
+
+// GetCommentList 获取帖子对应的评论列表
+func (article *Article) GetCommentList(redisDB *redis.Client) (comments []uint64) {
+	rdsData, _ := rankRedisDB.ZRange(article.toKeyForComments(), 0, -1).Result()
+	for _, _cid := range rdsData {
+		cid, _ := strconv.ParseUint(_cid, 10, 64)
+		comments = append(comments, cid)
+	}
+	return
+}
