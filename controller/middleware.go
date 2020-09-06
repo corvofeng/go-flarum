@@ -118,12 +118,13 @@ func (h *BaseHandler) AuthMiddleware(inner http.Handler) http.Handler {
 }
 
 // InAPIMiddleware 被此装饰器修饰表明当前请求为API请求
-func InAPIMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func InAPIMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
 		reqCtx := GetRetContext(r)
 		reqCtx.inAPI = true
-		inner(w, r)
+		inner.ServeHTTP(w, r)
 	}
+	return http.HandlerFunc(mw)
 }
 
 // MustAuthMiddleware 要求用户必须登录

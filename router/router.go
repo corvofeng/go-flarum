@@ -99,9 +99,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.Use(ct.RealIPMiddleware)
 	sp.Use(ct.AdjustLocaleMiddleware)
 
-	apiSP := goji.SubMux()
-	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
-
 	sp.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			// ct.TestMiddleware,
@@ -138,27 +135,28 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// 获取用户的设置 GET请求
 	sp.HandleFunc(pat.Get("/settings"), ct.MustAuthMiddleware(ct.FlarumUserSettings))
 
+	apiSP := goji.SubMux()
+	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
+	apiSP.Use(ct.InAPIMiddleware)
 	apiSP.HandleFunc(pat.Get("/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumUser,
 	))
 
 	// API handler
 	// 获取全部的帖子信息
-	apiSP.HandleFunc(pat.Get("/discussions"), ct.InAPIMiddleware(ct.FlarumAPIDiscussions))
+	apiSP.HandleFunc(pat.Get("/discussions"), ct.FlarumAPIDiscussions)
 
 	// 获取某个帖子的详细信息 GET请求
-	apiSP.HandleFunc(pat.Get("/discussions/:aid"), ct.InAPIMiddleware(ct.FlarumArticleDetail))
+	apiSP.HandleFunc(pat.Get("/discussions/:aid"), ct.FlarumArticleDetail)
 
 	// 获取帖子的详细信息, POST请求
 	// 与上面不同的是, 这里的请求中可能携带有当前登录用户阅读到的位置, 将其进行记录
 	apiSP.HandleFunc(pat.Post("/discussions/:aid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumArticleDetail,
 	))
@@ -168,7 +166,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumAPICreateDiscussion,
 	))
@@ -177,17 +174,15 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumCommentsUtils,
 	))
 
-	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.InAPIMiddleware(ct.NewCaptcha))
+	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.NewCaptcha)
 
 	apiSP.HandleFunc(pat.Get("/posts"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumComments,
 	))
@@ -197,7 +192,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumAPICreatePost,
 	))
@@ -205,12 +199,11 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Post("/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
-			ct.InAPIMiddleware,
 		},
 		ct.FlarumUserUpdate,
 	))
 
-	apiSP.HandleFunc(pat.Get("/users"), ct.InAPIMiddleware(ct.FlarumConfirmUserAndPost))
+	apiSP.HandleFunc(pat.Get("/users"), ct.FlarumConfirmUserAndPost)
 
 	return sp
 }
