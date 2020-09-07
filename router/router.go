@@ -180,12 +180,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.NewCaptcha)
 
-	apiSP.HandleFunc(pat.Get("/posts"), ct.MiddlewareArrayToChains(
-		[]ct.HTTPMiddleWareFunc{
-			ct.MustAuthMiddleware,
-		},
-		ct.FlarumComments,
-	))
+	apiSP.HandleFunc(pat.Get("/posts"), ct.FlarumComments)
 
 	// 创建一篇评论
 	apiSP.HandleFunc(pat.Post("/posts"), ct.MiddlewareArrayToChains(
