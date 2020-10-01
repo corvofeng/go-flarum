@@ -3,7 +3,7 @@ version: '3'
 services:
   app:
     ports:
-      - "12322:8082"
+      - "10001:8082"
     image: zoe:dev
     environment:
       type: "web"
@@ -11,9 +11,11 @@ services:
       replicas: 3
     volumes:
       - ./static:/home/zoe/static
+      - ./config/config.yaml-docker:/home/zoe/config.yml
   cron:
     image: zoe:dev
     environment:
       type: "cron"
     volumes:
       - ./static:/home/zoe/static
+      - ./config/config.yaml-docker:/home/zoe/config.yml

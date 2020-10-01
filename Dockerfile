@@ -21,8 +21,8 @@ RUN yarn build
 
 # ## BOF CLEAN
 # # 国内用户可能需要设置 go proxy
-# RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
-# RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+RUN go env -w GOPROXY=https://goproxy.cn,direct
 # ## EOF CLEAN
 
 # RUN apk update && apk add git
@@ -45,13 +45,14 @@ WORKDIR /home/zoe
 
 ## BOF CLEAN
 # 下面的内容仅在本地调试时使用，线上构建时会将其删除
-COPY ./config/config.yaml-docker config.yml
-COPY ./static static
+# COPY ./config/config.yaml-docker config.yml
+# COPY ./static static
 ## EOF CLEAN
 
 COPY ./view view
 RUN rm -rf view/extensions view/flarum
 COPY --from=build-static /home/zoe/static webpack/static
+# COPY ./config/config.yaml $WORKDIR/config.yml
 # COPY --from=build-backend /home/zoe/zoe zoe
 COPY zoe zoe
 

@@ -6,54 +6,64 @@
 trigger:
 - master
 
-pool: Digital
-
-variables:
-  WORKDIR: /home/azure/zoe-build
-  PROJ: zoe
-  DOCKERHUB: corvofeng
-  # for go build in alpine
-  CGO_ENABLED: 0
-  GOOS: linux 
-
-
-steps:
-# force get submodules
-- checkout: self
-  persistCredentials: true
-  submodules: true
-
-- script: |
-    pwd
-    echo "$(System.DefaultWorkingDirectory)"
-    echo "Get build ID $(Build.BuildId)"
-    echo "Get build number $(Build.BuildNumber)"
-  displayName: 'pwd and echo dir'
-
-- task: GoTool@0
-  displayName: 'Use Go 1.13'
-  inputs:
-    version: 1.13
-
-- script: |
-    rsync --delete -avz --exclude '.git' --exclude 'gopath' $(System.DefaultWorkingDirectory)/* $(WORKDIR)
-  displayName: 'Sync the blog'
-
-- task: Go@0
-  displayName: 'go build'
-  inputs:
-    command: build
-    arguments: '-o zoe'
+jobs:
+- job: Build
+  pool: Digital
+  
+  variables:
+    WORKDIR: /home/azure/zoe-build
+    PROJ: zoe
+    DOCKERHUB: corvofeng
+    # for go build in alpine
+    CGO_ENABLED: 0
+    GOOS: linux 
+  
+  
+  steps:
+  # force get submodules
+  - checkout: self
+    persistCredentials: true
+    submodules: true
+  
+  - script: |
+      pwd
+      echo "$(System.DefaultWorkingDirectory)"
+      echo "Get build ID $(Build.BuildId)"
+      echo "Get build number $(Build.BuildNumber)"
+    displayName: 'pwd and echo dir'
+  
+  - task: GoTool@0
+    displayName: 'Use Go 1.13'
+    inputs:
+      version: 1.13
+    
+  - script: |
+      rsync --delete -avz --exclude '.git' --exclude 'gopath' $(System.DefaultWorkingDirectory)/* $(WORKDIR)
+    displayName: 'Sync the blog'
+    
+  - task: Go@0
+    displayName: 'go build'
+    inputs:
+      command: build
+      arguments: '-o zoe'
+      workingDirectory: '$(WORKDIR)'
+    
+  - script: |
+      echo "$(System.DefaultWorkingDirectory)"
+      sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
+      docker build . -t $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
+      # docker tag '$(PROJ):v$(Build.BuildId)'
+      docker push $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
+      sed -i 's@zoe:dev@$(DOCKERHUB)/$(PROJ):v$(Build.BuildId)@' docker-compose.yaml
+      sed -i 's@- ./config/config.yaml-docker:/home/zoe/config.yml@- /home/azure/zoe-config.yaml:/home/zoe/config.yml@' docker-compose.yaml
     workingDirectory: '$(WORKDIR)'
+    displayName: 'Build zoe image'
+    
+  - script: |
+      docker stack deploy --compose-file docker-compose.yaml zoe
+    workingDirectory: '$(WORKDIR)'
+    displayName: 'Use docker stack to run'
 
-- script: |
-    echo "$(System.DefaultWorkingDirectory)"
-    sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
-    docker build . -t '$(PROJ):v$(Build.BuildId)'
-    docker tag '$(PROJ):v$(Build.BuildId)' $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
-    docker push $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
-  workingDirectory: '$(WORKDIR)'
-  displayName: 'Build zoe image'
 
 # - task: CopyFiles@2
 #   displayName: 'Copy Files to: /home/azure/goyoubbs'
