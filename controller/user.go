@@ -425,8 +425,13 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var rec recForm
 	err := decoder.Decode(&rec)
-	if err != nil || rec.Identification == "" || rec.Password == "" {
+	if err != nil {
 		rsp = normalRsp{400, "数据填写错误:" + err.Error()}
+		h.jsonify(w, rsp)
+		return
+	}
+	if rec.Identification == "" || rec.Password == "" {
+		rsp = normalRsp{400, "请填写登录信息与密码"}
 		h.jsonify(w, rsp)
 		return
 	}
@@ -439,11 +444,8 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	var respCaptcha captchaData
 	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
-		respCaptcha = captchaData{
-			response{405, "验证码错误"},
-			model.NewCaptcha(),
-		}
-		h.jsonify(w, respCaptcha)
+		rsp = normalRsp{405, "验证码错误"}
+		h.jsonify(w, rsp)
 		return
 	}
 
@@ -453,19 +455,13 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	uobj, err := model.SQLUserGetByName(sqlDB, rec.Identification)
 	if err != nil {
-		respCaptcha = captchaData{
-			response{405, "登录失败, 请检查用户名与密码"},
-			model.NewCaptcha(),
-		}
+		rsp = normalRsp{405, "登录失败, 请检查用户名与密码"}
 		h.jsonify(w, respCaptcha)
 		return
 	}
 	if uobj.Password != rec.Password {
-		respCaptcha = captchaData{
-			response{405, "登录失败, 请检查用户名与密码"},
-			model.NewCaptcha(),
-		}
-		h.jsonify(w, respCaptcha)
+		rsp = normalRsp{405, "登录失败, 请检查用户名与密码"}
+		h.jsonify(w, rsp)
 		return
 	}
 	sessionid := xid.New().String()
