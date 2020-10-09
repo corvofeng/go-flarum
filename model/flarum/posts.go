@@ -30,6 +30,8 @@ type PostRelations struct {
 	Flags       RelationArray `json:"flags"`
 	Likes       RelationArray `json:"likes"`
 	MentionedBy RelationArray `json:"mentionedBy"`
+
+	MentionsPosts RelationArray `json:"mentionsPosts"`
 }
 
 // DoInit 初始化评论数据

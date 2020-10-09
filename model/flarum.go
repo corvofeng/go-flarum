@@ -237,6 +237,13 @@ func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resourc
 		},
 	)
 
+	obj.BindRelations(
+		"MentionsPosts",
+		flarum.RelationArray{
+			Data: []flarum.BaseRelation{},
+		},
+	)
+
 	return obj
 }
 
