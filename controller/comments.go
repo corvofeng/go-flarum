@@ -133,7 +133,7 @@ func createFlarumReplyAPIDoc(
 
 	commentsLen := uint64(len(comments))
 	if commentsLen < rf.RenderLimit {
-		logger.Warning("Can't get proper comments for", rf.IDS)
+		logger.Warning("Can't get proper comments for", rf.AID)
 		rf.RenderLimit = commentsLen
 	}
 
