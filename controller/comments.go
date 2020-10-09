@@ -110,6 +110,7 @@ func createFlarumReplyAPIDoc(
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
+		// comments = comments[0:rf.RenderLimit]
 	} else if rf.FT == ePost {
 		pageInfo := model.SQLCommentListByID(sqlDB, redisDB, rf.CID, rf.Limit, tz)
 		comments = pageInfo.Items
@@ -129,6 +130,12 @@ func createFlarumReplyAPIDoc(
 
 	if len(comments) == 0 {
 		logger.Errorf("Can't get any comment for %d", rf.AID)
+	}
+
+	commentsLen := uint64(len(comments))
+	if commentsLen < rf.RenderLimit {
+		logger.Warning("Can't get proper comments for", rf.IDS)
+		rf.RenderLimit = commentsLen
 	}
 
 	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
@@ -161,7 +168,7 @@ func createFlarumReplyAPIDoc(
 		}
 	}
 
-	for _, comment := range comments[0:rf.RenderLimit] {
+	for _, comment := range comments {
 		if _, ok := allUsers[comment.UID]; !ok {
 			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
 			if err != nil {
