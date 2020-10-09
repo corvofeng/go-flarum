@@ -129,12 +129,12 @@ func createFlarumPageAPIDoc(
 	var flarumTags []flarum.Resource
 	for _, category := range categories {
 		tag := model.FlarumCreateTag(category)
-		coreData.AppendResourcs(tag)
+		coreData.AppendResources(tag)
 		flarumTags = append(flarumTags, tag)
 	}
 
 	// 添加主站点信息
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+	coreData.AppendResources(model.FlarumCreateForumInfo(
 		currentUser,
 		appConf, siteInfo, flarumTags,
 	))
@@ -155,7 +155,7 @@ func createFlarumPageAPIDoc(
 	for _, article := range pageInfo.Items {
 		diss := model.FlarumCreateDiscussion(article)
 		res = append(res, diss)
-		coreData.AppendResourcs(diss)
+		coreData.AppendResources(diss)
 		getUser := func(uid uint64) {
 			// 用户不存在则添加, 已经存在的用户不会考虑
 			// TODO: 多次执行SQL可能会有性能问题
@@ -166,7 +166,7 @@ func createFlarumPageAPIDoc(
 				} else {
 					user := model.FlarumCreateUser(u)
 					allUsers[uid] = true
-					coreData.AppendResourcs(user)
+					coreData.AppendResources(user)
 				}
 			}
 		}

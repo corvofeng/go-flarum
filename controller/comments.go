@@ -110,7 +110,6 @@ func createFlarumReplyAPIDoc(
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
-		// comments = comments[0:rf.RenderLimit]
 	} else if rf.FT == ePost {
 		pageInfo := model.SQLCommentListByID(sqlDB, redisDB, rf.CID, rf.Limit, tz)
 		comments = pageInfo.Items
@@ -160,7 +159,7 @@ func createFlarumReplyAPIDoc(
 		} else {
 			diss := model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz))
 			curDisscussion = &diss
-			apiDoc.AppendResourcs(*curDisscussion)
+			apiDoc.AppendResources(*curDisscussion)
 		}
 		allDiscussions[rf.AID] = true
 		if rf.FT == eArticle { // 查询当前帖子的信息时, 更新redis中的帖子的评论信息
@@ -176,7 +175,7 @@ func createFlarumReplyAPIDoc(
 			} else {
 				user := model.FlarumCreateUser(u)
 				allUsers[comment.UID] = true
-				coreData.AppendResourcs(user)
+				coreData.AppendResources(user)
 			}
 		}
 
@@ -185,7 +184,7 @@ func createFlarumReplyAPIDoc(
 			if err != nil {
 				logger.Warning("Can't get article: ", comment.AID, err)
 			} else {
-				apiDoc.AppendResourcs(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
+				apiDoc.AppendResources(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
 			}
 			allDiscussions[comment.AID] = true
 		}
@@ -199,13 +198,13 @@ func createFlarumReplyAPIDoc(
 				} else {
 					user := model.FlarumCreateUser(u)
 					allUsers[user.GetID()] = true
-					coreData.AppendResourcs(user)
+					coreData.AppendResources(user)
 				}
 			}
 		}
 
 		post := model.FlarumCreatePost(comment, currentUser)
-		apiDoc.AppendResourcs(post)
+		apiDoc.AppendResources(post)
 		flarumPosts = append(flarumPosts, post)
 	}
 
@@ -227,7 +226,7 @@ func createFlarumReplyAPIDoc(
 	for _, category := range categories {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+	coreData.AppendResources(model.FlarumCreateForumInfo(
 		currentUser,
 		appConf, siteInfo,
 		flarumTags,

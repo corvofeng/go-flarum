@@ -248,20 +248,20 @@ func (apiDoc *APIDoc) SetData(data interface{}) {
 	apiDoc.Data = data
 }
 
-// AppendResourcs 添加资源
-func (apiDoc *APIDoc) AppendResourcs(res Resource) {
+// AppendResources 添加资源
+func (apiDoc *APIDoc) AppendResources(res Resource) {
 	apiDoc.Included = append(apiDoc.Included, res)
 }
 
-// AppendResourcs 添加资源
-func (coreData *CoreData) AppendResourcs(res Resource) {
-	coreData.APIDocument.AppendResourcs(res)
+// AppendResources 添加资源
+func (coreData *CoreData) AppendResources(res Resource) {
+	coreData.APIDocument.AppendResources(res)
 	coreData.Resources = append(coreData.Resources, res)
 }
 
 // AddCurrentUser 增加当前用户的信息
 func (coreData *CoreData) AddCurrentUser(user Resource) {
-	coreData.AppendResourcs(user)
+	coreData.AppendResources(user)
 }
 
 // AddSessionData 添加用户的session信息, 仅用于csrf

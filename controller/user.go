@@ -516,7 +516,7 @@ func createFlarumUserAPIDoc(
 	for _, category := range categories {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+	coreData.AppendResources(model.FlarumCreateForumInfo(
 		currentUser,
 		appConf, siteInfo, flarumTags,
 	))
@@ -639,7 +639,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	si := model.GetSiteInfo(redisDB)
 
-	coreData.AppendResourcs(model.FlarumCreateForumInfo(
+	coreData.AppendResources(model.FlarumCreateForumInfo(
 		ctx.currentUser,
 		*h.App.Cf, si,
 		[]flarum.Resource{},
@@ -649,7 +649,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 
 	// if user.ID == currentUser.ID {
 	u := model.FlarumCreateCurrentUser(user)
-	coreData.AppendResourcs(u)
+	coreData.AppendResources(u)
 	apiDoc.SetData(u)
 	currentUser := ctx.currentUser
 	// coreData.AppendResourcs(model.FlarumCreateCurrentUser(*ctx.currentUser))
