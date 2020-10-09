@@ -759,6 +759,23 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println(_filter)
 	// _near := r.FormValue("page[near]")
 	// fmt.Println(_near)
+	type QueryFilter struct {
+		Data struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			Attributes struct {
+				LastReadPostNumber uint64 `json:"lastReadPostNumber"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	getLastReadPostNumber := false
+
+	qf := QueryFilter{}
+	if inAPI {
+		if err := json.NewDecoder(r.Body).Decode(&qf); err == nil {
+			getLastReadPostNumber = true
+		}
+	}
 
 	_aid := pat.Param(r, "aid")
 	aid, err := strconv.ParseUint(_aid, 10, 64)
@@ -778,8 +795,14 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		FT:    eArticle,
 		AID:   aid,
 		Limit: article.Comments,
+
+		LastReadPostNumber: 0,
 	}
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, scf.TimeZone)
+	if getLastReadPostNumber {
+		rf.LastReadPostNumber = qf.Data.Attributes.LastReadPostNumber
+	}
+	coreData, err := createFlarumReplyAPIDoc(
+		ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))

@@ -74,6 +74,8 @@ type replyFilter struct {
 	IDS   []uint64
 
 	RenderLimit uint64 // 当前页面会显示的评论数量, 一般只显示几条
+
+	LastReadPostNumber uint64
 }
 
 // 获取评论的信息
@@ -95,7 +97,7 @@ func createFlarumReplyAPIDoc(
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
 
-	rf.RenderLimit = 5
+	rf.RenderLimit = 20
 	// 当前全部的评论资源: 数据库中得到
 	var comments []model.CommentListItem
 	// 当前全部的评论资源: API返回
@@ -127,11 +129,11 @@ func createFlarumReplyAPIDoc(
 		return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
 	}
 
-	if len(comments) == 0 {
+	commentsLen := uint64(len(comments))
+	if commentsLen == 0 {
 		logger.Errorf("Can't get any comment for %d", rf.AID)
 	}
 
-	commentsLen := uint64(len(comments))
 	if commentsLen < rf.RenderLimit {
 		logger.Warning("Can't get proper comments for", rf.AID)
 		rf.RenderLimit = commentsLen
@@ -145,10 +147,11 @@ func createFlarumReplyAPIDoc(
 		user := model.FlarumCreateCurrentUser(*currentUser)
 		allUsers[user.GetID()] = true
 		coreData.AddCurrentUser(user)
-		if !inAPI { // 做API请求时, 不更新csrf信息
+		if !inAPI { // 做API请求时, 不更新csrf信息, 反之则进行更新
 			coreData.AddSessionData(user, currentUser.RefreshCSRF(redisDB))
 		}
 	}
+
 	hasUpdateComments := make(chan bool)
 
 	// 针对某个话题时, 这里直接进行添加
@@ -168,6 +171,13 @@ func createFlarumReplyAPIDoc(
 	}
 
 	for _, comment := range comments {
+		if rf.LastReadPostNumber != 0 && comment.Number < rf.LastReadPostNumber {
+			continue
+		}
+		if rf.RenderLimit == 0 {
+			break
+		}
+
 		if _, ok := allUsers[comment.UID]; !ok {
 			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
 			if err != nil {
@@ -206,6 +216,8 @@ func createFlarumReplyAPIDoc(
 		post := model.FlarumCreatePost(comment, currentUser)
 		apiDoc.AppendResources(post)
 		flarumPosts = append(flarumPosts, post)
+
+		rf.RenderLimit--
 	}
 
 	// 针对当前的话题, 补全其关系信息
