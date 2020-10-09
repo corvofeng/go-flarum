@@ -134,6 +134,7 @@ func createFlarumReplyAPIDoc(
 		logger.Errorf("Can't get any comment for %d", rf.AID)
 	}
 
+	// 获取恰当的commentsLen值
 	if commentsLen < rf.RenderLimit {
 		logger.Warning("Can't get proper comments for", rf.AID)
 		rf.RenderLimit = commentsLen
@@ -171,9 +172,12 @@ func createFlarumReplyAPIDoc(
 	}
 
 	for _, comment := range comments {
+		// 使用lastReadPostNumber来标记起始位置
 		if rf.LastReadPostNumber != 0 && comment.Number < rf.LastReadPostNumber {
 			continue
 		}
+
+		// 使用renderlimit 标记结束位置
 		if rf.RenderLimit == 0 {
 			break
 		}
