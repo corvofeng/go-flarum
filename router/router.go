@@ -125,7 +125,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	//	discussion
 	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get("/d/:aid/:cid"), ct.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid/:lrn"), ct.FlarumArticleDetail) // lastReadNumber
 	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumArticleDetail)
 
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)

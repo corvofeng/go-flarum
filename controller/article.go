@@ -784,6 +784,20 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 获取此router下的lastReadNumber
+	// sp.HandleFunc(pat.Get("/d/:aid/:lrn"), ct.FlarumArticleDetail) // lastReadNumber
+	// goji的Param会在没有变量时抛出异常, 因此进行catch处理
+	func() {
+		defer func() { recover() }()
+		_lrn := pat.Param(r, "lrn")
+		if _lrn != "" {
+			if lrn, err := strconv.ParseUint(_lrn, 10, 64); err == nil {
+				getLastReadPostNumber = true
+				qf.Data.Attributes.LastReadPostNumber = lrn
+			}
+		}
+	}()
+
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 	if err != nil {
 		logger.Error("Can't get discussion id for ", aid)
