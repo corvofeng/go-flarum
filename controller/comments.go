@@ -166,7 +166,7 @@ func createFlarumReplyAPIDoc(
 			apiDoc.AppendResources(*curDisscussion)
 		}
 		allDiscussions[rf.AID] = true
-		if rf.FT == eArticle { // 查询当前帖子的信息时, 更新redis中的帖子的评论信息
+		if rf.FT == eArticle || rf.FT == ePost { // 查询当前帖子的信息时, 更新redis中的帖子的评论信息, ePost为刚刚添加帖子的操作
 			go article.CacheCommentList(redisDB, comments, hasUpdateComments)
 		}
 	}
@@ -226,7 +226,7 @@ func createFlarumReplyAPIDoc(
 
 	// 针对当前的话题, 补全其关系信息
 	if curDisscussion != nil {
-		if rf.FT == eArticle { // 如果是查询全部评论, 等待一下
+		if rf.FT == eArticle || rf.FT == ePost { // 如果是查询全部评论, 等待一下
 			<-hasUpdateComments
 		}
 		article, _ := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
@@ -403,6 +403,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	_limit := parm.Get("page[limit]")
 	_ids := parm.Get("filter[id]")
 	// _sort := parm.Get("sort")
+	_near := parm.Get("page[near]")
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	inAPI := ctx.inAPI
@@ -467,6 +468,15 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			FT:  ePosts,
 			IDS: _ids64,
 		}
+	}
+	if _near != "" {
+		near, err := strconv.ParseUint(_near, 10, 64)
+		if err != nil {
+			logger.Error("Can't get discussion id for ", _near)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the page[near] for: "+_near+err.Error()))
+			return
+		}
+		rf.LastReadPostNumber = near
 	}
 	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {

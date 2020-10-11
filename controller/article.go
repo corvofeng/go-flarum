@@ -797,6 +797,12 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}()
+	// if !getLastReadPostNumber {
+	// 	if near, err := strconv.ParseUint(_near, 10, 64); err == nil {
+	// 		getLastReadPostNumber = true
+	// 		qf.Data.Attributes.LastReadPostNumber = near
+	// 	}
+	// }
 
 	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
 	if err != nil {
