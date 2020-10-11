@@ -492,6 +492,7 @@ func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
 		err = json.Unmarshal(data, &user.Preferences)
 		if err != nil {
 			logger.Error("Load preferences", err.Error(), data)
+			user.Preferences = &flarum.Preferences{}
 		}
 	}
 	return
