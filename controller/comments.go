@@ -76,6 +76,8 @@ type replyFilter struct {
 	RenderLimit uint64 // 当前页面会显示的评论数量, 一般只显示几条
 
 	LastReadPostNumber uint64
+	NearNumber         uint64
+	StartNumber        uint64
 }
 
 // 获取评论的信息
@@ -109,6 +111,13 @@ func createFlarumReplyAPIDoc(
 	// 当前的话题信息
 	var curDisscussion *flarum.Resource
 
+	// 使用startNumber时, 多加载一部分数据
+	if rf.StartNumber < 10 {
+		rf.StartNumber = 1
+	} else {
+		rf.StartNumber = rf.StartNumber - 10
+	}
+
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
 		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
@@ -122,10 +131,8 @@ func createFlarumReplyAPIDoc(
 		pageInfo := model.SQLCommentListByList(sqlDB, redisDB, rf.IDS, tz)
 		rf.RenderLimit = uint64(len(rf.IDS))
 		comments = pageInfo.Items
-		if len(comments) != 0 {
-			rf.AID = comments[0].AID
-		}
 	} else {
+		logger.Warningf("Can't process filter: %s", rf.FT)
 		return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
 	}
 
@@ -138,6 +145,10 @@ func createFlarumReplyAPIDoc(
 	if commentsLen < rf.RenderLimit {
 		logger.Warning("Can't get proper comments for", rf.AID)
 		rf.RenderLimit = commentsLen
+	}
+
+	if rf.AID == 0 && commentsLen != 0 { // 没有AID时, 进行补充
+		rf.AID = comments[0].AID
 	}
 
 	allUsers := make(map[uint64]bool)       // 用于保存已经添加的用户, 进行去重
@@ -172,8 +183,13 @@ func createFlarumReplyAPIDoc(
 	}
 
 	for _, comment := range comments {
+		// lastReadPostNumber只用于记录读取到的位置, 不需要返回评论信息
+		if rf.LastReadPostNumber != 0 {
+			break
+		}
+
 		// 使用lastReadPostNumber来标记起始位置
-		if rf.LastReadPostNumber != 0 && comment.Number < rf.LastReadPostNumber {
+		if rf.StartNumber != 0 && comment.Number < rf.StartNumber {
 			continue
 		}
 
@@ -249,7 +265,11 @@ func createFlarumReplyAPIDoc(
 	))
 
 	if rf.FT == eArticle {
-		apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
+		if rf.NearNumber != 0 {
+			apiDoc.SetData(flarumPosts) // 主要信息为全部评论
+		} else {
+			apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
+		}
 	} else if rf.FT == ePost {
 		// comment, err := model.SQLGetCommentByID(sqlDB, redisDB, rf.CID, tz)
 		// if err != nil {
@@ -404,6 +424,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	_ids := parm.Get("filter[id]")
 	// _sort := parm.Get("sort")
 	_near := parm.Get("page[near]")
+	_postID := ""
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	inAPI := ctx.inAPI
@@ -453,6 +474,17 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			AID:   aid,
 			Limit: article.Comments,
 		}
+
+		if _near != "" {
+			near, err := strconv.ParseUint(_near, 10, 64)
+			if err != nil {
+				logger.Error("Can't get discussion id for ", _near)
+				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the page[near] for: "+_near+err.Error()))
+				return
+			}
+			rf.NearNumber = near
+		}
+
 	} else if _ids != "" {
 		postIds := strings.Split(_ids, ",")
 		var _ids64 []uint64
@@ -468,16 +500,20 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			FT:  ePosts,
 			IDS: _ids64,
 		}
-	}
-	if _near != "" {
-		near, err := strconv.ParseUint(_near, 10, 64)
+	} else if _postID, err = h.safeGetParm(r, "cid"); _postID != "" && err == nil {
+		postID, err := strconv.ParseUint(_postID, 10, 64)
 		if err != nil {
-			logger.Error("Can't get discussion id for ", _near)
-			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the page[near] for: "+_near+err.Error()))
-			return
+			logger.Error("Can't get post id for ", _postID)
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get postId for: "+err.Error()))
 		}
-		rf.LastReadPostNumber = near
+		rf = replyFilter{
+			FT:  ePost,
+			CID: postID,
+		}
+	} else {
+		logger.Warning("Can't process post api")
 	}
+
 	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))

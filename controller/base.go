@@ -15,6 +15,7 @@ import (
 	"goyoubbs/util"
 
 	"github.com/op/go-logging"
+	"goji.io/pat"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
@@ -166,6 +167,19 @@ func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}
 	}
 
 	return err
+}
+
+// sp.HandleFunc(pat.Get("/d/:aid/:lrn"), ct.FlarumArticleDetail) // lastReadNumber
+// goji的Param会在没有变量时抛出异常, 因此进行catch处理
+func (h *BaseHandler) safeGetParm(r *http.Request, parm string) (data string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			data = ""
+			err = errors.New("Can't get parm")
+		}
+	}()
+	data = pat.Param(r, parm)
+	return data, nil
 }
 
 // jsonify 序列化结构体并进行返回
