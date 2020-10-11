@@ -499,6 +499,8 @@ func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
 }
 
 // SetPreference 更新用户配置信息
+// 数据库中使用了blob的数据类型, 查看数据时, 需要进行转换:
+//  SELECT CONVERT(`preferences` USING utf8) FROM `user`;
 func (user *User) SetPreference(sqlDB *sql.DB, redisDB *redis.Client, preference flarum.Preferences) {
 	logger := util.GetLogger()
 	if user.Preferences == nil {
