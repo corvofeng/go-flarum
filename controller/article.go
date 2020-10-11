@@ -791,8 +791,14 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		defer func() { recover() }()
 		_lrn := pat.Param(r, "lrn")
 		if _lrn != "" {
+			// 对于lastReadNumber, 会预先加载部分先前的评论内容
 			if lrn, err := strconv.ParseUint(_lrn, 10, 64); err == nil {
 				getLastReadPostNumber = true
+				if lrn < 10 {
+					lrn = 0
+				} else {
+					lrn = lrn - 10
+				}
 				qf.Data.Attributes.LastReadPostNumber = lrn
 			}
 		}
