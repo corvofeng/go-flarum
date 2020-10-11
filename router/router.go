@@ -125,7 +125,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	//	discussion
 	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get("/d/:aid/:lrn"), ct.FlarumArticleDetail) // lastReadNumber
+	sp.HandleFunc(pat.Get("/d/:aid/:sn"), ct.FlarumArticleDetail) // startNumber
 	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumArticleDetail)
 
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)
@@ -181,6 +181,8 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.NewCaptcha)
 
 	apiSP.HandleFunc(pat.Get("/posts"), ct.FlarumComments)
+
+	apiSP.HandleFunc(pat.Get("/posts/:cid"), ct.FlarumComments)
 
 	// 创建一篇评论
 	apiSP.HandleFunc(pat.Post("/posts"), ct.MiddlewareArrayToChains(
