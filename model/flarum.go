@@ -31,8 +31,8 @@ func FlarumCreateForumInfo(
 	data.CanStartDiscussion = true
 	data.AllowSignUp = true
 	data.ShowLanguageSelector = true
-	data.WelcomeMessage = "这是一个简单的小站"
-	data.WelcomeTitle = "用作测试"
+	data.WelcomeMessage = siteConf.WelcomeMessage
+	data.WelcomeTitle = siteConf.WelcomeTitle
 	data.Debug = appConf.Main.Debug
 	data.MaxPrimaryTags = 3
 	data.MaxSecondaryTags = 3
