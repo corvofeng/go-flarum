@@ -48,6 +48,7 @@ Site:
     QQClientSecret: ""
     WeiboClientID: 0
     WeiboClientSecret: ""
+    TrackingCodeID: ""
     GithubClientID: ""
     GithubClientSecret: ""
     UploadSuffix: ""

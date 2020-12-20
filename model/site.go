@@ -90,6 +90,9 @@ type SiteConf struct {
 	UpyunUser         string
 	UpyunPw           string
 
+	// Google tracking code id
+	TrackingCodeID string
+
 	GithubClientID     string
 	GithubClientSecret string
 }
