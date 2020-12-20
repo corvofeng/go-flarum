@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"goyoubbs/cronjob"
-	"goyoubbs/getold"
 	"goyoubbs/model"
 
 	"goyoubbs/router"
@@ -38,7 +37,6 @@ func main() {
 	util.InitLogger()
 	logger := util.GetLogger()
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
-	getOldSite := flag.String("getoldsite", "0", "get or not old site, 0 or 1, 2")
 
 	flag.Parse()
 
@@ -50,19 +48,6 @@ func main() {
 
 	// 验证码信息使用Redis保存
 	model.SetCaptchaUseRedisStore(app.RedisDB)
-
-	if *getOldSite == "1" || *getOldSite == "2" {
-		bh := &getold.BaseHandler{
-			App: app,
-		}
-		if *getOldSite == "1" {
-			bh.GetRemote()
-		} else if *getOldSite == "2" {
-			bh.GetLocal()
-		}
-		app.Close()
-		return
-	}
 
 	// cron job
 	cr := cronjob.BaseHandler{App: app}
