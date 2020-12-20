@@ -1,14 +1,6 @@
 {{ define "flarum-content" }}
 
 <div class="container">
-  {{/* <h2>All Discussions</h2>
-  <ul>
-    <li>
-      <a href="https://flarum.yjzq.fun/d/1">
-        这是一个新的主题
-      </a>
-    </li>
-  </ul> */}}
 </div>
 
 
@@ -22,19 +14,5 @@
   </li>
   {{end}}
 </ul>
-
-{{/*
-  @if (isset($apiDocument->links->prev))
-    <a href="{{ $url->to('forum')->route('index') }}?page={{ $page - 1 }}">&laquo;
-  {{ $translator->trans('core.views.index.previous_page_button') }}</a>
-  @endif
-*/}}
-
-{{/*
-  @if (isset($apiDocument->links->next))
-    <a href="{{ $url->to('forum')->route('index') }}?page={{ $page + 1 }}">{{ $translator->trans('core.views.index.next_page_button') }}
-  &raquo;</a>
-  @endif
-*/}}
 </div>
 {{ end }}
