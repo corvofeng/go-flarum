@@ -8,7 +8,7 @@
   "dependencies": {
     "@babel/preset-typescript": "^7.10.1",
     "@types/jquery": "^3.5.1",
-    "@types/mithril": "^2.0.3",
+    "@types/mithril": "^2.0.4",
     "bootstrap": "3.4.1",
     "classnames": "^2.2.5",
     "color-thief-browser": "^2.0.2",
@@ -18,7 +18,7 @@
     "expose-loader": "^0.7.5",
     "file-loader": "^6.0.0",
     "flarum-webpack-config": "0.1.0-beta.10",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.1",
     "jquery.hotkeys": "^0.1.0",
     "less": "^3.11.1",
     "less-loader": "^6.1.0",

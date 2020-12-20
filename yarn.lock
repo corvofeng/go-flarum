@@ -1080,10 +1080,10 @@
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-3.0.3.tgz#3dca0e3f33b200fc7d1139c0cd96c1268cadfd9d"
   integrity sha512-tHq6qdbT9U1IRSGf14CL0pUlULksvY9OZ+5eEgl1N7t+OA3tGvNpxJCzuKQlsNgCVwbAs670L1vcVQi8j9HjnA==
 
-"@types/mithril@^2.0.3":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@types/mithril/-/mithril-2.0.4.tgz#bea4f931d3c60e59cc7b647d69f70ba7b25bc100"
-  integrity sha512-MIvmMwqoCN+e46Yj+FqvlYXviGK/PW98KDdx07j29ljIme74LW7KbBimogUdNorloeqqFpQYSu8ioJ57UBvFiA==
+"@types/mithril@^2.0.4":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@types/mithril/-/mithril-2.0.6.tgz#1e2a482b0d8bcfe83f4d61e4c370ec8534903984"
+  integrity sha512-oOyFr99rKH+94uKHjIVKTL9uaUaxtXJgtZOZkjhWIAY8twr9YzxfEmYARMJkWC3aVg52We8d4wtLhqQ99+fXpw==
 
 "@types/node@*":
   version "14.0.9"
@@ -3547,7 +3547,7 @@ jquery.hotkeys@^0.1.0:
   resolved "https://registry.yarnpkg.com/jquery.hotkeys/-/jquery.hotkeys-0.1.0.tgz#a88f636494fe75de41e4b753a059e5a523b83273"
   integrity sha1-qI9jZJT+dd5B5LdToFnlpSO4MnM=
 
-jquery@^3.4.1:
+jquery@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
   integrity sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==
