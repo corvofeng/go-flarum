@@ -2,7 +2,6 @@ package router
 
 import (
 	"net/http"
-	"os"
 
 	ct "goyoubbs/controller"
 	"goyoubbs/model"
@@ -70,22 +69,6 @@ func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Post("/content/preview"), h.ContentPreviewPost)
 	// sp.HandleFunc(pat.Post("/file/upload"), h.FileUpload)
 
-	sp.HandleFunc(pat.Get("/admin/post/edit/:aid"), h.ArticleEdit)
-	sp.HandleFunc(pat.Post("/admin/post/edit/:aid"), h.ArticleEditPost)
-
-	if os.Getenv("type") == "admin" {
-		sp.HandleFunc(pat.Get("/admin/comment/edit/:aid/:cid"), h.CommentEdit)
-		sp.HandleFunc(pat.Post("/admin/comment/edit/:aid/:cid"), h.CommentEditPost)
-		sp.HandleFunc(pat.Get("/admin/user/edit/:uid"), h.UserEdit)
-		sp.HandleFunc(pat.Post("/admin/user/edit/:uid"), h.UserEditPost)
-		sp.HandleFunc(pat.Get("/admin/user/list"), h.AdminUserList)
-		sp.HandleFunc(pat.Post("/admin/user/list"), h.AdminUserListPost)
-		sp.HandleFunc(pat.Get("/admin/category/list"), h.AdminCategoryList)
-		sp.HandleFunc(pat.Post("/admin/category/list"), h.AdminCategoryListPost)
-		sp.HandleFunc(pat.Get("/admin/link/list"), h.AdminLinkList)
-		sp.HandleFunc(pat.Post("/admin/link/list"), h.AdminLinkListPost)
-	}
-
 	return sp
 }
 
@@ -108,6 +91,9 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	))
 
 	sp.HandleFunc(pat.Get("/tags"), ct.FlarumIndex)
+
+	// robots.txt
+	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
 
 	// 用户相关
 	sp.HandleFunc(pat.Post("/register"), ct.FlarumUserRegister)
