@@ -1,17 +1,20 @@
 package model
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"fmt"
+	"goyoubbs/util"
 	"regexp"
-	"strconv"
 	"strings"
+
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
 )
 
 var (
-	codeRegexp    = regexp.MustCompile("(?s:```(.+?)```)")
-	imgRegexp     = regexp.MustCompile(`(https?://[\w./:]+/[\w./]+\.(jpg|jpe|jpeg|gif|png))`)
-	gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-]+/)?[\d]+)`)
+	// codeRegexp = regexp.MustCompile("(?s:```(.+?)```)")
+	// imgRegexp     = regexp.MustCompile(`(https?://[\w./:]+/[\w./]+\.(jpg|jpe|jpeg|gif|png))`)
+	// gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-]+/)?[\d]+)`)
+	gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+)`)
 	mentionRegexp = regexp.MustCompile(`\B@([a-zA-Z0-9\p{Han}]{1,32})#?([0-9]*)?\s?`)
 	// flarumMentionRegexp = regexp.MustCompile(`&lt;[USER|POST]MENTION(.+?)\/MENTION&gt;`)
 
@@ -20,43 +23,43 @@ var (
 	nlineRegexp         = regexp.MustCompile(`\s{2,}`)
 	youku1Regexp        = regexp.MustCompile(`https?://player\.youku\.com/player\.php/sid/([a-zA-Z0-9=]+)/v\.swf`)
 	youku2Regexp        = regexp.MustCompile(`https?://v\.youku\.com/v_show/id_([a-zA-Z0-9=]+)(/|\.html?)?`)
-
-	mentionReplaceStr = `<a href="/d/927/26" class="UserMention" data-id="$2">$1</a>`
+	iframeStyle         = `style="min-width: 200px; width: 80%; height: 460px;" allowfullscreen="allowfullscreen" scrolling="no" frameborder="0"`
 )
 
-// ContentFmt 防止XSS漏洞, 并处理样式
+func htmlEscape(rs string) string {
+	rs = strings.Replace(rs, "<", "&lt;", -1)
+	rs = strings.Replace(rs, ">", "&gt;", -1)
+	return rs
+}
+
+func genBilibili(url string) string {
+
+	const style = `style="min-width: 200px; width: 80%; height: 460px;" allowfullscreen="allowfullscreen" frameborder="0"`
+	return fmt.Sprintf(
+		`<br><iframe %s src="%s" sandbox="allow-top-navigation allow-same-origin allow-forms allow-popups allow-scripts"></iframe><br>`,
+		style,
+		url,
+	)
+}
+
+func genGist(url string) string {
+	return fmt.Sprintf(
+		`<br><iframe %s seamless="seamless" srcdoc='<html><body><style type="text/css">.gist .gist-data { height: 400px; }</style><script src="%s.js"></script></body></html>'></iframe><br>`,
+		iframeStyle,
+		url,
+	)
+}
+
+func genYoutube(url string) string {
+	return fmt.Sprintf(
+		`<br><iframe %s src="%s" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe><br>`,
+		iframeStyle,
+		url,
+	)
+}
+
+// ContentFmt 处理markdown样式
 func ContentFmt(input string) string {
-	if strings.Index(input, "```") >= 0 {
-		sepNum := strings.Count(input, "```")
-		if sepNum < 2 {
-			return input
-		}
-		codeMap := map[string]string{}
-		input = codeRegexp.ReplaceAllStringFunc(input, func(m string) string {
-			m = strings.Trim(m, "```")
-			m = strings.Trim(m, "\n")
-			//m = strings.TrimSpace(m)
-			m = strings.Replace(m, "&", "&amp;", -1)
-			m = strings.Replace(m, "<", "&lt;", -1)
-			m = strings.Replace(m, ">", "&gt;", -1)
-
-			codeTag := "[mspctag_" + strconv.FormatInt(int64(len(codeMap)+1), 10) + "]"
-			codeMap[codeTag] = "<pre><code>" + m + "</code></pre>"
-			return codeTag
-		})
-
-		input = ContentRich(input)
-		// replace tmp code tag
-		if len(codeMap) > 0 {
-			for k, v := range codeMap {
-				input = strings.Replace(input, k, v, -1)
-			}
-		}
-		//
-		input = strings.Replace(input, "<p><pre>", "<pre>", -1)
-		input = strings.Replace(input, "</pre></p>", "</pre>", -1)
-		return input
-	}
 	return ContentRich(input)
 }
 
@@ -66,116 +69,98 @@ type urlInfo struct {
 }
 
 // ContentRich 用来转换文本, 转义以及允许用户添加一些富文本样式
+// 该函数效率奇差, 但不会优化
 func ContentRich(input string) string {
 	input = strings.TrimSpace(input)
-	input = " " + input // fix Has url Prefix
-	inFlrum := false
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank | html.Safelink
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
 
-	replDict := make(map[string]string)
-	//1.  首先预取一次已经渲染好的数据
+	replaceDict := make(map[string]string) // 用来记录使用了uuid替换的数据的具体值
+
+	// 处理mention信息
+	// 首先获取应该被识别的mention信息
+	// 参考: https://stackoverflow.com/a/39102969
 	if strings.Index(input, "USERMENTION") >= 0 || strings.Index(input, "POSTMENTION") >= 0 { // flarum 的mention
-		inFlrum = true
+		mentionDict := make(map[string]string)
 		for _, m := range flarumMentionRegexp.FindAllString(input, -1) {
-			oldData := m
-			m = strings.Replace(m, "<", "&lt;", -1)
-			m = strings.Replace(m, ">", "&gt;", -1)
-
-			//2.  计算出未来增加了&lt;与&gt;之后的结果,
-			replDict[m] = MentionToHTML(oldData)
+			uid := util.GetUUID()
+			replaceDict[uid] = MentionToHTML(m)
+			mentionDict[m] = uid
+		}
+		for k, v := range mentionDict {
+			input = strings.ReplaceAll(input, k, v)
 		}
 	}
+	if strings.Index(input, "//player.bilibili.com") >= 0 {
+		bilibiliDict := make(map[string]string)
+		bilibliRegexp := regexp.MustCompile(`<iframe src="(//player.bilibili.com[^"^\n]*)"[a-zA-Z0-9 ="]*>\s*</iframe>`)
+		bilibiliURLRegexp := regexp.MustCompile(`(//player.bilibili.com[^"^\n]*)\n`)
+		input = bilibliRegexp.ReplaceAllString(input, "$1\n") // 将原有的iframe包裹的块剥离开来
+		for _, m := range bilibiliURLRegexp.FindAllString(input, -1) {
+			m = strings.TrimSuffix(m, "\n")
+			uid := util.GetUUID()
+			replaceDict[uid] = genBilibili(m)
+			bilibiliDict[m] = uid
+		}
 
-	input = strings.Replace(input, "<", "&lt;", -1)
-	input = strings.Replace(input, ">", "&gt;", -1)
-	input = imgRegexp.ReplaceAllString(input, `<img src="$1" />`)
-
-	// 3. 替换mention数据, 确保用户提交的&lt与&gt, 不会被错误处理
-	for k, v := range replDict {
-		input = strings.ReplaceAll(input, k, v)
-	}
-
-	// video
-	// youku
-	if strings.Index(input, "player.youku.com") >= 0 {
-		input = youku1Regexp.ReplaceAllString(input, `<embed src="https://player.youku.com/player.php/sid/$1/v.swf" quality="high" width="590" height="492" align="middle" allowScriptAccess="sameDomain" type="application/x-shockwave-flash"></embed>`)
-	}
-	if strings.Index(input, "v.youku.com") >= 0 {
-		input = youku2Regexp.ReplaceAllString(input, `<embed src="https://player.youku.com/player.php/sid/$1/v.swf" quality="high" width="590" height="492" align="middle" allowScriptAccess="sameDomain" type="application/x-shockwave-flash"></embed>`)
+		for k, v := range bilibiliDict {
+			input = strings.ReplaceAll(input, k, v)
+		}
 	}
 
 	if strings.Index(input, "://gist") >= 0 {
-		input = gistRegexp.ReplaceAllString(input, `<script src="$1.js"></script>`)
+		gistDict := make(map[string]string)
+		embedRegexp := regexp.MustCompile(`<script src="(https://gist.github.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+).js"></script>`)
+		gistURLRegexp := regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+)`)
+		input = embedRegexp.ReplaceAllString(input, "$1")
+		for _, m := range gistURLRegexp.FindAllString(input, -1) {
+			uid := util.GetUUID()
+			replaceDict[uid] = genGist(m)
+			gistDict[m] = uid
+		}
+
+		for k, v := range gistDict {
+			input = strings.ReplaceAll(input, k, v)
+		}
 	}
-	if !inFlrum && strings.Index(input, "@") >= 0 { // goyoubbs的mention
-		input = mentionRegexp.ReplaceAllString(input, mentionReplaceStr)
-	}
-	if strings.Index(input, "http") >= 0 {
-		//input = urlRegexp.ReplaceAllString(input, `$1<a href="$2">$2</a>`)
-		urlMd5Map := map[string]urlInfo{}
-		var keys [][]byte
-		input = urlRegexp.ReplaceAllStringFunc(input, func(m string) string {
-			n := strings.Index(m, "http")
-			url := strings.Replace(strings.TrimSpace(m[n:]), "&amp;", "&", -1)
-			hash := md5.Sum([]byte(url))
-			urlMd5 := hex.EncodeToString(hash[:])
-			urlMd5Map[urlMd5] = urlInfo{Href: url}
-			keys = append(keys, []byte(urlMd5))
-			return m[:n] + "[" + urlMd5 + "]"
-		})
-		// #2: URL链接允许用户查看已经点击的次数, 本身属于旧的功能, 未来可以考虑支持一下吧
-		// if len(urlMd5Map) > 0 {
-		// rs := cacheDB.Hmget("url_md5_click", keys)
-		// for i := 0; i < (len(rs.Data) - 1); i += 2 {
-		// key := rs.Data[i].String()
-		// tmp := urlMd5Map[key]
-		// tmp.Click = youdb.B2ds(rs.Data[i+1])
-		// urlMd5Map[key] = tmp
-		// }
-		// for k, v := range urlMd5Map {
-		// var aTag string
-		// if len(v.Click) > 0 {
-		// aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a> <span class="badge-notification clicks" title="` + v.Click + ` 次点击">` + v.Click + `</span>`
-		// } else {
-		// aTag = `<a href="` + v.Href + `" target="_blank">` + v.Href + `</a>`
-		// }
-		// input = strings.Replace(input, "["+k+"]", aTag, -1)
-		// }
-		// }
+	if strings.Index(input, "://www.youtube.com") >= 0 {
+		youtubeDict := make(map[string]string)
+		youtubeRegexp := regexp.MustCompile(`<iframe.*src="((https:)?//www.youtube.com[^"]*)".*>\s*</iframe>`)
+		input = youtubeRegexp.ReplaceAllString(input, "$1\n") // 将原有的iframe包裹的块剥离开来
+		youtubeURLRegexp := regexp.MustCompile(`((https:)?//www.youtube.com[^"^\n]*)\n`)
+
+		for _, m := range youtubeURLRegexp.FindAllString(input, -1) {
+			m = strings.TrimSuffix(m, "\n")
+			uid := util.GetUUID()
+			replaceDict[uid] = genYoutube(m)
+			youtubeDict[m] = uid
+		}
+
+		for k, v := range youtubeDict {
+			input = strings.ReplaceAll(input, k, v)
+		}
 	}
 
-	input = strings.Replace(input, "\r\n", "\n", -1)
-	input = strings.Replace(input, "\r", "\n", -1)
+	// 将原有的字符串中的<>全部进行转义
+	input = htmlEscape(input)
 
-	input = nlineRegexp.ReplaceAllString(input, "</p><p>")
-	input = strings.Replace(input, "\n", "<br>", -1)
+	// 对markdown文本进行解析
+	input = string(markdown.ToHTML([]byte(input), nil, renderer))
+
+	// 将原有被替换成uuid的内容进行恢复
+	for k, v := range replaceDict {
+		input = strings.ReplaceAll(input, k, v)
+	}
+
+	// input = strings.Replace(input, "\r\n", "\n", -1)
+	// input = strings.Replace(input, "\r", "\n", -1)
+
+	// input = nlineRegexp.ReplaceAllString(input, "</p><p>")
+	// input = strings.Replace(input, "\n", "<br>", -1)
 
 	input = "<p>" + input + "</p>"
-	input = strings.Replace(input, "<p></p>", "", -1)
+	// input = strings.Replace(input, "<p></p>", "", -1)
 
 	return input
-}
-
-func GetMention(input string, notInclude []string) []string {
-	notIncludeMap := make(map[string]struct{}, len(notInclude))
-	for _, v := range notInclude {
-		notIncludeMap[v] = struct{}{}
-	}
-	sbMap := map[string]struct{}{}
-	for _, at := range mentionRegexp.FindAllString(input, -1) {
-		sb := strings.TrimSpace(at)[1:]
-		if _, ok := notIncludeMap[sb]; ok {
-			continue
-		}
-		sbMap[sb] = struct{}{}
-	}
-	if len(sbMap) > 0 {
-		sb := make([]string, len(sbMap))
-		i := 0
-		for k := range sbMap {
-			sb[i] = k
-			i++
-		}
-		return sb
-	}
-	return []string{}
 }

@@ -79,7 +79,6 @@ type (
 
 		// 此处的变量为兼容旧的youbbs变量
 		PageInfo   model.ArticlePageInfo
-		Links      []model.Link
 		Cobj       model.Category
 		Aobj       model.Article
 		MainNodes  []model.CategoryMini

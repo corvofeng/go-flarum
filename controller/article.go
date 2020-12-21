@@ -285,7 +285,6 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 		BasePageData
 		SiteInfo model.SiteInfo
 		PageInfo model.ArticlePageInfo
-		Links    []model.Link
 	}
 
 	var count uint64
@@ -345,7 +344,7 @@ func (h *BaseHandler) IFeelLucky(w http.ResponseWriter, r *http.Request) {
 	evn.PageInfo = pageInfo
 
 	// 右侧的链接
-	evn.Links = model.RedisLinkList(redisDB, false)
+	// evn.Links = model.RedisLinkList(redisDB, false)
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }

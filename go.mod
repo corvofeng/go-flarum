@@ -9,9 +9,11 @@ require (
 	github.com/ego008/youdb v0.0.0-20200223095330-0a16a0a292d3
 	github.com/go-redis/redis/v7 v7.3.0
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gomarkdown/markdown v0.0.0-20201113031856-722100d81a8e
 	github.com/google/go-cmp v0.4.1 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/securecookie v1.1.1
 	github.com/klauspost/compress v1.10.7 // indirect
 	github.com/kr/text v0.2.0 // indirect

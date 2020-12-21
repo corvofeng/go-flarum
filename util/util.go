@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -110,6 +112,12 @@ func b64decode(data string) []byte {
 		return nil
 	}
 	return decoded
+}
+
+// GetUUID 获取一个随机的uuid
+func GetUUID() string {
+	id := uuid.New()
+	return id.String()
 }
 
 // GetNewToken 获取新的csrf token

@@ -49,6 +49,8 @@ jobs:
       workingDirectory: '$(WORKDIR)'
     
   - script: |
+      go test goyoubbs/model
+
       echo "$(System.DefaultWorkingDirectory)"
       sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
       docker build . -t $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)

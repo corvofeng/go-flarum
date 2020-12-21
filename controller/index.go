@@ -74,9 +74,6 @@ func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 	evn.PageInfo = pageInfo
 
-	// 右侧的链接
-	evn.Links = model.RedisLinkList(redisDB, false)
-
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }
 
