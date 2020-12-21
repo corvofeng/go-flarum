@@ -31,3 +31,6 @@
 [submodule "view/locale/zh"]
 	path = view/locale/zh
 	url = https://github.com/Littlegolden/flarum-lang-simplified-chinese.git
+[submodule "view/extensions/flarum-pipetables"]
+	path = view/extensions/flarum-pipetables
+	url = https://github.com/KevID/flarum-pipetables.git
