@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"goyoubbs/model"
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
+	"zoe/model"
+	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"

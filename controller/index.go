@@ -3,12 +3,12 @@ package controller
 import (
 	"database/sql"
 	"fmt"
-	"goyoubbs/model"
-	"goyoubbs/model/flarum"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"zoe/model"
+	"zoe/model/flarum"
 
 	"github.com/go-redis/redis/v7"
 )

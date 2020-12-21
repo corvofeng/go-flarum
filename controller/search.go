@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"goyoubbs/model"
+	"zoe/model"
 )
 
 // SearchDetail 按关键字查找

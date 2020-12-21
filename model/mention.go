@@ -3,8 +3,8 @@ package model
 import (
 	"encoding/xml"
 	"fmt"
-	"goyoubbs/util"
 	"strings"
+	"zoe/util"
 )
 
 type (

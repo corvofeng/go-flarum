@@ -49,8 +49,7 @@ jobs:
       workingDirectory: '$(WORKDIR)'
     
   - script: |
-      go test goyoubbs/model
-
+      go test zoe/model
       echo "$(System.DefaultWorkingDirectory)"
       sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
       docker build . -t $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
@@ -68,16 +67,16 @@ jobs:
 
 
 # - task: CopyFiles@2
-#   displayName: 'Copy Files to: /home/azure/goyoubbs'
+#   displayName: 'Copy Files to: /home/azure/zoe'
 #   inputs:
 #     SourceFolder: '$(WORKDIR)'
 #     Contents: |
 #      !.git/**/*
-#      **/goyoubbs
+#      **/zoe
 #      **/view/**
 #      **/static/**
 #      whooshsearch.py
-#     TargetFolder: /home/azure/goyoubbs
+#     TargetFolder: /home/azure/zoe
 #     OverWrite: true
 # - script: |
 #     mkdir -p '$(GOBIN)'

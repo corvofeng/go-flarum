@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
 	"html/template"
+	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
 

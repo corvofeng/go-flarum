@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-redis/redis/v7"
 
-	"goyoubbs/model"
-	"goyoubbs/system"
+	"zoe/model"
+	"zoe/system"
 
 	"github.com/boltdb/bolt"
 	"github.com/ego008/youdb"

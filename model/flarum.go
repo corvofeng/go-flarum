@@ -1,8 +1,8 @@
 package model
 
 import (
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
+	"zoe/model/flarum"
+	"zoe/util"
 )
 
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo

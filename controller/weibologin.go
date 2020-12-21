@@ -2,13 +2,13 @@ package controller
 
 import (
 	"encoding/json"
-	"goyoubbs/lib/weiboOAuth"
-	"goyoubbs/model"
-	"goyoubbs/util"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+	"zoe/lib/weiboOAuth"
+	"zoe/model"
+	"zoe/util"
 
 	"github.com/ego008/youdb"
 	"github.com/rs/xid"

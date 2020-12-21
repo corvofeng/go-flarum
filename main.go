@@ -14,14 +14,14 @@ import (
 	"syscall"
 	"time"
 
-	"goyoubbs/cronjob"
-	"goyoubbs/model"
+	"zoe/cronjob"
+	"zoe/model"
 
-	"goyoubbs/router"
-	"goyoubbs/system"
-	"goyoubbs/util"
+	"zoe/router"
+	"zoe/system"
+	"zoe/util"
 
-	ct "goyoubbs/controller"
+	ct "zoe/controller"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/xi2/httpgzip"

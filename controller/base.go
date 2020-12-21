@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"goyoubbs/model"
-	"goyoubbs/system"
-	"goyoubbs/util"
+	"zoe/model"
+	"zoe/system"
+	"zoe/util"
 
 	"github.com/op/go-logging"
 	"goji.io/pat"

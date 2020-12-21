@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"goyoubbs/model"
 	"net/http"
 	"strings"
+	"zoe/model"
 
 	"goji.io/pat"
 )

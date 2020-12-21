@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"goyoubbs/model"
-	// "goyoubbs/util"
+	"zoe/model"
+	// "zoe/util"
 
 	"goji.io/pat"
 )

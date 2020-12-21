@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"goyoubbs/model"
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
+	"zoe/model"
+	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"

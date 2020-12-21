@@ -3,9 +3,9 @@ package router
 import (
 	"net/http"
 
-	ct "goyoubbs/controller"
-	"goyoubbs/model"
-	"goyoubbs/system"
+	ct "zoe/controller"
+	"zoe/model"
+	"zoe/system"
 
 	"goji.io"
 	"goji.io/pat"
@@ -19,13 +19,13 @@ func NewRouter(app *system.Application) *goji.Mux {
 	if app.IsFlarum() {
 		NewFlarumRouter(app, sp)
 	} else {
-		NewGoYouBBSRouter(app, sp)
+		NewzoeRouter(app, sp)
 	}
 	return sp
 }
 
-// NewGoYouBBSRouter goyoubbs的router
-func NewGoYouBBSRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+// NewzoeRouter zoe的router
+func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	h := ct.BaseHandler{App: app}
 	sp.Use(h.InitMiddlewareContext)
 	sp.Use(h.AuthMiddleware)

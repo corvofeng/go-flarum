@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"goyoubbs/util"
+	"zoe/util"
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"goyoubbs/model"
-	"goyoubbs/util"
+	"zoe/model"
+	"zoe/util"
 
 	"github.com/rs/xid"
 )

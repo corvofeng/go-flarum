@@ -10,15 +10,16 @@ import (
 
 	"database/sql"
 
-	"goyoubbs/model"
-	"goyoubbs/util"
+	"zoe/model"
+	"zoe/util"
 
 	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"
 	logging "github.com/op/go-logging"
 	"github.com/weint/config"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+
+	// "go.mongodb.org/mongo-driver/mongo"
+	// "go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -29,8 +30,8 @@ type Application struct {
 	Db      *youdb.DB
 	RedisDB *redis.Client
 	MySQLdb *sql.DB
-	MongoDB *mongo.Client
-	Sc      *securecookie.SecureCookie
+	// MongoDB *mongo.Client
+	Sc *securecookie.SecureCookie
 	// QnZone  *storage.Zone
 	Logger *logging.Logger
 	Rand   *rand.Rand // 负责处理随机数
@@ -100,11 +101,11 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	logger.Debug(pong, err)
 
 	logger.Debugf("Get mongo db url: %s", mcf.MongoURL)
-	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
-	if err != nil {
-		logger.Errorf("Connect mongo error, %s", err)
-		return
-	}
+	// mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
+	// if err != nil {
+	// 	logger.Errorf("Connect mongo error, %s", err)
+	// 	return
+	// }
 
 	logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
 	sqlDb, err := sql.Open("mysql", mcf.MySQLURL)
@@ -117,7 +118,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	app.Db = nil
 	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient
-	app.MongoDB = mongoClient
+	// app.MongoDB = mongoClient
 
 	// set main node
 	// db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))

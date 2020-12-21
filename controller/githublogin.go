@@ -3,8 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	"goyoubbs/model"
 	"net/http"
+	"zoe/model"
 
 	"github.com/google/go-github/github"
 	"github.com/rs/xid"

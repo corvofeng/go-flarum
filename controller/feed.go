@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"goyoubbs/model"
 	"net/http"
 	"text/template"
+	"zoe/model"
 )
 
 func (h *BaseHandler) FeedHandler(w http.ResponseWriter, r *http.Request) {

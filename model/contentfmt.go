@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"goyoubbs/util"
 	"regexp"
 	"strings"
+	"zoe/util"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"

@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
 	"strconv"
 	"strings"
+	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
 )

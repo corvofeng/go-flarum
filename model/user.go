@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"goyoubbs/model/flarum"
-	"goyoubbs/util"
+	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
 	"github.com/google/go-github/github"
