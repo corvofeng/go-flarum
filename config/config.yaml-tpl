@@ -22,8 +22,8 @@ Main:
     SCHashKey: "BBt4fdaFlLFDlFDFLJiFFD8FD7876631345FDFDF998fdFD9fdF896766FFfdfa5"
     SCBlockKey: "cfdaFFiooVV7785565NL9876OTU0MGQ2"
 Site:
-    Name: "youBBS"
-    Desc: "Yet another bbs in go"
+    Name: "Zoe测试"
+    Desc: "zoe & ez"
     WelcomeTitle: "用作测试"
     WelcomeMessage: "这是一个简单的小站"
     AdminEmail: ""
