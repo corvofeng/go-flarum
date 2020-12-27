@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 	"zoe/model"
 	"zoe/model/flarum"
+	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
 	"goji.io/pat"
@@ -329,7 +329,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := uint64(time.Now().UTC().Unix())
+	now := util.TimeNow()
 	comment := model.Comment{
 		CommentBase: model.CommentBase{
 			AID:      aid,
@@ -569,6 +569,9 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 
 	if val, ok := commentUtils.Data.Attributes["isLiked"]; ok {
 		cobj.DoLike(sqlDB, redisDB, ctx.currentUser, val.(bool))
+	}
+	if val, ok := commentUtils.Data.Attributes["content"]; ok {
+		cobj.UpdateFlarumComment(sqlDB, val.(string), ctx.currentUser.ID)
 	}
 
 	rf := replyFilter{

@@ -476,6 +476,32 @@ func (comment *Comment) CreateFlarumComment(db *sql.DB) (bool, error) {
 	return true, nil
 }
 
+// UpdateFlarumComment 创建用户编辑评论
+func (comment *Comment) UpdateFlarumComment(db *sql.DB, newContent string, uID uint64) (bool, error) {
+	tx, err := db.Begin()
+	logger := util.GetLogger()
+	defer clearTransaction(tx)
+	if err != nil {
+		return false, err
+	}
+	db.Query("SELECT * FROM reply WHERE id=? FOR UPDATE", comment.ID)
+	if ok, err := comment.sqlCreateHistory(tx, newContent, uID); !ok {
+		return false, err
+	}
+
+	if ok, err := comment.sqlUpdateComment(tx, newContent); !ok {
+		return false, err
+	}
+
+	logger.Debugf("Update comment content %d success", comment.ID)
+	if err := tx.Commit(); err != nil {
+		logger.Error("Create reply with error", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (comment *Comment) sqlCreateComment(tx *sql.Tx) (bool, error) {
 	row, err := tx.Exec(
 		("INSERT INTO `reply` " +
@@ -495,6 +521,40 @@ func (comment *Comment) sqlCreateComment(tx *sql.Tx) (bool, error) {
 	cid, err := row.LastInsertId()
 	comment.ID = uint64(cid)
 
+	return true, nil
+}
+
+func (comment *Comment) sqlUpdateComment(tx *sql.Tx, newContent string) (bool, error) {
+	comment.Content = newContent
+	_, err := tx.Exec("UPDATE `reply`"+
+		" set content = ?, updated_at = ?"+
+		" where id = ?",
+		comment.Content,
+		util.TimeNow(),
+		comment.ID,
+	)
+	if util.CheckError(err, "更新评论内容") {
+		return false, err
+	}
+	return true, nil
+}
+
+func (comment *Comment) sqlCreateHistory(tx *sql.Tx, newContent string, uID uint64) (bool, error) {
+	_, err := tx.Exec(
+		("INSERT INTO `history` " +
+			" (`user_id`, `reply_id`, `topic_id`, `content`, created_at)" +
+			" VALUES " +
+			" (?, ?, ?, ?, ?)"),
+		uID,
+		comment.ID,
+		comment.AID,
+		comment.Content,
+		util.TimeNow(),
+	)
+	if err != nil {
+		util.GetLogger().Errorf("Can't create history because of %s", err)
+		return false, err
+	}
 	return true, nil
 }
 
@@ -562,7 +622,6 @@ func (comment *Comment) DoLike(db *sql.DB, redisDB *redis.Client, user *User, is
 	if isLiked {
 		sql = "INSERT INTO `reply_likes` (`reply_id`, `user_id`) VALUES (?, ?)"
 	} else {
-
 		sql = "DELETE FROM `reply_likes` WHERE `reply_likes`.`reply_id` = ? AND `reply_likes`.`user_id` = ?"
 	}
 	_, err := db.Exec(sql, comment.ID, user.ID)

@@ -9,6 +9,11 @@ const (
 	TIME_FMT = "2006-01-02 15:04"
 )
 
+// TimeNow 当前时间
+func TimeNow() uint64 {
+	return uint64(time.Now().UTC().Unix())
+}
+
 // TimeFmt 格式化时间戳
 func TimeFmt(tp interface{}, sample string, tz int) string {
 	offset := int64(time.Duration(tz) * time.Hour)
