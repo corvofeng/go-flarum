@@ -20,23 +20,25 @@ var (
 )
 
 // InitLogger 初始化Logger, 未来可以使用文件进行初始化.
-func InitLogger() {
-
+func InitLogger(lvl string) {
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
 	backendFormatter := logging.NewBackendFormatter(backend, format)
 	logging.SetBackend(backendFormatter)
-	logging.SetLevel(logging.DEBUG, loggerName)
+	// logging.SetLevel(logging.DEBUG, loggerName)
 
-	// switch *config.Loglvl {
-	// case "INFO":
-	// 	logging.SetLevel(logging.INFO, loggerName)
-	// 	break
-
-	// case "DEBUG":
-	// 	break
-	// default:
-	// 	logger.Notice("Unkonw level flags")
-	// }
+	switch lvl {
+	case "INFO":
+		logging.SetLevel(logging.INFO, loggerName)
+		break
+	case "DEBUG":
+		logging.SetLevel(logging.DEBUG, loggerName)
+		logger.Debug("In Debug log level")
+		break
+	case "WARNING":
+		logging.SetLevel(logging.WARNING, loggerName)
+	default:
+		logger.Notice("Unkonw level flags")
+	}
 }
 
 //CheckError error check, 检查到error, 返回true

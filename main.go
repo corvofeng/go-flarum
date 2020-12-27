@@ -34,11 +34,12 @@ import (
 )
 
 func main() {
-	util.InitLogger()
-	logger := util.GetLogger()
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
+	logLevel := flag.String("lvl", "INFO", "DEBUG LEVEL")
 
 	flag.Parse()
+	util.InitLogger(*logLevel)
+	logger := util.GetLogger()
 
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}
