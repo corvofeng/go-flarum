@@ -88,7 +88,6 @@ func (user *User) IsValid() bool {
 
 // SQLUserListByFlag 从数据库中查找用户列表
 /*
- * db (*youdb.DB): TODO
  * cmd (TODO): TODO
  * tb (TODO): TODO
  * key (string): TODO

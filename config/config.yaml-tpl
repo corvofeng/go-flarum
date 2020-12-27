@@ -9,7 +9,6 @@ Main:
     PubDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
-    Youdb: "mydata.db"
     LocaleDir: "view/locale"
     BaseURL: "http://127.0.0.1:8082"
     ServerStyle: "flarum"  # "flarum" | "youbbs"

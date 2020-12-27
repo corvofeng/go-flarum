@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 
 	"flag"
 	"log"
@@ -10,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -24,12 +22,8 @@ import (
 	ct "zoe/controller"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/xi2/httpgzip"
 	goji "goji.io"
 	"goji.io/pat"
-
-	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/net/http2"
 	// "github.com/go-redis/redis/v7"
 )
 
@@ -62,7 +56,6 @@ func main() {
 	root := goji.NewMux()
 
 	mcf := app.Cf.Main
-	scf := app.Cf.Site
 
 	// static file server
 	staticPath := mcf.PubDir
@@ -95,69 +88,14 @@ func main() {
 
 	var srv *http.Server
 
-	if mcf.HttpsOn {
-		// https
-		logger.Debug("Register sll for domain:", mcf.Domain)
-		logger.Debug("TLSCrtFile : ", mcf.TLSCrtFile)
-		logger.Debug("TLSKeyFile : ", mcf.TLSKeyFile)
+	// http
+	srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
+	// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
+	go func() {
+		log.Fatal(srv.ListenAndServe())
+	}()
 
-		root.Use(stlAge)
-
-		tlsCf := &tls.Config{
-			NextProtos: []string{http2.NextProtoTLS, "http/1.1"},
-		}
-
-		if mcf.Domain != "" && mcf.TLSCrtFile == "" && mcf.TLSKeyFile == "" {
-
-			domains := strings.Split(mcf.Domain, ",")
-			certManager := autocert.Manager{
-				Prompt:     autocert.AcceptTOS,
-				HostPolicy: autocert.HostWhitelist(domains...),
-				Cache:      autocert.DirCache("certs"),
-				Email:      scf.AdminEmail,
-			}
-			tlsCf.GetCertificate = certManager.GetCertificate
-			//tlsCf.ServerName = domains[0]
-
-			go func() {
-				// 必须是 80 端口
-				// log.Fatal(http.ListenAndServe(":http", certManager.HTTPHandler(nil)))
-			}()
-
-		} else {
-			// rewrite
-			go func() {
-				if err := http.ListenAndServe(":"+strconv.Itoa(mcf.HTTPPort), http.HandlerFunc(redirectHandler)); err != nil {
-					logger.Debug("Http2https server failed ", err)
-				}
-			}()
-		}
-
-		srv = &http.Server{
-			Addr:           ":" + strconv.Itoa(mcf.HttpsPort),
-			Handler:        httpgzip.NewHandler(root, nil),
-			TLSConfig:      tlsCf,
-			MaxHeaderBytes: int(app.Cf.Site.UploadMaxSizeByte),
-		}
-
-		go func() {
-			// 如何获取 TLSCrtFile、TLSKeyFile 文件参见 https://www.youbbs.org/t/2169
-			logger.Fatal(srv.ListenAndServeTLS(mcf.TLSCrtFile, mcf.TLSKeyFile))
-		}()
-
-		logger.Debug("Web server Listen port", mcf.HttpsPort)
-		logger.Debug("Web server URL", "https://"+mcf.Domain)
-
-	} else {
-		// http
-		srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
-		// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
-		go func() {
-			log.Fatal(srv.ListenAndServe())
-		}()
-
-		logger.Debug("Web server Listen port", strconv.Itoa(mcf.HTTPPort))
-	}
+	logger.Debug("Web server Listen port", strconv.Itoa(mcf.HTTPPort))
 
 	<-stopChan // wait for SIGINT
 	logger.Notice("Shutting down server...")

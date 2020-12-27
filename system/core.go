@@ -13,7 +13,6 @@ import (
 	"zoe/model"
 	"zoe/util"
 
-	"github.com/ego008/youdb"
 	"github.com/gorilla/securecookie"
 	logging "github.com/op/go-logging"
 	"github.com/weint/config"
@@ -27,7 +26,6 @@ import (
 // Application 应用数据库以及外部服务
 type Application struct {
 	Cf      *model.AppConf
-	Db      *youdb.DB
 	RedisDB *redis.Client
 	MySQLdb *sql.DB
 	// MongoDB *mongo.Client
@@ -115,7 +113,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		return
 	}
 
-	app.Db = nil
 	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient
 	// app.MongoDB = mongoClient
@@ -130,8 +127,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		// securecookie.GenerateRandomKey(32),
 	)
 	//app.Sc.SetSerializer(securecookie.JSONEncoder{})
-
-	app.Logger.Debug("youdb Connect to", mcf.Youdb)
 }
 
 // IsFlarum 当前论坛是否为flarum风格
@@ -141,10 +136,6 @@ func (app *Application) IsFlarum() bool {
 
 // Close 清理程序连接
 func (app *Application) Close() {
-	if app.Db != nil {
-		app.Db.Close()
-		app.Db = nil
-	}
 	if app.MySQLdb != nil {
 		app.MySQLdb.Close()
 		app.MySQLdb = nil

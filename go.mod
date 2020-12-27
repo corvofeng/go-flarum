@@ -3,11 +3,9 @@ module zoe
 go 1.13
 
 require (
-	github.com/boltdb/bolt v1.3.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/captcha v0.0.0-20170622155422-6a29415a8364
 	github.com/disintegration/imaging v1.6.2
-	github.com/ego008/youdb v0.0.0-20200223095330-0a16a0a292d3
 	github.com/go-redis/redis/v7 v7.3.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gomarkdown/markdown v0.0.0-20201113031856-722100d81a8e

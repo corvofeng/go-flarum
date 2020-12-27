@@ -178,19 +178,6 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		}
 		uobj.SQLRegister(sqlDB)
 
-		// uidStr := strconv.FormatUint(uobj.ID, 10)
-		// err = util.GenerateAvatar("male", rec.Name, 73, 73, "static/avatar/"+uidStr+".jpg")
-		// if err != nil {
-		// 	uobj.Avatar = "0"
-		// } else {
-		// 	uobj.Avatar = uidStr
-		// }
-
-		// jb, _ := json.Marshal(uobj)
-		// db.Hset("user", youdb.I2b(uobj.ID), jb)
-		// db.Hset("user_name2uid", []byte(nameLow), youdb.I2b(uobj.ID))
-		// db.Hset("user_flag:"+strconv.Itoa(flag), youdb.I2b(uobj.ID), []byte(""))
-
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
 	}
 

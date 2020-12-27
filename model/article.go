@@ -2,10 +2,8 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"html"
 	"math"
 	"strconv"
 	"strings"
@@ -16,8 +14,6 @@ import (
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
-
-	"github.com/ego008/youdb"
 )
 
 // ArticleBase 基础的文档类, 在数据库表中的字段
@@ -155,7 +151,6 @@ func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, 
 // GetCommentsSize 获取评论
 /*
  * db (*sql.DB): TODO
- * cntDB (*youdb.DB): TODO
  * redisDB (redis.Client): TODO
  */
 func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
@@ -762,101 +757,6 @@ func SQLArticleList(db *sql.DB, redisDB *redis.Client, start uint64, btnAct stri
 	return SQLCIDArticleList(
 		db, redisDB, 0, start, btnAct, limit, tz,
 	)
-}
-
-// ArticleFeedList 旧有函数, TODO: 增加feeds功能
-func ArticleFeedList(db *youdb.DB, limit, tz int) []ArticleFeedListItem {
-	var items []ArticleFeedListItem
-	var keys [][]byte
-	keyStart := []byte("")
-
-	for {
-		rs := db.Hrscan("article", keyStart, limit)
-		if rs.State != "ok" {
-			break
-		}
-		for i := 0; i < (len(rs.Data) - 1); i += 2 {
-			keyStart = rs.Data[i]
-			keys = append(keys, rs.Data[i])
-		}
-
-		if len(keys) > 0 {
-			var aitems []Article
-			userMap := map[uint64]UserMini{}
-			categoryMap := map[uint64]CategoryMini{}
-
-			rs := db.Hmget("article", keys)
-			if rs.State == "ok" {
-				for i := 0; i < (len(rs.Data) - 1); i += 2 {
-					item := Article{}
-					json.Unmarshal(rs.Data[i+1], &item)
-					if !item.Hidden {
-						aitems = append(aitems, item)
-						userMap[item.UID] = UserMini{}
-						categoryMap[item.CID] = CategoryMini{}
-					}
-				}
-			}
-
-			userKeys := make([][]byte, 0, len(userMap))
-			for k := range userMap {
-				userKeys = append(userKeys, youdb.I2b(k))
-			}
-			rs = db.Hmget("user", userKeys)
-			if rs.State == "ok" {
-				for i := 0; i < (len(rs.Data) - 1); i += 2 {
-					item := UserMini{}
-					json.Unmarshal(rs.Data[i+1], &item)
-					userMap[item.ID] = item
-				}
-			}
-
-			categoryKeys := make([][]byte, 0, len(categoryMap))
-			for k := range categoryMap {
-				categoryKeys = append(categoryKeys, youdb.I2b(k))
-			}
-			rs = db.Hmget("category", categoryKeys)
-			if rs.State == "ok" {
-				for i := 0; i < (len(rs.Data) - 1); i += 2 {
-					item := CategoryMini{}
-					json.Unmarshal(rs.Data[i+1], &item)
-					categoryMap[item.ID] = item
-				}
-			}
-
-			for _, article := range aitems {
-				user := userMap[article.UID]
-				category := categoryMap[article.CID]
-				item := ArticleFeedListItem{
-					ID:          article.ID,
-					UID:         article.UID,
-					Name:        user.Name,
-					Cname:       html.EscapeString(category.Name),
-					Title:       html.EscapeString(article.Title),
-					AddTimeFmt:  util.TimeFmt(article.AddTime, time.RFC3339, tz),
-					EditTimeFmt: util.TimeFmt(article.EditTime, time.RFC3339, tz),
-				}
-
-				contentRune := []rune(article.Content)
-				if len(contentRune) > 150 {
-					contentRune := []rune(article.Content)
-					item.Des = string(contentRune[:150])
-				} else {
-					item.Des = article.Content
-				}
-				item.Des = html.EscapeString(item.Des)
-
-				items = append(items, item)
-			}
-
-			keys = keys[:0]
-			if len(items) >= limit {
-				break
-			}
-		}
-	}
-
-	return items
 }
 
 func (article *Article) toKeyForComments() string {

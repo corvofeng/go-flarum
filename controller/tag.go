@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strings"
 	"zoe/model"
 
 	"goji.io/pat"
@@ -19,21 +18,21 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	tag := pat.Param(r, "tag")
-	tagLow := strings.ToLower(tag)
+	// tagLow := strings.ToLower(tag)
 
 	// cmd := "hrscan"
 	// if btn == "prev" {
 	// 	cmd = "hscan"
 	// }
 
-	db := h.App.Db
+	// db := h.App.Db
 	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
-	rs := db.Hscan("tag:"+tagLow, nil, 1)
-	if rs.State != "ok" {
-		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
-		return
-	}
+	// rs := db.Hscan("tag:"+tagLow, nil, 1)
+	// if rs.State != "ok" {
+	// 	w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
+	// 	return
+	// }
 
 	currentUser, _ := h.CurrentUser(w, r)
 
@@ -67,8 +66,7 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
 	evn.Tag = tagDetail{
-		Name:   tag,
-		Number: db.Zget("tag_article_num", []byte(tagLow)).Uint64(),
+		Name: tag,
 	}
 	evn.PageInfo = pageInfo
 	evn.SiteInfo = model.GetSiteInfo(redisDB)

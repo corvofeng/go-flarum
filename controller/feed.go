@@ -36,9 +36,7 @@ func (h *BaseHandler) FeedHandler(w http.ResponseWriter, r *http.Request) {
 </feed>
 `
 
-	db := h.App.Db
-
-	items := model.ArticleFeedList(db, 20, h.App.Cf.Site.TimeZone)
+	items := []model.ArticleFeedListItem{}
 
 	var upDate string
 	if len(items) > 0 {

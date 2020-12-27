@@ -31,7 +31,7 @@ func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.Use(h.AuthMiddleware)
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	sp.HandleFunc(pat.Get("/luck"), h.IFeelLucky)
+	// sp.HandleFunc(pat.Get("/luck"), h.IFeelLucky)
 	sp.HandleFunc(pat.Get("/view"), h.ViewAtTpl)
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
@@ -48,13 +48,13 @@ func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// sp.HandleFunc(pat.Get("/notification"), h.UserNotification)
 
 	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	sp.HandleFunc(pat.Post("/topic/:aid"), h.ArticleDetailPost)
+	// sp.HandleFunc(pat.Post("/topic/:aid"), h.ArticleDetailPost)
 
 	sp.HandleFunc(pat.Get("/setting"), h.UserSetting)
 	sp.HandleFunc(pat.Post("/setting"), h.UserSettingPost)
 
-	sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
-	sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
+	// sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
+	// sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
 
 	sp.HandleFunc(pat.Get("/login"), h.UserLogin)
 	sp.HandleFunc(pat.Post("/login"), h.UserLoginPost)

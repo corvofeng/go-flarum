@@ -13,10 +13,8 @@ const (
 
 // MainConf 主配置
 type MainConf struct {
-	HTTPPort  int
-	HttpsOn   bool   // TODO: 废弃
-	HttpsPort int    // TODO: 废弃
-	Domain    string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
+	HTTPPort int
+	Domain   string // 若启用https 则该domain 为注册的域名，eg: domain.com、www.domain.com
 
 	BaseURL string
 
@@ -29,7 +27,6 @@ type MainConf struct {
 	WebpackDir     string
 	LocaleDir      string
 	ViewDir        string
-	Youdb          string // TODO: 废弃
 	Debug          bool
 	ServerStyle    string // 选择使用的样式
 	ServerName     string
