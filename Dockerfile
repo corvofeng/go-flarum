@@ -1,5 +1,5 @@
 # 静态资源编译阶段
-FROM node:14.5.0-alpine3.12 as build-static
+FROM node:14.16.0-alpine3.12 as build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
 WORKDIR /home/zoe
@@ -7,7 +7,7 @@ COPY package.json *.lock ./
 
 # 只安装dependencies依赖
 # node镜像自带yarn
-# RUN yarn --only=prod --registry=https://registry.npm.taobao.org
+RUN yarn --only=prod --registry=https://registry.npm.taobao.org
 RUN yarn --only=prod
 
 COPY webpack.config.js ./
