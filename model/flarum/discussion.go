@@ -78,6 +78,7 @@ type DiscussionRelations struct {
 func (d *BaseDiscussion) DoInit(id uint64) {
 	d.setType("discussions")
 	d.setID(id)
+	d.Slug = d.ID
 }
 
 // GetType 获取类型
