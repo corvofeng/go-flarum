@@ -32,6 +32,10 @@
 
 {{/* {{ template "js" . }} */}}
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.js"></script>
+<script>
+  flarum.core.app = window.flarum_core_app;
+  flarum.core.compat = window.flarum_core_compat;
+</script>
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum_ext.js"></script>
 <script src="/locale/{{ .FlarumInfo.Locale }}/flarum-lang.js"></script>
 

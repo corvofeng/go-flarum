@@ -18,10 +18,8 @@ let devServer = {
 };
 let OUTPUT_PATH = path.resolve(process.cwd(), 'static', 'flarum');
 let FLARUM_DIR = path.resolve(process.cwd(), 'view', 'flarum');
+let STATIC_DIR = path.resolve(process.cwd(), 'view');
 let EXT_DIR = path.resolve(process.cwd(), "view", "extensions");
-
-config['module'].rules[0].test = /\.(tsx?|js)$/;
-config['module'].rules[0].use.options.presets.push('@babel/preset-typescript');
 
 module.exports = [
   // flarum.core配置
@@ -29,13 +27,14 @@ module.exports = [
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
-        const file = path.resolve(FLARUM_DIR, "js", app + '.js');
+        const file = path.resolve(STATIC_DIR, app + '.js');
         if (fs.existsSync(file)) {
           entries[app] = file;
         }
       }
       return entries;
     }(),
+    plugins: config.plugins,
 
     output: {
       path: OUTPUT_PATH,
@@ -46,18 +45,13 @@ module.exports = [
     module: config.module,
     devtool: config.devtool,
     devServer: devServer,
-    // temporary TS configuration
-    resolve: {
-      extensions: ['.ts', '.tsx', '.js', '.json'],
-    },
+    resolve: config.resolve
   },
   // flarum的一些扩展功能
   {
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
-        ;
-
         const file = path.resolve(EXT_DIR, app + ".js");
         entries[`${app}_ext`] = file;
       }
@@ -88,7 +82,12 @@ module.exports = [
       rules: [{
         test: /\.less$/,
         use: [
-          MiniCssExtractPlugin.loader,
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              publicPath: ''
+            }
+          },
           'css-loader',
           {
             loader: 'less-loader',
@@ -118,6 +117,6 @@ module.exports = [
     plugins: [new MiniCssExtractPlugin()],
     output: {
       path: OUTPUT_PATH,
-    }
+    },
   },
 ];
