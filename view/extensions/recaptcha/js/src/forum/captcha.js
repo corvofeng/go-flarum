@@ -1,5 +1,3 @@
-const { call } = require("file-loader");
-
 var Captcha = {
   captchaId: "",
   captchaSolution: "",
