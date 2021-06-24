@@ -2,6 +2,15 @@
 # yarn lockfile v1
 
 
+"@askvortsov/rich-icu-message-formatter@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@askvortsov/rich-icu-message-formatter/-/rich-icu-message-formatter-0.1.0.tgz#3fd4c36625e041ebc06756eafc3f2b0cabec9fa0"
+  integrity sha512-ZSHJZRqtopZljPcoCoyA4K+ORB/CpZKy2yJrZDsRdMB9MaQIKSCMx97WsHMU+VpW4nr8rUxfkE0eqvUlCBu9yQ==
+  dependencies:
+    "@babel/runtime" "^7.11.2"
+    "@ultraq/array-utils" "^2.1.0"
+    "@ultraq/icu-message-formatter" "^0.10.0"
+
 "@babel/code-frame@^7.10.1":
   version "7.10.1"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.10.1.tgz#d5481c5095daa1c57e16e54c6f9198443afb49ff"
@@ -983,6 +992,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.11.2":
+  version "7.14.6"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.14.6.tgz#535203bc0892efc7dec60bdc27b2ecf6e409062d"
+  integrity sha512-/PCB2uJ7oM44tz8YhC4Z/6PeOKXp4K588f+5M3clr1M4zbqztlo0XEfJ2LEzj/FgwfgGcIdl8n7YYjTCI0BYwg==
+  dependencies:
+    regenerator-runtime "^0.13.4"
+
 "@babel/template@^7.10.1":
   version "7.10.1"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.10.1.tgz#e167154a94cb5f14b28dc58f5356d2162f539811"
@@ -1094,6 +1110,34 @@
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/@types/sizzle/-/sizzle-2.3.2.tgz#a811b8c18e2babab7d542b3365887ae2e4d9de47"
   integrity sha512-7EJYyKTL7tFR8+gDbB6Wwz/arpGa0Mywk1TJbNzKzHtzbwVmY4HR9WqS5VV7dsBUKQmPNr192jHr/VpBluj/hg==
+
+"@ultraq/array-utils@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@ultraq/array-utils/-/array-utils-2.1.0.tgz#56f16a1ea3ef46c5d5f04638b47c4fca4d71a8c1"
+  integrity sha512-TKO1zE6foqs5HG3+QH32yKwJ0zhZrm6J3UmltscveQmxCdbgIPXhNf3A8C9HakjyZDHVRK5pYZOU0tTl28YGFg==
+
+"@ultraq/function-utils@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@ultraq/function-utils/-/function-utils-0.3.0.tgz#63eb7dceff18fdca212fae11a59b3ee01f556917"
+  integrity sha512-AwFCYorRn0GE34hfgxaCmfnReHqcwWE6QwWPQf/1Zj7k3Zi0FATSJhbtDA+6ayV8p6AnhEntntXaMWMkK17tEQ==
+
+"@ultraq/icu-message-formatter@^0.10.0":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@ultraq/icu-message-formatter/-/icu-message-formatter-0.10.1.tgz#628286a8a5e0714ada1c3e91559f992154436d6a"
+  integrity sha512-UxhC0wQvDmeQSZ/4RtxO62czV8fjV/T6A0JU9zjGS0eK+ho0WeTixnEUJ0vNikFBqUkaopl+HDjrsvTDXm5W+A==
+  dependencies:
+    "@babel/runtime" "^7.11.2"
+    "@ultraq/array-utils" "^2.1.0"
+    "@ultraq/function-utils" "^0.3.0"
+
+"@ultraq/icu-message-formatter@^0.11.1":
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/@ultraq/icu-message-formatter/-/icu-message-formatter-0.11.1.tgz#78965174295249c67edf0acaf9510cd155ecbd50"
+  integrity sha512-ouPFSqgSiCLLOEZTahfSxQJoparf7hCOSPUilOd1cORmBBhsL+zY2sy82bdn3PofoXIUKRqqQmMHGil+hO8N8w==
+  dependencies:
+    "@babel/runtime" "^7.11.2"
+    "@ultraq/array-utils" "^2.1.0"
+    "@ultraq/function-utils" "^0.3.0"
 
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
@@ -1891,6 +1935,11 @@ clone@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/clone/-/clone-2.1.2.tgz#1b7f4b9f591f1e8f83670401600345a02887435f"
   integrity sha1-G39Ln1kfHo+DZwQBYANFoCiHQ18=
+
+clsx@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.1.1.tgz#98b3134f9abbdf23b2663491ace13c5c03a73188"
+  integrity sha512-6/bPho624p3S2pMyvP5kKBPXnI3ufHLObBFCfgx+LkeR5lg2XYy2hqZqUf45ypD8COn2bhgGJSUE+l5dhNBieA==
 
 collection-visit@^1.0.0:
   version "1.0.0"
@@ -5464,6 +5513,11 @@ textarea-caret@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/textarea-caret/-/textarea-caret-3.1.0.tgz#5d5a35bb035fd06b2ff0e25d5359e97f2655087f"
   integrity sha512-cXAvzO9pP5CGa6NKx0WYHl+8CHKZs8byMkt3PCJBCmq2a34YA9pO1NrQET5pzeqnBjBdToF5No4rrmkDUgQC2Q==
+
+throttle-debounce@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/throttle-debounce/-/throttle-debounce-3.0.1.tgz#32f94d84dfa894f786c9a1f290e7a645b6a19abb"
+  integrity sha512-dTEWWNu6JmeVXY0ZYoPuH5cRIwc0MeGbJwah9KUNYSJwommQpCzTySTpEe8Gs1J23aeWEuAobe4Ag7EHVt/LOg==
 
 through2@^2.0.0:
   version "2.0.5"
