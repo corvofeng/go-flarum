@@ -127,6 +127,16 @@ func InAPIMiddleware(inner http.Handler) http.Handler {
 	return http.HandlerFunc(mw)
 }
 
+// InAdminMiddleware 被此装饰器修饰表明当前请求为API请求
+func InAdminMiddleware(inner http.Handler) http.Handler {
+	mw := func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		reqCtx.inAdmin = true
+		inner.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(mw)
+}
+
 // MustAuthMiddleware 要求用户必须登录
 func MustAuthMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -175,6 +185,15 @@ func MustAdminUser(inner HTTPHandleFunc) HTTPHandleFunc {
 				Retmsg:  "此行为仅允许管理员操作",
 			})
 		}
+		inner(w, r)
+	}
+}
+
+// IsInAdmin 在admin页面中
+func IsInAdmin(inner HTTPHandleFunc) HTTPHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqCtx := GetRetContext(r)
+		reqCtx.inAdmin = true
 		inner(w, r)
 	}
 }

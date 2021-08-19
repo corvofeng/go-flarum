@@ -88,7 +88,6 @@ func createFlarumReplyAPIDoc(
 	reqctx *ReqContext,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
-	siteInfo model.SiteInfo,
 	rf replyFilter,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -98,6 +97,7 @@ func createFlarumReplyAPIDoc(
 	inAPI := reqctx.inAPI
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
+	siteInfo := model.GetSiteInfo(redisDB)
 
 	rf.RenderLimit = 20
 	// 当前全部的评论资源: 数据库中得到
@@ -132,8 +132,8 @@ func createFlarumReplyAPIDoc(
 		rf.RenderLimit = uint64(len(rf.IDS))
 		comments = pageInfo.Items
 	} else {
-		logger.Warningf("Can't process filter: %s", rf.FT)
-		return coreData, fmt.Errorf("Can't process filter: %s", rf.FT)
+		logger.Warningf("Can't process filter: `%s`", rf.FT)
+		return coreData, fmt.Errorf("can't process filter: `%s`", rf.FT)
 	}
 
 	commentsLen := uint64(len(comments))
@@ -297,7 +297,6 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
-	si := model.GetSiteInfo(redisDB)
 	// logger := ctx.GetLogger()
 
 	type PostedReply struct {
@@ -354,7 +353,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		Limit: comment.Number,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询评论出现错误:"+err.Error())
 		return
@@ -514,7 +513,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		logger.Warning("Can't process post api")
 	}
 
-	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -526,8 +525,6 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		h.jsonify(w, coreData.APIDocument)
 		return
 	}
-
-	return
 }
 
 // FlarumCommentsUtils 对于评论的一些操作
@@ -580,7 +577,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 		AID: cobj.AID,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

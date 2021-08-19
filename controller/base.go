@@ -33,6 +33,7 @@ type (
 		Keywords      string
 		Description   string
 		IsMobile      bool
+		IsInAdmin     bool       // 是否在admin页面中
 		CurrentUser   model.User // 历史原因: 这里切换成指针有太多的报错, 暂时不处理
 		PageName      string     // index/post_add/post_detail/...
 		ShowPostTopAd bool
@@ -67,6 +68,7 @@ type (
 	ReqContext struct {
 		currentUser *model.User
 		inAPI       bool
+		inAdmin     bool
 		h           *BaseHandler
 		realIP      string
 		locale      string
@@ -83,6 +85,8 @@ type (
 		Aobj       model.Article
 		MainNodes  []model.CategoryMini
 		FlarumInfo interface{}
+
+		FlarumJSPrefix string
 
 		PluginHTML map[string]string
 	}
@@ -103,11 +107,17 @@ func InitPageData(r *http.Request) *PageData {
 			SiteCf:      h.App.Cf.Site,
 			Title:       h.App.Cf.Site.Name,
 			Description: h.App.Cf.Site.Desc,
+			IsInAdmin:   ctx.inAdmin,
 			SiteInfo:    model.GetSiteInfo(redisDB),
 		},
-		PluginHTML: make(map[string]string),
+		PluginHTML:     make(map[string]string),
+		FlarumJSPrefix: "forum",
 		// SiteInfo: model.GetSiteInfo(redisDB),
 	}
+	if pd.IsInAdmin {
+		pd.FlarumJSPrefix = "admin"
+	}
+
 	if ctx.currentUser != nil {
 		pd.CurrentUser = *ctx.currentUser
 	}

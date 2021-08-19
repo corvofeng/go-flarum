@@ -8,7 +8,9 @@ import (
 
 const (
 	// FlarumAPIPath flarum 的api位置
-	FlarumAPIPath = "/api/v1/flarum"
+	FlarumAPIPath      = "/api/v1/flarum"
+	FlarumAdminPath    = "/admin"
+	FlarumExtensionAPI = "/api/extensions" // 用于网站管理员
 )
 
 // MainConf 主配置
@@ -26,6 +28,7 @@ type MainConf struct {
 	PubDir         string
 	WebpackDir     string
 	LocaleDir      string
+	ExtensionsDir  string
 	ViewDir        string
 	Debug          bool
 	ServerStyle    string // 选择使用的样式
