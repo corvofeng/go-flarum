@@ -186,33 +186,27 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 	var defaultRelation IRelation
 
 	switch resourceType {
+	// golang no need break
 	case EBaseUser:
 		data = &BaseUser{}
 		defaultRelation = &UserRelations{}
-		break
 	case ECurrentUser:
 		data = &CurrentUser{}
 		defaultRelation = &UserRelations{}
-		break
 	case EDiscussion:
 		data = &Discussion{}
 		defaultRelation = &DiscussionRelations{}
-		break
 	case EForum:
 		data = &Forum{}
 		defaultRelation = &ForumRelations{}
-		break
 	case ETAG:
 		data = &Tag{}
 		defaultRelation = &TagRelations{}
-		break
 	case EPost:
 		data = &Post{}
 		defaultRelation = &PostRelations{}
-		break
 	case EGroup:
 		data = &Group{}
-		break
 	}
 	data.DoInit(id)
 	obj = Resource{
@@ -241,6 +235,16 @@ func NewCoreData() CoreData {
 	coreData := CoreData{}
 	coreData.APIDocument = newAPIDoc()
 	return coreData
+}
+
+// NewAdminCoreData 新建一个CoreData对象
+// 使用方法:
+// 	coreData := flarum.NewAdminCoreData()
+// 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+func NewAdminCoreData() AdminCoreData {
+	adminCoreData := AdminCoreData{}
+	adminCoreData.APIDocument = newAPIDoc()
+	return adminCoreData
 }
 
 // SetData 设置为字典类型的数据

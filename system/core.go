@@ -134,6 +134,10 @@ func (app *Application) IsFlarum() bool {
 	return app.Cf.Main.ServerStyle == "flarum"
 }
 
+func (app *Application) CanServeAdmin() bool {
+	return true
+}
+
 // Close 清理程序连接
 func (app *Application) Close() {
 	if app.MySQLdb != nil {

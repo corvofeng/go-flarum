@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8">
   <title>{{.SiteCf.Name}}</title>
-  <link rel="stylesheet" href="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.css">
+  <link rel="stylesheet" href="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}.css">
   <link rel="canonical" href="{{.SiteCf.MainDomain}}">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
   <meta name="description" content="">
@@ -31,20 +31,21 @@
 </script>
 
 {{/* {{ template "js" . }} */}}
-<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}.js"></script>
 <script>
   flarum.core.app = window.flarum_core_app;
   flarum.core.compat = window.flarum_core_compat;
 </script>
-<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/forum_ext.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}_ext.js"></script>
 <script src="/locale/{{ .FlarumInfo.Locale }}/flarum-lang.js"></script>
 
 <script>
   document.getElementById('flarum-loading').style.display = 'none';
 
   try {
-    {{/* flarum.core.app.load({"resources":[{"type":"forums","id":"1","attributes":{"title":"MyFlarum","description":"","showLanguageSelector":true,"baseUrl":"https:\/\/flarum.yjzq.fun","basePath":"","debug":false,"apiUrl":"https:\/\/flarum.yjzq.fun\/api","welcomeTitle":"Welcome to MyFlarum","welcomeMessage":"This is beta software and you should not use it in production.","themePrimaryColor":"#4D698E","themeSecondaryColor":"#4D698E","logoUrl":null,"faviconUrl":null,"headerHtml":null,"footerHtml":null,"allowSignUp":true,"defaultRoute":"\/all","canViewDiscussions":true,"canStartDiscussion":true,"canViewUserList":true,"adminUrl":"https:\/\/flarum.yjzq.fun\/admin","version":"0.1.0-beta.13","canViewFlags":true,"flagCount":0,"guidelinesUrl":null,"minPrimaryTags":"1","maxPrimaryTags":"1","minSecondaryTags":"0","maxSecondaryTags":"3"},"relationships":{"groups":{"data":[{"type":"groups","id":"1"},{"type":"groups","id":"2"},{"type":"groups","id":"3"},{"type":"groups","id":"4"}]},"tags":{"data":[{"type":"tags","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}},{"type":"groups","id":"2","attributes":{"nameSingular":"Guest","namePlural":"Guests","color":null,"icon":null,"isHidden":0}},{"type":"groups","id":"3","attributes":{"nameSingular":"Member","namePlural":"Members","color":null,"icon":null,"isHidden":0}},{"type":"groups","id":"4","attributes":{"nameSingular":"Mod","namePlural":"Mods","color":"#80349E","icon":"fas fa-bolt","isHidden":0}},{"type":"tags","id":"1","attributes":{"name":"General","description":null,"slug":"general","color":"#888","backgroundUrl":null,"backgroundMode":null,"icon":null,"discussionCount":1,"position":0,"defaultSort":null,"isChild":false,"isHidden":false,"lastPostedAt":"2020-05-28T02:01:41+00:00","canStartDiscussion":true,"canAddToDiscussion":true,"isRestricted":false},"relationships":{"lastPostedDiscussion":{"data":{"type":"discussions","id":"1"}}}},{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-28T02:01:41+00:00","lastPostNumber":1,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-28T02:01:41+00:00","lastReadPostNumber":1,"isApproved":true,"isLocked":false,"canLock":true,"isSticky":false,"canSticky":true,"subscription":false,"canTag":true}},{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null,"joinTime":"2020-05-28T01:53:35+00:00","discussionCount":1,"commentCount":1,"canEdit":true,"canDelete":true,"lastSeenAt":"2020-05-30T05:11:50+00:00","isEmailConfirmed":true,"email":"corvofeng@gmail.com","markedAllAsReadAt":null,"unreadNotificationCount":0,"newNotificationCount":0,"preferences":{"notify_discussionRenamed_alert":true,"notify_postLiked_alert":true,"notify_discussionLocked_alert":true,"notify_postMentioned_alert":true,"notify_postMentioned_email":false,"notify_userMentioned_alert":true,"notify_userMentioned_email":false,"notify_newPost_alert":true,"notify_newPost_email":true,"notify_userSuspended_alert":true,"notify_userUnsuspended_alert":true,"followAfterReply":false,"discloseOnline":true,"indexProfile":true,"locale":null},"newFlagCount":0,"canSuspend":false},"relationships":{"groups":{"data":[{"type":"groups","id":"1"}]}}},{"type":"groups","id":"1","attributes":{"nameSingular":"Admin","namePlural":"Admins","color":"#B72A2A","icon":"fas fa-wrench","isHidden":0}}],"session":{"userId":1,"csrfToken":"idW9vG5m2SY9cuesZEgkQJiZEx1EA6eyEXqogctS"},"locales":{"en":"English"},"locale":"en","apiDocument":{"links":{"first":"https:\/\/flarum.yjzq.fun\/api\/discussions?sort=\u0026page%5Blimit%5D=20"},"data":[{"type":"discussions","id":"1","attributes":{"title":"\u8fd9\u662f\u4e00\u4e2a\u65b0\u7684\u4e3b\u9898","slug":"","commentCount":1,"participantCount":1,"createdAt":"2020-05-28T02:01:41+00:00","lastPostedAt":"2020-05-28T02:01:41+00:00","lastPostNumber":1,"canReply":true,"canRename":true,"canDelete":true,"canHide":true,"lastReadAt":"2020-05-28T02:01:41+00:00","lastReadPostNumber":1,"isApproved":true,"isLocked":false,"canLock":true,"isSticky":false,"canSticky":true,"subscription":false,"canTag":true},"relationships":{"user":{"data":{"type":"users","id":"1"}},"lastPostedUser":{"data":{"type":"users","id":"1"}},"firstPost":{"data":{"type":"posts","id":"1"}},"tags":{"data":[{"type":"tags","id":"1"}]}}}],"included":[{"type":"users","id":"1","attributes":{"username":"corvofeng","displayName":"corvofeng","avatarUrl":null}},{"type":"posts","id":"1","attributes":{"number":1,"createdAt":"2020-05-28T02:01:41+00:00","contentType":"comment","contentHtml":"\u003Cp\u003E\u8fd9\u662f\u4e3b\u9898\u7684\u5185\u5bb9\u003C\/p\u003E"}},{"type":"tags","id":"1","attributes":{"name":"General","description":null,"slug":"general","color":"#888","backgroundUrl":null,"backgroundMode":null,"icon":null,"discussionCount":1,"position":0,"defaultSort":null,"isChild":false,"isHidden":false,"lastPostedAt":"2020-05-28T02:01:41+00:00","canStartDiscussion":true,"canAddToDiscussion":true,"isRestricted":false}}]}}); */}}
-    flarum.core.app.load({{ marshal .FlarumInfo }});
+    let data = {{ marshal .FlarumInfo }};
+    console.log(data);
+    flarum.core.app.load(data);
     flarum.core.app.bootExtensions(flarum.extensions);
     flarum.core.app.boot();
   } catch (e) {
@@ -92,7 +93,13 @@
   </div>
 
   <main class="App-content">
+    {{if .IsInAdmin}}
+    {{ template "admin-nav"}}
+    <div id="content" class="sideNavOffset"></div>
+    {{else}}
+
     <div id="content"></div>
+    {{end}}
 
     {{ template "main-content" . }}
 
@@ -137,6 +144,8 @@
 </noscript>
 {{ end }}
 
+{{ define "admin-nav" }}
+{{ end }}
 
 {{ define "gtag" }}
 {{if .SiteCf.TrackingCodeID }}

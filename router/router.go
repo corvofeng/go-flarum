@@ -31,7 +31,6 @@ func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.Use(h.AuthMiddleware)
 
 	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	// sp.HandleFunc(pat.Get("/luck"), h.IFeelLucky)
 	sp.HandleFunc(pat.Get("/view"), h.ViewAtTpl)
 	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
@@ -72,6 +71,36 @@ func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	return sp
 }
 
+func NewFlarumAdminRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	app.Logger.Notice("Init flarum admin router")
+
+	// https://flarum.yjzq.fun/admin#/basics
+	// 管理员页面使用的是不同的路由导向的, 在goji中, 它们都会到/admin这个路径
+	sp.HandleFunc(pat.Get(model.FlarumAdminPath), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustAdminUser,
+			ct.IsInAdmin,
+		},
+		ct.AdminHome,
+	))
+
+	extAPISP := goji.SubMux()
+	sp.Handle(pat.New(model.FlarumExtensionAPI+"/*"), extAPISP)
+	// 修改扩展的配置调用类似如下的api
+	// https://flarum.yjzq.fun/api/extensions/flarum-mentions
+
+	// adminSP.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
+	// 	[]ct.HTTPMiddleWareFunc{
+	// 		ct.MustAuthMiddleware,
+	// 		ct.MustAdminUser,
+	// 	},
+	// 	ct.AdminHome,
+	// ))
+
+	return extAPISP
+}
+
 // NewFlarumRouter flarum的router
 func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	app.Logger.Notice("Init flarum router")
@@ -102,6 +131,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	// 语言包支持
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
+	sp.HandleFunc(pat.Get("/locale/:locale/admin-lang.js"), h.GetLocaleData)
 
 	fs := http.FileServer(http.Dir("static/captcha"))
 	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
@@ -121,6 +151,15 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// 获取用户的设置 GET请求
 	sp.HandleFunc(pat.Get("/settings"), ct.MustAuthMiddleware(ct.FlarumUserSettings))
 
+	NewFlarumAPIRouter(app, sp)
+	if app.CanServeAdmin() {
+		NewFlarumAdminRouter(app, sp)
+	}
+
+	return sp
+}
+
+func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP := goji.SubMux()
 	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
 	apiSP.Use(ct.InAPIMiddleware)

@@ -300,7 +300,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	coreData, err := createFlarumReplyAPIDoc(
-		ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), rf, scf.TimeZone)
+		ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
@@ -387,13 +387,12 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
 		return
 	}
-	si := model.GetSiteInfo(redisDB)
 
 	rf := replyFilter{
 		FT:  eArticle,
 		AID: aobj.ID,
 	}
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
