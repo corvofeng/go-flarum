@@ -1,0 +1,29 @@
+{
+    "name": "flarum/recaptch",
+    "description": "Increase your forum's security with reCAPTCHA",
+    "type": "flarum-extension",
+    "keywords": ["flarum"],
+    "license": "MIT",
+    "support": {},
+    "require": {
+        "flarum/core": "^0.1.0-beta.13"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flarum\\ReCaptcha\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
+        },
+        "flarum-extension": {
+            "title": "FoF reCAPTCHA",
+            "icon": {
+                "name": "fas fa-robot",
+                "backgroundColor": "#e74c3c",
+                "color": "#fff"
+            }
+        }
+    }
+}
