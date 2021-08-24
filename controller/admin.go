@@ -63,15 +63,15 @@ func createFlarumAdminAPIDoc(
 
 	coreData.PhpVersion = "8.0.6"
 	coreData.MysqlVersion = "10.4.8-MariaDB-1:10.4.8+maria~bionic"
-	coreData.SlugDrivers = map[string]interface{}{
-		"Flarum\\Discussion\\Discussion": []string{
-			"default",
-		},
-		"Flarum\\User\\User": []string{
-			"default",
-			"id",
-		},
-	}
+	// coreData.SlugDrivers = map[string]interface{}{
+	// 	"Flarum\\Discussion\\Discussion": []string{
+	// 		"default",
+	// 	},
+	// 	"Flarum\\User\\User": []string{
+	// 		"default",
+	// 		"id",
+	// 	},
+	// }
 
 	coreData.DisplayNameDrivers = []string{"username"}
 	coreData.ModelStatistics.Users.Total = 3
