@@ -476,7 +476,6 @@ func createFlarumUserAPIDoc(
 	reqctx *ReqContext,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
-	siteInfo model.SiteInfo,
 	tz int,
 ) (flarum.CoreData, error) {
 	var err error
@@ -484,10 +483,12 @@ func createFlarumUserAPIDoc(
 	inAPI := reqctx.inAPI
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
+	siteInfo := model.GetSiteInfo(redisDB)
 
 	// 所有分类的信息, 用于整个站点的信息
 	var flarumTags []flarum.Resource
 
+	// 添加当前用户的session信息
 	if currentUser != nil {
 		user := model.FlarumCreateCurrentUser(*currentUser)
 		coreData.AddCurrentUser(user)
@@ -584,16 +585,9 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
-	si := model.GetSiteInfo(redisDB)
-	// inAPI := ctx.inAPI
-	// coreData := flarum.NewCoreData()
-	// apiDoc := &coreData.APIDocument
-	// apiDoc.SetData(model.FlarumCreateCurrentUser(*ctx.currentUser))
-	// logger := ctx.GetLogger()
-
 	tpl := h.CurrentTpl(r)
 
-	coreData, err := createFlarumUserAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, si, scf.TimeZone)
+	coreData, err := createFlarumUserAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
 	}
