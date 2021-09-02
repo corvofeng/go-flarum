@@ -71,12 +71,18 @@ func FlarumCreateTag(cat Category) flarum.Resource {
 	data.LastPostedAt = "2020-06-10T01:20:37+00:00"
 	data.Position = cat.Position
 
+	data.IsChild = false
+	data.IsRestricted = false
+
 	data.Color = cat.Color
 	data.Icon = cat.IconIMG
 
 	// please refer to #11
 	if cat.ParentID == 0 {
-		obj.Relationships = flarum.TagRelations{}
+		obj.Relationships = flarum.TagRelations{
+			LastPostedDiscussion: flarum.RelationDict{Data: flarum.InitBaseResources(1, "discussions")},
+			// Children:             []flarum.RelationDict{},
+		}
 	} else {
 		obj.Relationships = flarum.TagChildRelations{}
 		obj.BindRelations(
