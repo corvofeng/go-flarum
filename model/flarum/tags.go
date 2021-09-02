@@ -31,7 +31,8 @@ type TagChildRelations struct {
 
 // TagRelations 标签具有的关系
 type TagRelations struct {
-	LastPostedDiscussion RelationDict `json:"lastPostedDiscussion"`
+	LastPostedDiscussion RelationDict   `json:"lastPostedDiscussion"`
+	Children             []RelationDict `json:"children"`
 }
 
 // DoInit 初始化tags

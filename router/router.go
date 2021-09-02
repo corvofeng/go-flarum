@@ -119,7 +119,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumIndex,
 	))
 
-	sp.HandleFunc(pat.Get("/tags"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
 
 	// robots.txt
 	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
@@ -226,6 +226,9 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	))
 
 	apiSP.HandleFunc(pat.Get("/users"), ct.FlarumConfirmUserAndPost)
+
+	apiSP.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
+	apiSP.HandleFunc(pat.Get("/tags/:tag"), ct.FlarumTagAll)
 
 	return sp
 }
