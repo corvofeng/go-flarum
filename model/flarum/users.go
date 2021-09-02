@@ -14,6 +14,8 @@ type BaseUser struct {
 
 	JoinTime        string `json:"joinTime"`
 	DiscussionCount int    `json:"discussionCount"`
+
+	Slug string `json:"slug"`
 	// CommentCount    int    `json:"commentCount"`
 	// CanEdit         bool   `json:"canEdit"`
 	// CanDelete       bool   `json:"canDelete"`

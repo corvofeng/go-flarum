@@ -164,6 +164,7 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.Email = user.Email
 	data.IsEmailConfirmed = true
 	data.JoinTime = util.TimeFmt(user.RegTime, util.TIME_FMT, 0)
+	data.Slug = user.Name
 	if user.Preferences != nil {
 		data.Preferences = *user.Preferences
 	}
