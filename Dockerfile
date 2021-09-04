@@ -15,9 +15,9 @@ COPY view ./view
 RUN yarn build
 
 # Golang编译阶段
-# FROM golang:1.14.4-alpine3.12 as build-backend
-# # All these steps will be cached
-# WORKDIR /home/zoe
+FROM golang:1.14.4-alpine3.12 as build-backend
+# All these steps will be cached
+WORKDIR /home/zoe
 
 # ## BOF CLEAN
 # # 国内用户可能需要设置 go proxy
@@ -27,16 +27,16 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct
 
 # RUN apk update && apk add git
 
-# # COPY go.mod and go.sum files to the workspace
-# COPY go.mod .
-# COPY go.sum .
+# COPY go.mod and go.sum files to the workspace
+COPY go.mod .
+COPY go.sum .
 
 # RUN go mod download
 # # COPY the source code as the last step
-# COPY . .
+COPY . .
 
 # # Build the binary
-# RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o zoe
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o zoe
 
 
 # 构建最终镜像
@@ -53,8 +53,8 @@ COPY ./view view
 RUN rm -rf view/extensions view/flarum
 COPY --from=build-static /home/zoe/static webpack/static
 # COPY ./config/config.yaml $WORKDIR/config.yml
-# COPY --from=build-backend /home/zoe/zoe zoe
-COPY zoe zoe
+COPY --from=build-backend /home/zoe/zoe zoe
+# COPY zoe zoe
 
 EXPOSE 8082
 CMD ["/home/zoe/zoe", "-config", "/home/zoe/config.yml"]
