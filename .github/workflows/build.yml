@@ -9,6 +9,10 @@ on: [push]
 jobs:
   docker:
     runs-on: ubuntu-latest
+
+    env:
+      GO_MOD_NAME: zoe
+
     steps:
       -
         name: Checkout
@@ -36,11 +40,6 @@ jobs:
       - name: Delete logs
         run: |
           sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码
-          docker build . -t $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
-          # docker tag '$(PROJ):v$(Build.BuildId)'
-          # docker push $(DOCKERHUB)/$(PROJ):v$(Build.BuildId)
-          sed -i 's@zoe:dev@$(DOCKERHUB)/$(PROJ):v$(Build.BuildId)@' docker-compose.yaml
-          sed -i 's@- ./config/config.yaml-docker:/home/zoe/config.yml@- /home/azure/zoe-config.yaml:/home/zoe/config.yml@' docker-compose.yaml
       -
         name: Build and push
         uses: docker/build-push-action@v2
