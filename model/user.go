@@ -479,22 +479,25 @@ func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
 		"SELECT `preferences` FROM `user` WHERE id=?",
 		user.ID,
 	)
-	defer rows.Close()
 	if err != nil {
 		logger.Error("Get preferences", err.Error())
 		return
 	}
+	defer rows.Close()
 
-	if rows.Next() {
+	for rows.Next() {
 		var data []byte
 		rows.Scan(&data)
+		if len(data) <= 0 {
+			user.Preferences = &flarum.Preferences{}
+			continue
+		}
 		err = json.Unmarshal(data, &user.Preferences)
 		if err != nil {
-			logger.Error("Load preferences", err.Error(), data)
+			logger.Warning("Load preferences", err.Error(), data)
 			user.Preferences = &flarum.Preferences{}
 		}
 	}
-	return
 }
 
 // SetPreference 更新用户配置信息
