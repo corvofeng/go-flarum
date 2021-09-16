@@ -25,19 +25,21 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositorie
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 # ## EOF CLEAN
 
-# RUN apk update && apk add git
+RUN apk update && apk add git
 
 # COPY go.mod and go.sum files to the workspace
 COPY go.mod .
 COPY go.sum .
 
-# RUN go mod download
+RUN go mod download
 # # COPY the source code as the last step
 COPY . .
 
 # # Build the binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o zoe
-
+RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+	-a -installsuffix cgo \
+	-ldflags "-X main.GitCommit=$GIT_COMMIT" \
+	-o zoe ./cmd/main.go 
 
 # 构建最终镜像
 FROM alpine:3.7

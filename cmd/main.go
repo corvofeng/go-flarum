@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"flag"
 	"log"
@@ -27,7 +28,11 @@ import (
 	// "github.com/go-redis/redis/v7"
 )
 
+var GitCommit string
+
 func main() {
+	fmt.Printf("Hello world, version: %s\n", GitCommit)
+
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	logLevel := flag.String("lvl", "INFO", "DEBUG LEVEL")
 
