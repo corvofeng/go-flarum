@@ -34,6 +34,8 @@ func FlarumCreateForumInfo(
 	data.WelcomeMessage = siteConf.WelcomeMessage
 	data.WelcomeTitle = siteConf.WelcomeTitle
 	data.Debug = appConf.Main.Debug
+	data.CanSearchUsers = true
+	data.CanViewForum = true
 	data.MaxPrimaryTags = 3
 	data.MaxSecondaryTags = 3
 	data.MinPrimaryTags = 1
