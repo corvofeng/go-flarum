@@ -29,6 +29,8 @@ type Forum struct {
 	CanViewDiscussions   bool        `json:"canViewDiscussions"`
 	CanStartDiscussion   bool        `json:"canStartDiscussion"`
 	CanViewUserList      bool        `json:"canViewUserList"`
+	CanSearchUsers       bool        `json:"canSearchUsers"` // Please refer to /view/extensions/forum.js
+	CanViewForum         bool        `json:"canViewForum"`
 	AdminURL             string      `json:"adminUrl"`
 	Version              string      `json:"version"`
 	CanViewFlags         bool        `json:"canViewFlags"`
