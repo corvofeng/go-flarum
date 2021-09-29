@@ -7,7 +7,13 @@ COPY package.json *.lock ./
 
 # 只安装dependencies依赖
 # node镜像自带yarn
-RUN yarn --only=prod --registry=https://registry.npm.taobao.org
+# ## BOF CLEAN
+# # 国内用户可能设置 regietry
+ARG registry=https://registry.npm.taobao.org
+ARG disturl=https://npm.taobao.org/dist
+RUN yarn config set disturl $disturl
+RUN yarn config set registry $registry
+# ## EOF CLEAN
 RUN yarn --only=prod
 
 COPY webpack.config.js ./
