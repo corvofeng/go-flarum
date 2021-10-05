@@ -123,7 +123,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 	timeStamp := uint64(time.Now().UTC().Unix())
 
 	if act == "login" {
-		uobj, err := model.SQLUserGetByName(sqlDB, nameLow)
+		uobj, err := model.SQLUserGetByName(h.App.GormDB, nameLow)
 
 		if err != nil {
 			respCaptcha = captchaData{
@@ -160,7 +160,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 			h.jsonify(w, rsp)
 			return
 		}
-		if _, err := model.SQLUserGetByName(sqlDB, nameLow); err == nil {
+		if _, err := model.SQLUserGetByName(h.App.GormDB, nameLow); err == nil {
 			respCaptcha = captchaData{
 				response{405, "用户名已经存在"},
 				model.NewCaptcha(),
@@ -250,7 +250,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 
 	// db := h.App.Db
 	redisDB := h.App.RedisDB
-	sqlDB := h.App.MySQLdb
+	// sqlDB := h.App.MySQLdb
 	scf := h.App.Cf.Site
 
 	uid := pat.Param(r, "uid")
@@ -271,7 +271,7 @@ func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
 	// 	cmd = "scan"
 	// }
 
-	uobj, err := model.SQLUserGetByID(sqlDB, uidi)
+	uobj, err := model.SQLUserGetByID(h.App.GormDB, uidi)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
@@ -436,11 +436,11 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlDB := h.App.MySQLdb
+	// sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	// timeStamp := uint64(time.Now().UTC().Unix())
 
-	uobj, err := model.SQLUserGetByName(sqlDB, rec.Identification)
+	uobj, err := model.SQLUserGetByName(h.App.GormDB, rec.Identification)
 	if err != nil {
 		rsp = normalRsp{405, "登录失败, 请检查用户名与密码"}
 		h.jsonify(w, respCaptcha)
@@ -551,11 +551,11 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	sqlDB := h.App.MySQLdb
+	// sqlDB := h.App.MySQLdb
 	inAPI := ctx.inAPI
 
 	_userID := pat.Param(r, "uid")
-	user, err := model.SQLUserGet(sqlDB, _userID)
+	user, err := model.SQLUserGet(h.App.GormDB, _userID)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误: "+err.Error()))
@@ -603,11 +603,11 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	// currentUser := ctx.currentUser
 	h := ctx.h
-	sqlDB := h.App.MySQLdb
+	// sqlDB := h.App.MySQLdb
 	inAPI := ctx.inAPI
 
 	username := pat.Param(r, "username")
-	user, err := model.SQLUserGetByName(sqlDB, username)
+	user, err := model.SQLUserGetByName(h.App.GormDB, username)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("获取用户信息错误"+err.Error()))
@@ -664,7 +664,6 @@ func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
 	_uid := pat.Param(r, "uid")
 	ctx := GetRetContext(r)
 	h := ctx.h
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	if ctx.currentUser.StrID() != _uid {
 		h.flarumErrorMsg(w, "当期仅允许修改自己的配置")
@@ -687,7 +686,7 @@ func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx.currentUser.SetPreference(
-		sqlDB, redisDB,
+		h.App.GormDB, redisDB,
 		userUpdateInfo.Data.Attributes.Preferences,
 	)
 	coreData := flarum.NewCoreData()

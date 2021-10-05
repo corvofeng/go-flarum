@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 // ContentPreviewPost 预览主题以及评论
@@ -86,7 +87,7 @@ type replyFilter struct {
 // ePost: 获取一条评论信息
 func createFlarumReplyAPIDoc(
 	reqctx *ReqContext,
-	sqlDB *sql.DB, redisDB *redis.Client,
+	gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	rf replyFilter,
 	tz int,
@@ -119,16 +120,16 @@ func createFlarumReplyAPIDoc(
 	}
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
-		pageInfo := model.SQLCommentListByPage(sqlDB, redisDB, rf.AID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByPage(gormDB, sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == ePost {
-		pageInfo := model.SQLCommentListByID(sqlDB, redisDB, rf.CID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByID(gormDB, sqlDB, redisDB, rf.CID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
-		pageInfo := model.SQLCommentListByUser(sqlDB, redisDB, rf.UID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByUser(gormDB, sqlDB, redisDB, rf.UID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == ePosts { // 根据post列表获取评论
-		pageInfo := model.SQLCommentListByList(sqlDB, redisDB, rf.IDS, tz)
+		pageInfo := model.SQLCommentListByList(gormDB, sqlDB, redisDB, rf.IDS, tz)
 		rf.RenderLimit = uint64(len(rf.IDS))
 		comments = pageInfo.Items
 	} else {
@@ -172,7 +173,7 @@ func createFlarumReplyAPIDoc(
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
 		} else {
-			diss := model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz))
+			diss := model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz))
 			curDisscussion = &diss
 			apiDoc.AppendResources(*curDisscussion)
 		}
@@ -199,7 +200,7 @@ func createFlarumReplyAPIDoc(
 		}
 
 		if _, ok := allUsers[comment.UID]; !ok {
-			u, err := model.SQLUserGetByID(sqlDB, comment.UID)
+			u, err := model.SQLUserGetByID(gormDB, comment.UID)
 			if err != nil {
 				logger.Warningf("Get user %d error: %s", comment.UID, err)
 			} else {
@@ -214,7 +215,7 @@ func createFlarumReplyAPIDoc(
 			if err != nil {
 				logger.Warning("Can't get article: ", comment.AID, err)
 			} else {
-				apiDoc.AppendResources(model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz)))
+				apiDoc.AppendResources(model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz)))
 			}
 			allDiscussions[comment.AID] = true
 		}
@@ -222,7 +223,7 @@ func createFlarumReplyAPIDoc(
 		// 处理用户的like信息
 		for _, userID := range comment.Likes {
 			if _, ok := allUsers[userID]; !ok {
-				u, err := model.SQLUserGetByID(sqlDB, userID)
+				u, err := model.SQLUserGetByID(gormDB, userID)
 				if err != nil {
 					logger.Warningf("Get user %d error: %s", userID, err)
 				} else {
@@ -339,7 +340,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 			AddTime:  now,
 		},
 	}
-	comment.Content = model.PreProcessUserMention(sqlDB, redisDB, scf.TimeZone, comment.Content)
+	comment.Content = model.PreProcessUserMention(h.App.GormDB, sqlDB, redisDB, scf.TimeZone, comment.Content)
 
 	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
 		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())
@@ -353,7 +354,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		Limit: comment.Number,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询评论出现错误:"+err.Error())
 		return
@@ -443,7 +444,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	var rf replyFilter
 
 	if _userID != "" {
-		user, err = model.SQLUserGet(sqlDB, _userID)
+		user, err = model.SQLUserGet(h.App.GormDB, _userID)
 		if user.ID == 0 || err != nil {
 			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID+err.Error()))
 			return
@@ -513,7 +514,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		logger.Warning("Can't process post api")
 	}
 
-	coreData, err = createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err = createFlarumReplyAPIDoc(ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -542,7 +543,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	cobj, err := model.SQLGetCommentByID(sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
+	cobj, err := model.SQLGetCommentByID(h.App.GormDB, sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取评论"))
 		return
@@ -577,7 +578,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 		AID: cobj.AID,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

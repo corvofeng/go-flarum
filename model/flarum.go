@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"zoe/model/flarum"
 	"zoe/util"
 )
@@ -167,9 +168,13 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.IsEmailConfirmed = true
 	data.JoinTime = util.TimeFmt(user.RegTime, util.TIME_FMT, 0)
 	data.Slug = user.Name
-	if user.Preferences != nil {
-		data.Preferences = *user.Preferences
+	if len(user.Preferences) > 0 {
+		err := json.Unmarshal(user.Preferences, &data.Preferences)
+		if err != nil {
+			util.GetLogger().Errorf("Can't get preferences for user %s", user.ID, user.Preferences)
+		}
 	}
+
 	obj.BindRelations(
 		"Groups",
 		flarum.RelationArray{

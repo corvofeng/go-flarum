@@ -103,6 +103,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageInfo := model.SQLCommentList(
+		h.App.GormDB,
 		sqlDB,
 		redisDB,
 		aobj.ID,
@@ -150,7 +151,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	author, _ := model.SQLUserGetByID(sqlDB, aobj.UID)
+	author, _ := model.SQLUserGetByID(h.App.GormDB, aobj.UID)
 
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
@@ -300,7 +301,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	coreData, err := createFlarumReplyAPIDoc(
-		ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+		ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
@@ -392,7 +393,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		FT:  eArticle,
 		AID: aobj.ID,
 	}
-	coreData, err := createFlarumReplyAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))

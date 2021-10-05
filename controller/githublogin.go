@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"zoe/model"
@@ -10,6 +11,7 @@ import (
 	"github.com/rs/xid"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
+	"gorm.io/gorm"
 )
 
 var (
@@ -42,6 +44,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
+	logger := h.App.Logger
 	gOauth := githubOauth(h.App.Cf.Site.GithubClientID, h.App.Cf.Site.GithubClientSecret)
 	data, err := getUserInfo(gOauth, r.FormValue("state"), r.FormValue("code"))
 	if data == nil || err != nil {
@@ -50,15 +53,22 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
+	gormDB := h.App.GormDB
+	var uobj model.User
 
-	uobj, err := model.SQLUserGetByEmail(sqlDB, data.GetEmail())
-
-	if !uobj.IsValid() {
-		uobj, err = model.SQLGithubRegister(sqlDB, data)
+	result := gormDB.Where("email = ?", data.GetEmail()).First(&uobj)
+	if err != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// 无法找到用户
+			uobj, err = model.SQLGithubRegister(gormDB, data)
+		}
+		if err != nil {
+			logger.Error("Find or create user " + err.Error())
+		}
 	}
-	uobj.SQLGithubSync(sqlDB, data)
+
+	uobj.SQLGithubSync(gormDB, data)
 
 	sessionid := xid.New().String()
 	uobj.Session = sessionid

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"flag"
 	"log"
@@ -31,14 +30,17 @@ import (
 var GitCommit string
 
 func main() {
-	fmt.Printf("Hello world, version: %s\n", GitCommit)
-
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	logLevel := flag.String("lvl", "INFO", "DEBUG LEVEL")
 
 	flag.Parse()
 	util.InitLogger(*logLevel)
 	logger := util.GetLogger()
+	if GitCommit == "" {
+		GitCommit = "Development"
+	}
+
+	logger.Infof("Git version: %s", GitCommit)
 
 	c := system.LoadConfig(*configFile)
 	app := &system.Application{}

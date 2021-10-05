@@ -62,7 +62,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 	}
 
 	si := model.GetSiteInfo(redisDB)
-	pageInfo = model.SQLArticleGetByCID(sqlDB, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
+	pageInfo = model.SQLArticleGetByCID(h.App.GormDB, sqlDB, redisDB, cobj.ID, page, uint64(scf.HomeShowNum), scf.TimeZone)
 	pageInfo.HasNext = true
 	if pageInfo.PagePrev != 0 {
 		pageInfo.HasPrev = true

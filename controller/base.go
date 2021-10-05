@@ -12,10 +12,10 @@ import (
 
 	"zoe/model"
 	"zoe/system"
-	"zoe/util"
 
 	"github.com/op/go-logging"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 var mobileRegexp = regexp.MustCompile(`Mobile|iP(hone|od|ad)|Android|BlackBerry|IEMobile|Kindle|NetFront|Silk-Accelerated|(hpw|web)OS|Fennec|Minimo|Opera M(obi|ini)|Blazer|Dolfin|Dolphin|Skyfire|Zune`)
@@ -214,8 +214,7 @@ func (h *BaseHandler) flarumErrorMsg(w http.ResponseWriter, errMsg string) error
 // CurrentUser 当前用户
 // 原有的策略是保存用户到文件中, 现在经过重新改写, 将从数据库中获取用户,
 func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (user model.User, err error) {
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
+	logger := h.App.Logger
 	ssValue := h.GetCookie(r, "SessionID")
 	if len(ssValue) == 0 {
 		return user, errors.New("SessionID cookie not found ")
@@ -223,14 +222,12 @@ func (h *BaseHandler) CurrentUser(w http.ResponseWriter, r *http.Request) (user 
 	z := strings.Split(ssValue, ":")
 	rawUID := z[0]
 
-	user, err = model.RedisGetUserByID(redisDB, rawUID)
-	// user, err = model.SQLUserGetByID(sqlDB, user.ID)
-	if util.CheckError(err, "获取用户") {
-		// 程序运行到这里, 表明redis中已经将其删掉, 用户需要重新登录
+	result := h.App.GormDB.First(&user, rawUID)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		logger.Warningf("Can't get user %d error: not fount", rawUID)
 		h.DelCookie(w, "SessionID")
 		return user, err
 	}
-	user.GetPreference(sqlDB, redisDB)
 
 	return user, nil
 }

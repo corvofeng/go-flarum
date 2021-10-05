@@ -88,7 +88,7 @@ func (h *BaseHandler) SearchDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	// Although we get data from the search API, it is necessary to
 	// check the data in the database, also we need get article title.
-	pageInfo := model.SQLArticleGetByList(sqlDB, redisDB, articleList, scf.TimeZone)
+	pageInfo := model.SQLArticleGetByList(h.App.GormDB, sqlDB, redisDB, articleList, scf.TimeZone)
 
 	for _, item := range data.Items {
 		for idx := range pageInfo.Items {
