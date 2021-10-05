@@ -11,6 +11,7 @@ import (
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
+	"gorm.io/gorm"
 )
 
 type (
@@ -54,7 +55,7 @@ type (
 
 // PreProcessUserMention 预处理用户的引用
 // #14
-func PreProcessUserMention(sqlDB *sql.DB, redisDB *redis.Client, tz int, userComment string) string {
+func PreProcessUserMention(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, tz int, userComment string) string {
 
 	mentionDict := make(map[string]string)
 	for _, mentionStr := range mentionRegexp.FindAllStringSubmatch(userComment, -1) {
@@ -63,12 +64,12 @@ func PreProcessUserMention(sqlDB *sql.DB, redisDB *redis.Client, tz int, userCom
 			util.GetLogger().Warning("Can't process mention", mentionStr[0])
 			continue
 		}
-		comment, err := SQLGetCommentByID(sqlDB, redisDB, cid, tz)
+		comment, err := SQLGetCommentByID(gormDB, sqlDB, redisDB, cid, tz)
 		if err != nil {
 			util.GetLogger().Warningf("Can't comment %d with error %v", cid, err)
 			continue
 		}
-		user, err := SQLUserGetByName(sqlDB, mentionStr[1])
+		user, err := SQLUserGetByName(gormDB, mentionStr[1])
 		replData := makeMention(mentionStr, comment, user)
 		mentionDict[mentionStr[0]] = replData
 	}
@@ -165,7 +166,7 @@ func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []
 	return
 }
 
-func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comment {
+func (cb *CommentBase) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tz int) Comment {
 	c := Comment{
 		CommentBase: *cb,
 		Likes:       cb.getUserLikes(db, redisDB),
@@ -175,8 +176,8 @@ func (cb *CommentBase) toComment(db *sql.DB, redisDB *redis.Client, tz int) Comm
 	// 预防XSS漏洞
 	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
 
-	c.UserName = GetUserNameByID(db, redisDB, cb.UID)
-	c.Avatar = GetAvatarByID(db, redisDB, cb.UID)
+	c.UserName = GetUserNameByID(gormDB, redisDB, cb.UID)
+	c.Avatar = GetAvatarByID(gormDB, db, redisDB, cb.UID)
 	return c
 }
 
@@ -211,7 +212,7 @@ func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz 
 	return item
 }
 
-func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
+func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
 	logger := util.GetLogger()
@@ -234,12 +235,12 @@ func sqlCommentListByTopicID(db *sql.DB, redisDB *redis.Client, topicID uint64, 
 	}
 	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
 	for _, bc := range baseComments {
-		comments = append(comments, bc.toComment(db, redisDB, tz))
+		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
 	}
 	return
 }
 
-func sqlCommentListByUserID(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
+func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
 	logger := util.GetLogger()
@@ -262,31 +263,31 @@ func sqlCommentListByUserID(db *sql.DB, redisDB *redis.Client, userID uint64, li
 	}
 	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
 	for _, bc := range baseComments {
-		comments = append(comments, bc.toComment(db, redisDB, tz))
+		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
 	}
 	return
 }
 
 // SQLGetCommentByID 获取一条评论
-func SQLGetCommentByID(db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
+func SQLGetCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
 	logger := util.GetLogger()
 	comments := sqlGetCommentsBaseByList(db, redisDB, []uint64{cid})
 	if len(comments) == 0 {
 		logger.Debugf("Error get comment(%d)", cid)
 		return Comment{}, fmt.Errorf("Can't find comment")
 	}
-	return comments[0].toComment(db, redisDB, tz), nil
+	return comments[0].toComment(gormDB, db, redisDB, tz), nil
 }
 
 // SQLCommentListByID 获取某条评论
-func SQLCommentListByID(db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comment, err := SQLGetCommentByID(db, redisDB, commentID, tz)
+	comment, err := SQLGetCommentByID(gormDB, db, redisDB, commentID, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for cid(%d)", commentID)
 	}
@@ -302,13 +303,13 @@ func SQLCommentListByID(db *sql.DB, redisDB *redis.Client, commentID uint64, lim
 }
 
 // SQLCommentListByList 获取某条评论
-func SQLCommentListByList(db *sql.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
+func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
 	for _, bc := range baseComments {
-		c := bc.toComment(db, redisDB, tz)
+		c := bc.toComment(gormDB, db, redisDB, tz)
 		items = append(items, c.toCommentListItem(db, redisDB, tz))
 	}
 
@@ -322,14 +323,14 @@ func SQLCommentListByList(db *sql.DB, redisDB *redis.Client, commentList []uint6
 }
 
 // SQLCommentListByPage 获取帖子的所有评论
-func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByPage(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comments, err := sqlCommentListByTopicID(db, redisDB, topicID, limit, tz)
+	comments, err := sqlCommentListByTopicID(gormDB, db, redisDB, topicID, limit, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for %d", topicID)
 	}
@@ -347,14 +348,14 @@ func SQLCommentListByPage(db *sql.DB, redisDB *redis.Client, topicID uint64, lim
 }
 
 // SQLCommentListByUser 获取某个用户的帖子信息
-func SQLCommentListByUser(db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByUser(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comments, err := sqlCommentListByUserID(db, redisDB, userID, limit, tz)
+	comments, err := sqlCommentListByUserID(gormDB, db, redisDB, userID, limit, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for user %d", userID)
 	}
@@ -373,7 +374,7 @@ func SQLCommentListByUser(db *sql.DB, redisDB *redis.Client, userID uint64, limi
 
 // SQLCommentList 获取在数据库中存储的评论
 // TODO: deprecated
-func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
+func SQLCommentList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -409,8 +410,8 @@ func SQLCommentList(db *sql.DB, redisDB *redis.Client, topicID, start uint64, bt
 	for rows.Next() {
 		item := CommentListItem{}
 		err = rows.Scan(&item.ID, &item.UID, &item.AID, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(db, redisDB, item.UID)
-		item.UserName = GetUserNameByID(db, redisDB, item.UID)
+		item.Avatar = GetAvatarByID(gormDB, db, redisDB, item.UID)
+		item.UserName = GetUserNameByID(gormDB, redisDB, item.UID)
 
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v", err)

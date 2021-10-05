@@ -3,40 +3,45 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"zoe/model/flarum"
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
 	"github.com/google/go-github/github"
+
+	"gorm.io/gorm"
 )
 
 // User store in database
 type User struct {
-	ID         uint64 `json:"id"`
-	Name       string `json:"name"`
-	Nickname   string `json:"nickname"`
-	Gender     string `json:"gender"`
-	Flag       int    `json:"flag"`
-	Avatar     string `json:"avatar"`
-	Password   string `json:"password"`
-	Email      string `json:"email"`
-	URL        string `json:"url"`
-	Articles   uint64 `json:"articles"`
-	Replies    uint64 `json:"replies"`
-	RegTime    uint64 `json:"regtime"`
-	About      string `json:"about"`
-	Hidden     bool   `json:"hidden"`
-	Session    string `json:"session"`
-	Token      string `json:"token"`
-	Reputation uint64 `json:"reputation"` // 声望值
+	gorm.Model
+	ID       uint64 `gorm:"primaryKey"`
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+	Gender   string `json:"gender"`
+	Flag     int    `json:"flag"`
+	Avatar   string `json:"avatar"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+	URL      string `json:"url"`
+	Articles uint64 `json:"articles"`
+	Replies  uint64 `json:"replies"`
+	RegTime  uint64 `json:"regtime"`
+	About    string `json:"about"`
+	Hidden   bool   `json:"hidden"`
+	Session  string `json:"session"`
+	Token    string `json:"token"`
 
-	Preferences *flarum.Preferences
+	Description string
+	WebSite     string
+	Reputation  uint64 `json:"reputation"` // 声望值
+
+	// Preferences *flarum.Preferences `gorm:"foreignKey:PreferencesRefer"`
+	Preferences []byte
 }
 
 // UserListItem 用户信息
@@ -110,7 +115,7 @@ func SQLUserListByFlag(sqlDB *sql.DB, cmd, tb, key string, limit int) UserPageIn
 
 // SQLUserGet 获取用户
 // 当你不确定用户传来的是用户名还是用户id时, 可以调用该函数获取用户
-func SQLUserGet(sqlDB *sql.DB, _userID string) (User, error) {
+func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 	var err error
 	var user User
 	var userID uint64
@@ -118,7 +123,7 @@ func SQLUserGet(sqlDB *sql.DB, _userID string) (User, error) {
 
 	for true {
 		// 如果通过用户名可以获取到用户, 那么马上退出并返回
-		if user, err = SQLUserGetByName(sqlDB, _userID); err == nil {
+		if user, err = SQLUserGetByName(gormDB, _userID); err == nil {
 			break
 		}
 
@@ -126,7 +131,7 @@ func SQLUserGet(sqlDB *sql.DB, _userID string) (User, error) {
 			logger.Error("Can't get user id for ", _userID)
 			break
 		}
-		if user, err = SQLUserGetByID(sqlDB, userID); err != nil {
+		if user, err = SQLUserGetByID(gormDB, userID); err != nil {
 			logger.Error("Can't get user by err: ", err)
 			break
 		}
@@ -198,65 +203,72 @@ func (user *User) toUserListItem(db *sql.DB, redisDB *redis.Client, tz int) User
 }
 
 // SQLUserGetByID 获取数据库用户
-func SQLUserGetByID(sqlDB *sql.DB, uid uint64) (User, error) {
-	obj := User{}
-	users := sqlGetUserByList(sqlDB, nil, []uint64{uid})
-	if len(users) == 0 {
-		return obj, fmt.Errorf("Can't find user %d", uid)
-	}
-	return users[0], nil
+func SQLUserGetByID(gormDB *gorm.DB, uid uint64) (User, error) {
+	user := User{}
+	result := gormDB.First(&user, uid)
+	// users := sqlGetUserByList(sqlDB, nil, []uint64{uid})
+	// if len(users) == 0 {
+	// 	return obj, fmt.Errorf("Can't find user %d", uid)
+	// }
+	// return users[0], nil
+	return user, result.Error
 }
 
 // SQLUserGetByName 获取数据库中用户
-func SQLUserGetByName(sqlDB *sql.DB, name string) (User, error) {
-	var uid uint64
-	obj := User{}
-	logger := util.GetLogger()
+func SQLUserGetByName(gormDB *gorm.DB, name string) (User, error) {
+	user := User{}
+	result := gormDB.Where("name = ?", name).First(&user)
+	return user, result.Error
 
-	rows, err := sqlDB.Query("SELECT id FROM user WHERE name =  ?", name)
-	defer rowsClose(rows)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return obj, err
-	}
+	// var uid uint64
+	// rows, err := sqlDB.Query("SELECT id FROM user WHERE name =  ?", name)
+	// defer rowsClose(rows)
+	// if err != nil {
+	// 	logger.Errorf("Query failed,err:%v", err)
+	// 	return user, err
+	// }
 
-	if rows.Next() {
-		err = rows.Scan(&uid)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			return obj, errors.New("No result")
-		}
-	} else {
-		return obj, errors.New("No result")
-	}
+	// if rows.Next() {
+	// 	err = rows.Scan(&uid)
+	// 	if err != nil {
+	// 		logger.Errorf("Scan failed,err:%v", err)
+	// 		return user, errors.New("No result")
+	// 	}
+	// } else {
+	// 	return user, errors.New("No result")
+	// }
 
-	return SQLUserGetByID(sqlDB, uid)
+	// return SQLUserGetByID(sqlDB, uid)
 }
 
 // SQLUserGetByEmail 获取数据库中用户
-func SQLUserGetByEmail(sqlDB *sql.DB, email string) (User, error) {
-	var uid uint64
-	obj := User{}
-	logger := util.GetLogger()
+func SQLUserGetByEmail(gormDB *gorm.DB, email string) (User, error) {
+	user := User{}
+	result := gormDB.Where("email = ?", email).First(&user)
+	return user, result.Error
 
-	rows, err := sqlDB.Query("SELECT id FROM user WHERE email =  ?", email)
-	defer rowsClose(rows)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return obj, err
-	}
+	// var uid uint64
+	// obj := User{}
+	// logger := util.GetLogger()
 
-	if rows.Next() {
-		err = rows.Scan(&uid)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			return obj, errors.New("No result")
-		}
-	} else {
-		return obj, errors.New("No result")
-	}
+	// rows, err := sqlDB.Query("SELECT id FROM user WHERE email =  ?", email)
+	// defer rowsClose(rows)
+	// if err != nil {
+	// 	logger.Errorf("Query failed,err:%v", err)
+	// 	return obj, err
+	// }
 
-	return SQLUserGetByID(sqlDB, uid)
+	// if rows.Next() {
+	// 	err = rows.Scan(&uid)
+	// 	if err != nil {
+	// 		logger.Errorf("Scan failed,err:%v", err)
+	// 		return obj, errors.New("No result")
+	// 	}
+	// } else {
+	// 	return obj, errors.New("No result")
+	// }
+
+	// return SQLUserGetByID(sqlDB, uid)
 }
 
 // SQLUserUpdate 更新用户信息
@@ -302,22 +314,22 @@ func (user *User) SQLRegister(db *sql.DB) bool {
 }
 
 // SQLGithubSync github用户同步信息
-func (user *User) SQLGithubSync(sqlDB *sql.DB, gu *github.User) {
+func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 	logger := util.GetLogger()
 	if user.Email != gu.GetEmail() {
 		logger.Errorf("Wanna modify %s, but give %s", user.Email, gu.GetEmail())
 		return
 	}
+
 	if user.About == "" {
-		user.UpdateField(sqlDB, "description", gu.GetBio())
+		gormDB.Model(user).Update("description", gu.GetBio())
 	}
 	if user.URL == "" {
-		user.UpdateField(sqlDB, "website", gu.GetBlog())
+		gormDB.Model(user).Update("website", gu.GetBlog())
 	}
 	if user.Avatar == "" {
-		user.UpdateField(sqlDB, "avatar", gu.GetAvatarURL())
+		gormDB.Model(user).Update("avatar", gu.GetAvatarURL())
 	}
-	*user, _ = SQLUserGetByID(sqlDB, user.ID)
 }
 
 // UpdateField 用户更新数据
@@ -331,40 +343,59 @@ func (user *User) UpdateField(sqlDB *sql.DB, field string, value string) {
 }
 
 // SQLGithubRegister github用户注册
-func SQLGithubRegister(sqlDB *sql.DB, gu *github.User) (User, error) {
+func SQLGithubRegister(gormDB *gorm.DB, gu *github.User) (User, error) {
+	user := User{
+		Name:        gu.GetLogin(),
+		Email:       gu.GetEmail(),
+		Reputation:  20,
+		Password:    "NoPassWordForGithub",
+		Avatar:      gu.GetAvatarURL(),
+		Description: gu.GetBio(),
+		WebSite:     gu.GetBlog(),
+	}
+	result := gormDB.Create(&user)
 	logger := util.GetLogger()
-	user := User{}
-	row, err := sqlDB.Exec(
-		("INSERT INTO `user` " +
-			" (`name`, `email`, `is_email_confirmed`, `urlname`,`nickname`, `password`, `reputation`, `avatar`, `description`, `website`, `created_at`)" +
-			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		gu.GetLogin(),
-		gu.GetEmail(),
-		"1",
-		gu.GetLogin(),
-		gu.GetName(),
-		"NoPassWordForGithub",
-		20, // 初始声望值20
-		gu.GetAvatarURL(),
-		gu.GetBio(),
-		gu.GetBlog(),
-		uint64(time.Now().UTC().Unix()),
-	)
-	if util.CheckError(err, "用户注册") {
-		return user, err
-	}
-	uid, err := row.LastInsertId()
-	if err != nil {
-		logger.Error("Get insert id err", err)
-	}
-	logger.Infof("Create user %d-%s success", uid, gu.GetLogin())
-	user, err = SQLUserGetByID(sqlDB, uint64(uid))
-	if err != nil {
-		logger.Error("Get user id err", err)
+
+	if result.Error != nil {
+		logger.Error("Can't creat user for", gu.GetLogin())
+		return User{}, result.Error
 	}
 
+	logger.Infof("Create user %d-%s success", user.ID, gu.GetLogin())
 	return user, nil
+
+	// user := User{}
+	// row, err := sqlDB.Exec(
+	// 	("INSERT INTO `user` " +
+	// 		" (`name`, `email`, `is_email_confirmed`, `urlname`,`nickname`, `password`, `reputation`, `avatar`, `description`, `website`, `created_at`)" +
+	// 		" VALUES " +
+	// 		" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+	// 	gu.GetLogin(),
+	// 	gu.GetEmail(),
+	// 	"1",
+	// 	gu.GetLogin(),
+	// 	gu.GetName(),
+	// 	"NoPassWordForGithub",
+	// 	20, // 初始声望值20
+	// 	gu.GetAvatarURL(),
+	// 	gu.GetBio(),
+	// 	gu.GetBlog(),
+	// 	uint64(time.Now().UTC().Unix()),
+	// )
+	// if util.CheckError(err, "用户注册") {
+	// 	return user, err
+	// }
+	// uid, err := row.LastInsertId()
+	// if err != nil {
+	// 	logger.Error("Get insert id err", err)
+	// }
+	// logger.Infof("Create user %d-%s success", uid, gu.GetLogin())
+	// user, err = SQLUserGetByID(sqlDB, uint64(uid))
+	// if err != nil {
+	// 	logger.Error("Get user id err", err)
+	// }
+	//
+	// return user, nil
 }
 
 // IsForbid 检查当前用户是否被禁用
@@ -431,7 +462,7 @@ func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string
 }
 
 // GetAvatarByID 获取用户头像
-func GetAvatarByID(sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
+func GetAvatarByID(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
 	var avatar string
 	logger := util.GetLogger()
 
@@ -440,7 +471,7 @@ func GetAvatarByID(sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
 		return rep
 	}
 
-	user, err := SQLUserGetByID(sqlDB, uid)
+	user, err := SQLUserGetByID(gormDB, uid)
 	if util.CheckError(err, "查询用户") {
 		return avatar
 	}
@@ -452,7 +483,7 @@ func GetAvatarByID(sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
 }
 
 // GetUserNameByID 获取用户名称
-func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
+func GetUserNameByID(gormDB *gorm.DB, redisDB *redis.Client, uid uint64) string {
 	var username string
 	logger := util.GetLogger()
 
@@ -461,7 +492,7 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 		return rep
 	}
 
-	user, err := SQLUserGetByID(db, uid)
+	user, err := SQLUserGetByID(gormDB, uid)
 	if util.CheckError(err, "查询用户") {
 		return username
 	}
@@ -473,7 +504,7 @@ func GetUserNameByID(db *sql.DB, redisDB *redis.Client, uid uint64) string {
 }
 
 // GetPreference 获取用户定义配置
-func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
+func (user *User) GetPreferenceOld(sqlDB *sql.DB, redisDB *redis.Client) {
 	logger := util.GetLogger()
 	rows, err := sqlDB.Query(
 		"SELECT `preferences` FROM `user` WHERE id=?",
@@ -488,22 +519,22 @@ func (user *User) GetPreference(sqlDB *sql.DB, redisDB *redis.Client) {
 	for rows.Next() {
 		var data []byte
 		rows.Scan(&data)
-		if len(data) <= 0 {
-			user.Preferences = &flarum.Preferences{}
-			continue
-		}
+		// if len(data) <= 0 {
+		// 	user.Preferences = &flarum.Preferences{}
+		// 	continue
+		// }
 		err = json.Unmarshal(data, &user.Preferences)
-		if err != nil {
-			logger.Warning("Load preferences", err.Error(), data)
-			user.Preferences = &flarum.Preferences{}
-		}
+		// if err != nil {
+		// 	logger.Warning("Load preferences", err.Error(), data)
+		// 	user.Preferences = &flarum.Preferences{}
+		// }
 	}
 }
 
 // SetPreference 更新用户配置信息
 // 数据库中使用了blob的数据类型, 查看数据时, 需要进行转换:
 //  SELECT CONVERT(`preferences` USING utf8) FROM `user`;
-func (user *User) SetPreference(sqlDB *sql.DB, redisDB *redis.Client, preference flarum.Preferences) {
+func (user *User) SetPreference(gormDB *gorm.DB, redisDB *redis.Client, preference flarum.Preferences) {
 	logger := util.GetLogger()
 	if user.Preferences == nil {
 		logger.Warning("Can't process user with no preferences", user.ID, user.Name)
@@ -516,18 +547,19 @@ func (user *User) SetPreference(sqlDB *sql.DB, redisDB *redis.Client, preference
 		return
 	}
 
-	_, err = sqlDB.Exec(
-		"UPDATE `user` "+
-			"set preferences=?"+
-			" where id=?",
-		string(data),
-		user.ID,
-	)
+	result := gormDB.Model(user).Update("preferences", data)
+	// _, err = sqlDB.Exec(
+	// 	"UPDATE `user` "+
+	// 		"set preferences=?"+
+	// 		" where id=?",
+	// 	string(data),
+	// 	user.ID,
+	// )
 
-	if err != nil {
-		logger.Error("Update user preferences error", err.Error(), user.Preferences)
+	if result.Error != nil {
+		logger.Error("Update user preferences error", result.Error, user.Preferences)
 	}
-	user.GetPreference(sqlDB, redisDB)
+	// user.GetPreference(sqlDB, redisDB)
 }
 
 // RefreshCSRF 刷新CSRF token

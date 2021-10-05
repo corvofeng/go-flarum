@@ -2,6 +2,8 @@ package flarum
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // BaseUser 基础的用户类
@@ -25,6 +27,7 @@ type BaseUser struct {
 
 // Preferences 用户偏好设置
 type Preferences struct {
+	gorm.Model
 	NotifyDiscussionRenamedAlert bool `json:"notify_discussionRenamed_alert"`
 	NotifyPostLikedAlert         bool `json:"notify_postLiked_alert"`
 	NotifyDiscussionLockedAlert  bool `json:"notify_discussionLocked_alert"`

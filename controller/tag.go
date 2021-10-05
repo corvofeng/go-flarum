@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +80,7 @@ func (h *BaseHandler) TagDetail(w http.ResponseWriter, r *http.Request) {
 
 func createFlarumTagAPIDoc(
 	reqctx *ReqContext,
-	sqlDB *sql.DB, redisDB *redis.Client,
+	gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -127,7 +128,7 @@ func createFlarumTagAPIDoc(
 	if err != nil {
 		logger.Info("Can't get article", err.Error())
 	}
-	diss := model.FlarumCreateDiscussion(article.ToArticleListItem(sqlDB, redisDB, tz))
+	diss := model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz))
 	apiDoc.AppendResources(diss)
 
 	apiDoc.SetData(res)
@@ -148,7 +149,7 @@ func FlarumTagAll(w http.ResponseWriter, r *http.Request) {
 	logger := ctx.GetLogger()
 
 	coreData, err := createFlarumTagAPIDoc(
-		ctx, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
+		ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorMsg(w, "查询标签信息错误:"+err.Error())

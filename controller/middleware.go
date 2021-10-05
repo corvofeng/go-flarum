@@ -2,9 +2,11 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
+	"zoe/model/flarum"
 	"zoe/util"
 )
 
@@ -62,14 +64,21 @@ func AdjustLocaleMiddleware(inner http.Handler) http.Handler {
 	mw := func(w http.ResponseWriter, r *http.Request) {
 		reqCtx := GetRetContext(r)
 		reqCtx.locale = "en"
-		// 未登录用户, 根据cookie来选择
-		if cookie, err := r.Cookie("locale"); err == nil {
-			reqCtx.locale = cookie.Value
-		}
+
 		// 已经登录过的用户, 根据自己的配置
 		user := reqCtx.currentUser
-		if user != nil && user.Preferences != nil && user.Preferences.Locale != "" {
-			reqCtx.locale = user.Preferences.Locale
+		if user != nil {
+			obj := flarum.NewResource(flarum.ECurrentUser, user.ID)
+			data := obj.Attributes.(*flarum.CurrentUser)
+			err := json.Unmarshal(user.Preferences, &data.Preferences)
+			if err != nil || data.Preferences.Locale == "" {
+				util.GetLogger().Errorf("Can't get preferences for user %d", user.ID)
+			} else {
+				reqCtx.locale = data.Preferences.Locale
+			}
+		} else if cookie, err := r.Cookie("locale"); err == nil {
+			// 未登录用户, 根据cookie来选择
+			reqCtx.locale = cookie.Value
 		}
 		inner.ServeHTTP(w, r)
 	}

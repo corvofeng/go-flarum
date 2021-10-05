@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/securecookie"
 	logging "github.com/op/go-logging"
 	"github.com/weint/config"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 
 	// "go.mongodb.org/mongo-driver/mongo"
 	// "go.mongodb.org/mongo-driver/mongo/options"
@@ -33,6 +35,7 @@ type Application struct {
 	// QnZone  *storage.Zone
 	Logger *logging.Logger
 	Rand   *rand.Rand // 负责处理随机数
+	GormDB *gorm.DB
 }
 
 // LoadConfig 从文件中初始化程序配置
@@ -115,6 +118,9 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 
 	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient
+	app.GormDB, err = gorm.Open(mysql.New(mysql.Config{
+		Conn: sqlDb,
+	}), &gorm.Config{})
 	// app.MongoDB = mongoClient
 
 	// set main node
