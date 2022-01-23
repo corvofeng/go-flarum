@@ -121,11 +121,11 @@ func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 	var userID uint64
 	logger := util.GetLogger()
 
-	for true {
+	for {
 		// 如果通过用户名可以获取到用户, 那么马上退出并返回
-		if user, err = SQLUserGetByName(gormDB, _userID); err == nil {
-			break
-		}
+		// if user, err = SQLUserGetByName(gormDB, _userID); err == nil {
+		// 	break
+		// }
 
 		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
 			logger.Error("Can't get user id for ", _userID)
@@ -135,7 +135,7 @@ func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 			logger.Error("Can't get user by err: ", err)
 			break
 		}
-		break
+		break //lint:ignore SA4004 ignore this!
 	}
 	return user, err
 }
