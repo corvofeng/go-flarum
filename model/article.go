@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 
 	"html/template"
@@ -19,9 +18,10 @@ import (
 
 // ArticleBase 基础的文档类, 在数据库表中的字段
 type ArticleBase struct {
+	gorm.Model
 	ID  uint64 `json:"id"`
-	UID uint64 `json:"uid"`
-	CID uint64 `json:"cid"`
+	UID uint64 `gorm:"column:user_id;index"`
+	CID uint64 `gorm:"column:category_id;index"`
 
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -29,13 +29,18 @@ type ArticleBase struct {
 	FirstPostID uint64
 	LastPostID  uint64
 
-	ClickCnt uint64 `json:"clickcnt"` // 不保证精确性
-	Comments uint64 `json:"comments"`
+	ClickCnt   uint64 `json:"clickcnt"` // 不保证精确性
+	ReplyCount uint64
 
 	AddTime  uint64 `json:"addtime"`
 	EditTime uint64 `json:"edittime"`
 
 	ClientIP string `json:"clientip"`
+}
+
+// 设置comment内容
+func (ArticleBase) TableName() string {
+	return "topic"
 }
 
 // Article store in database
@@ -137,8 +142,8 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, error) {
-	articleBaseList := sqlGetArticleBaseByList(db, redisDB, []uint64{aid})
+func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid uint64) (Article, error) {
+	articleBaseList := sqlGetArticleBaseByList(gormDB, db, redisDB, []uint64{aid})
 	obj := Article{}
 	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
@@ -155,7 +160,7 @@ func SQLArticleGetByID(db *sql.DB, redisDB *redis.Client, aid uint64) (Article, 
  * redisDB (redis.Client): TODO
  */
 func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
-	return article.Comments
+	return article.ReplyCount
 }
 
 // GetWeight 获取当前帖子的权重
@@ -199,7 +204,7 @@ func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 		article.AddTime,
 		article.EditTime,
 		article.ClientIP,
-		article.Comments,
+		article.ReplyCount,
 		article.Active,
 	)
 	if err != nil {
@@ -309,7 +314,7 @@ func (article *Article) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (
 }
 
 // SQLArticleUpdate 更新当前帖子
-func (article *Article) SQLArticleUpdate(db *sql.DB, redisDB *redis.Client) bool {
+func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) bool {
 	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
 	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
 	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.
@@ -317,7 +322,7 @@ func (article *Article) SQLArticleUpdate(db *sql.DB, redisDB *redis.Client) bool
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(db, redisDB, article.ID)
+	oldArticle, err := SQLArticleGetByID(gormDB, db, redisDB, article.ID)
 	oldArticle.Active = 0
 	if util.CheckError(err, "修改时拷贝") {
 		return false
@@ -376,7 +381,7 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	articleBaseList := sqlGetArticleBaseByList(db, redisDB, articleList)
+	articleBaseList := sqlGetArticleBaseByList(gormDB, db, redisDB, articleList)
 	m := make(map[uint64]ArticleListItem)
 
 	for _, articleBase := range articleBaseList {
@@ -400,59 +405,16 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 }
 
 // sqlGetArticleBaseByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
-func sqlGetArticleBaseByList(db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []ArticleBase) {
-	var err error
-	var rows *sql.Rows
-	var articleListStr []string
+func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []ArticleBase) {
 	logger := util.GetLogger()
-	defer rowsClose(rows)
+	result := gormDB.Find(&items, articleList)
+	if result.Error != nil {
+		logger.Errorf("Can't get article list by ", articleList)
 
-	if len(articleList) == 0 {
-		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
-		return
 	}
-
-	for _, v := range articleList {
-		articleListStr = append(articleListStr, strconv.FormatInt(int64(v), 10))
+	for _, article := range items {
+		article.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, article.ID)
 	}
-	qFieldList := []string{
-		"id", "title", "content",
-		"node_id", "user_id", "hits", "reply_count",
-		"first_post_id", "last_post_id",
-		"created_at", "updated_at",
-	}
-	sql := fmt.Sprintf("select %s from topic where id in (%s)",
-		strings.Join(qFieldList, ","),
-		strings.Join(articleListStr, ","))
-
-	rows, err = db.Query(sql)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return
-	}
-	m := make(map[uint64]ArticleBase)
-	for rows.Next() {
-		item := ArticleBase{}
-		err = rows.Scan(
-			&item.ID, &item.Title, &item.Content,
-			&item.CID, &item.UID, &item.ClickCnt, &item.Comments,
-			&item.FirstPostID, &item.LastPostID,
-			&item.AddTime, &item.EditTime)
-
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		item.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, item.ID)
-		m[item.ID] = item
-	}
-
-	for _, id := range articleList {
-		if item, ok := m[id]; ok {
-			items = append(items, item)
-		}
-	}
-
 	return
 }
 
@@ -747,7 +709,8 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) 
 	data, err := rep.Uint64()
 
 	if err != nil && err != redis.Nil {
-		fmt.Printf("Get %d with error :%v", aid, err)
+		logger := util.GetLogger()
+		logger.Errorf("Get %d with error :%v", aid, err)
 		data = 0
 	}
 	return data

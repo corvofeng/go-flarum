@@ -124,7 +124,7 @@ func createFlarumTagAPIDoc(
 		tag := model.FlarumCreateTag(category)
 		res = append(res, tag)
 	}
-	article, err := model.SQLArticleGetByID(sqlDB, redisDB, 1)
+	article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, 1)
 	if err != nil {
 		logger.Info("Can't get article", err.Error())
 	}

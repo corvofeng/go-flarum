@@ -2,11 +2,12 @@ package util
 
 import (
 	"errors"
-	"github.com/weint/httpclient"
 	"io"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/weint/httpclient"
 )
 
 func FetchAvatar(url, save, ua string) error {

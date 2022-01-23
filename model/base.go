@@ -7,6 +7,7 @@ import (
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
+	"gorm.io/gorm"
 )
 
 // ISQLLoader dict结果的loader
@@ -47,6 +48,11 @@ func executeQuery(db *sql.DB, query string, args ...interface{}) []map[string]in
 func rowsClose(rows *sql.Rows) {
 	if rows != nil {
 		rows.Close()
+	}
+}
+func clearGormTransaction(db *gorm.DB) {
+	if err := db.Rollback(); err != nil {
+		fmt.Println("error in gorm transaction", err)
 	}
 }
 

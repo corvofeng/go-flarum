@@ -1,5 +1,9 @@
 # zoe
 
+
+https://github.com/yannisme/flarum-oxo-theme
+https://discuss.flarum.org.cn/d/2775
+
 ## 本地快速启动
 
 ```bash

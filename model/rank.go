@@ -8,6 +8,7 @@ import (
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
+	"gorm.io/gorm"
 
 	"strconv"
 )
@@ -37,12 +38,13 @@ type CategoryRankData struct {
 type RankMap struct {
 	m       map[uint64]*CategoryRankData
 	mtx     sync.Mutex // 同一时刻, 只允许一个协程操纵map
+	GormDB  *gorm.DB
 	SQLDB   *sql.DB
 	RedisDB *redis.Client
 }
 
 func getWeight(rankMap *RankMap, aid uint64) float64 {
-	article, err := SQLArticleGetByID(rankMap.SQLDB, rankMap.RedisDB, aid)
+	article, err := SQLArticleGetByID(rankMap.GormDB, rankMap.SQLDB, rankMap.RedisDB, aid)
 	if util.CheckError(err, "查询帖子") {
 		return 0
 	}
@@ -116,8 +118,9 @@ func newRankMap() (m *RankMap) {
 }
 
 // RankMapInit init a ttl map
-func RankMapInit(sqlDB *sql.DB, redisDB *redis.Client) {
+func RankMapInit(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client) {
 	rankMap = newRankMap()
+	rankMap.GormDB = gormDB
 	rankMap.SQLDB = sqlDB
 	rankMap.RedisDB = redisDB
 
