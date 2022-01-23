@@ -55,7 +55,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	sqlDB := h.App.MySQLdb
 
 	// 获取帖子详情
-	aobj, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	aobj, err := model.SQLArticleGetByID(h.App.GormDB, sqlDB, redisDB, aid)
 	if util.CheckError(err, fmt.Sprintf("获取帖子 %d 失败", aid)) {
 		w.Write([]byte(err.Error()))
 		return
@@ -276,7 +276,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	// }
 
-	article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+	article, err := model.SQLArticleGetByID(h.App.GormDB, sqlDB, redisDB, aid)
 	if err != nil {
 		logger.Error("Can't get discussion id for ", aid)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_aid+err.Error()))
@@ -286,7 +286,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	rf := replyFilter{
 		FT:    eArticle,
 		AID:   aid,
-		Limit: article.Comments,
+		Limit: article.ReplyCount,
 
 		LastReadPostNumber: 0,
 	}
@@ -360,13 +360,13 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	now := uint64(time.Now().UTC().Unix())
 	aobj := model.Article{
 		ArticleBase: model.ArticleBase{
-			UID:      ctx.currentUser.ID,
-			Title:    diss.Data.Attributes.Title,
-			Content:  diss.Data.Attributes.Content,
-			Comments: 1,
-			AddTime:  now,
-			EditTime: now,
-			ClientIP: ctx.realIP,
+			UID:        ctx.currentUser.ID,
+			Title:      diss.Data.Attributes.Title,
+			Content:    diss.Data.Attributes.Content,
+			ReplyCount: 1,
+			AddTime:    now,
+			EditTime:   now,
+			ClientIP:   ctx.realIP,
 		},
 
 		Active:        1, // 帖子为激活状态

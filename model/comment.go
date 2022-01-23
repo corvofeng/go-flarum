@@ -17,9 +17,10 @@ import (
 type (
 	// CommentBase 会在数据库中保存的信息
 	CommentBase struct {
-		ID       uint64 `json:"id"`
-		AID      uint64 `json:"aid"`
-		UID      uint64 `json:"uid"`
+		gorm.Model
+		ID       uint64 `gorm:"primaryKey"`
+		AID      uint64 `gorm:"column:topic_id"`
+		UID      uint64 `gorm:"column:user_id"`
 		Number   uint64 `json:"number"`
 		Content  string `json:"content"`
 		ClientIP string `json:"clientip"`
@@ -52,6 +53,11 @@ type (
 		LastKey  uint64            `json:"lastkey"`
 	}
 )
+
+// 设置comment内容
+func (CommentBase) TableName() string {
+	return "reply"
+}
 
 // PreProcessUserMention 预处理用户的引用
 // #14
@@ -139,7 +145,7 @@ func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []
 	}
 	qFieldList := []string{
 		"id", "user_id", "topic_id", "content",
-		"number", "created_at",
+		"number", // "created_at",
 	}
 	sql := fmt.Sprintf("select %s from reply where id in (%s)",
 		strings.Join(qFieldList, ","),
@@ -155,7 +161,8 @@ func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []
 		item := CommentBase{}
 		err = rows.Scan(
 			&item.ID, &item.UID, &item.AID, &item.Content,
-			&item.Number, &item.AddTime,
+			&item.Number,
+			// &item.AddTime,
 		)
 		if err != nil {
 			logger.Errorf("Scan failed,err:%v", err)
@@ -215,25 +222,28 @@ func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz 
 func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
-	logger := util.GetLogger()
 
-	rows, err = db.Query("SELECT id FROM reply where topic_id = ? LIMIT ?", topicID, limit)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return
-	}
+	// logger := util.GetLogger()
+	// rows, err = db.Query("SELECT id FROM reply where topic_id = ? LIMIT ?", topicID, limit)
+	// if err != nil {
+	// 	logger.Errorf("Query failed,err:%v", err)
+	// 	return
+	// }
 
-	var commentList []uint64
-	for rows.Next() {
-		var item uint64
-		err = rows.Scan(&item)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		commentList = append(commentList, item)
-	}
-	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	// var commentList []uint64
+	// for rows.Next() {
+	// 	var item uint64
+	// 	err = rows.Scan(&item)
+	// 	if err != nil {
+	// 		logger.Errorf("Scan failed,err:%v", err)
+	// 		continue
+	// 	}
+	// 	commentList = append(commentList, item)
+	// }
+	// baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+
+	var baseComments []CommentBase
+	gormDB.Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
 	}
@@ -261,7 +271,10 @@ func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, 
 		}
 		commentList = append(commentList, item)
 	}
-	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	// baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+	var baseComments []CommentBase
+	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
+
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
 	}
@@ -451,27 +464,38 @@ func SQLCommentList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID,
 }
 
 // CreateFlarumComment 创建flarum的评论
-func (comment *Comment) CreateFlarumComment(db *sql.DB) (bool, error) {
-	tx, err := db.Begin()
+func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	logger := util.GetLogger()
-	defer clearTransaction(tx)
-	if err != nil {
-		return false, err
-	}
-	if ok, err := comment.sqlCreateComment(tx); !ok {
-		return false, err
-	}
 
-	logger.Debugf("Create comment %d success", comment.ID)
+	tx := gormDB.Begin()
+	defer clearGormTransaction(tx)
 
-	if ok, err := comment.sqlUpdateNumber(tx); !ok {
-		return false, err
+	var topic ArticleBase
+	result := gormDB.First(&topic, &comment.ID)
+	if result.Error != nil {
+		logger.Error("CCan't find topic with error", result.Error)
+		return false, result.Error
 	}
+	var lastComment Comment
+	result = gormDB.First(&lastComment, topic.LastPostID)
+	if result.Error != nil {
+		logger.Error("CCan't find last commet with error", result.Error)
+		return false, result.Error
+	}
+	comment.Number = lastComment.Number + 1
 
+	result = tx.Create(&comment.CommentBase)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	topic.LastPostID = comment.ID
+	tx.Save(&topic)
 	logger.Debugf("Update comment number %d success", comment.ID)
-	if err := tx.Commit(); err != nil {
-		logger.Error("Create reply with error", err)
-		return false, err
+
+	result = tx.Commit()
+	if result.Error != nil {
+		logger.Error("Create reply with error", result.Error)
+		return false, result.Error
 	}
 
 	return true, nil

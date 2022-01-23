@@ -169,7 +169,7 @@ func createFlarumReplyAPIDoc(
 
 	// 针对某个话题时, 这里直接进行添加
 	if rf.FT == eArticle || rf.FT == ePost || rf.FT == ePosts {
-		article, err := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
+		article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, rf.AID)
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
 		} else {
@@ -211,7 +211,7 @@ func createFlarumReplyAPIDoc(
 		}
 
 		if _, ok := allDiscussions[comment.AID]; !ok {
-			article, err := model.SQLArticleGetByID(sqlDB, redisDB, comment.AID)
+			article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, comment.AID)
 			if err != nil {
 				logger.Warning("Can't get article: ", comment.AID, err)
 			} else {
@@ -246,7 +246,7 @@ func createFlarumReplyAPIDoc(
 		if rf.FT == eArticle || rf.FT == ePost { // 如果是查询全部评论, 等待一下
 			<-hasUpdateComments
 		}
-		article, _ := model.SQLArticleGetByID(sqlDB, redisDB, rf.AID)
+		article, _ := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, rf.AID)
 		postRelation := model.FlarumCreatePostRelations([]flarum.Resource{}, article.GetCommentList(redisDB))
 		curDisscussion.BindRelations("Posts", postRelation)
 	}
@@ -342,7 +342,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 	comment.Content = model.PreProcessUserMention(h.App.GormDB, sqlDB, redisDB, scf.TimeZone, comment.Content)
 
-	if ok, err := comment.CreateFlarumComment(sqlDB); !ok {
+	if ok, err := comment.CreateFlarumComment(h.App.GormDB); !ok {
 		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())
 		return
 	}
@@ -462,7 +462,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the article for: "+_disscussionID+err.Error()))
 			return
 		}
-		article, err := model.SQLArticleGetByID(sqlDB, redisDB, aid)
+		article, err := model.SQLArticleGetByID(h.App.GormDB, sqlDB, redisDB, aid)
 		if err != nil {
 			logger.Error("Can't get discussion id for ", aid)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_disscussionID+err.Error()))
@@ -472,7 +472,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		rf = replyFilter{
 			FT:    eArticle,
 			AID:   aid,
-			Limit: article.Comments,
+			Limit: article.ReplyCount,
 		}
 
 		if _near != "" {
