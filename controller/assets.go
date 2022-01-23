@@ -13,8 +13,10 @@ import (
 // GetLocaleData 获取地区对应的语言包
 func (h *BaseHandler) GetLocaleData(w http.ResponseWriter, r *http.Request) {
 	localeDir := path.Join(h.App.Cf.Main.LocaleDir)
+	extDir := path.Join(h.App.Cf.Main.ExtensionsDir)
+	flarumDir := path.Join(h.App.Cf.Main.ExtensionsDir, "..", "flarum")
 	locale := pat.Param(r, "locale")
-	localeDataArr := util.FlarumReadLocale(localeDir, locale)
+	localeDataArr := util.FlarumReadLocale(flarumDir, extDir, localeDir, locale)
 
 	arr, _ := json.Marshal(localeDataArr)
 	retData := fmt.Sprintf(`flarum.core.app.translator.addTranslations(%s);`, arr)

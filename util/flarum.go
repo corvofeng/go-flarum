@@ -66,19 +66,11 @@ func readLocaleData(localeData map[string]interface{}, localeDataArr *map[string
 }
 
 // FlarumReadLocale 读取Flarum的语言包
-func FlarumReadLocale(localeDir, locale string) map[string]string {
+func FlarumReadLocale(flarumDir, extDir, localeDir, locale string) map[string]string {
 	logger := GetLogger()
 	localeDataArr := make(map[string]string)
 
-	dirPath := path.Join(localeDir, locale, "locale")
-	dir, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
-		return localeDataArr
-	}
-
 	doParseFile := func(fn string) {
-
 		yamlFile, err := ioutil.ReadFile(fn)
 		if err != nil {
 			logger.Errorf("yamlFile.Get err %v ", err)
@@ -93,11 +85,52 @@ func FlarumReadLocale(localeDir, locale string) map[string]string {
 		readLocaleData(localeData, &localeDataArr)
 	}
 
+	// flarum/locale
+	// 首先解析flarum中自带的语言包
+	flarumDatas, err := ioutil.ReadDir(path.Join(flarumDir, "locale"))
+	if err == nil {
+		for _, fi := range flarumDatas {
+			// 过滤指定格式
+			if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+				doParseFile(path.Join(flarumDir, "locale", fi.Name()))
+			}
+		}
+	}
+
+	// 解析flarum-lang中携带的语言包
+	// locale/en/*.yml, locale/zh/*.yml
+	dirPath := path.Join(localeDir, locale, "locale")
+	dir, err := ioutil.ReadDir(dirPath)
+	if err != nil {
+		logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
+		return localeDataArr
+	}
 	for _, fi := range dir {
 		// 过滤指定格式
 		if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
 			doParseFile(path.Join(dirPath, fi.Name()))
 		}
 	}
+
+	// 解析各个插件的语言包
+	// flarum-tags/locale/en.yml
+	extDirDatas, err := ioutil.ReadDir(extDir)
+	if err == nil {
+		for _, fi := range extDirDatas {
+			if fi.IsDir() {
+				extLocaleDir := path.Join(extDir, fi.Name(), locale)
+				dir, err := ioutil.ReadDir(extLocaleDir)
+				if err == nil {
+					for _, fi := range dir {
+						// 过滤指定格式
+						if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+							doParseFile(path.Join(extDir, fi.Name()))
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return localeDataArr
 }
