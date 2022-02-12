@@ -453,7 +453,7 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	tx := gormDB.Begin()
 	defer clearGormTransaction(tx)
 
-	var topic ArticleBase
+	var topic Topic
 	result := gormDB.First(&topic, &comment.AID)
 	if result.Error != nil {
 		logger.Error("Can't find topic with error", result.Error)

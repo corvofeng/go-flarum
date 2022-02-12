@@ -10,24 +10,27 @@ import (
 	"zoe/util"
 
 	"github.com/go-redis/redis/v7"
+	"gorm.io/gorm"
 )
 
-type (
-	// Category 帖子分类
-	Category = struct {
-		ID          uint64 `json:"id"`
-		Name        string `json:"name"`
-		URLName     string `json:"urlname"`
-		Articles    uint64 `json:"articles"`
-		About       string `json:"about"`
-		ParentID    uint64 `json:"parent_id"`
-		Position    uint64 `json:"position"`
-		Description string `json:"description"`
-		Hidden      bool   `json:"hidden"`
-		Color       string `json:"color"`
-		IconIMG     string `json:"icon_img"`
-	}
+// Tag 帖子分类
+type Tag struct {
+	gorm.Model
+	ID   uint64 `gorm:"primaryKey"`
+	Name string `json:"name"`
 
+	URLName     string `json:"urlname"`
+	Articles    uint64 `json:"articles"`
+	About       string `json:"about"`
+	ParentID    uint64 `json:"parent_id"`
+	Position    uint64 `json:"position"`
+	Description string `json:"description"`
+	Hidden      bool   `json:"hidden"`
+	Color       string `json:"color"`
+	IconIMG     string `json:"icon_img"`
+}
+
+type (
 	// CategoryMini 帖子分类
 	CategoryMini struct {
 		ID   uint64 `json:"id"`
@@ -36,16 +39,16 @@ type (
 
 	// CategoryPageInfo 显示所有的帖子信息
 	CategoryPageInfo struct {
-		Items    []Category `json:"items"`
-		HasPrev  bool       `json:"hasprev"`
-		HasNext  bool       `json:"hasnext"`
-		FirstKey uint64     `json:"firstkey"`
-		LastKey  uint64     `json:"lastkey"`
+		Items    []Tag  `json:"items"`
+		HasPrev  bool   `json:"hasprev"`
+		HasNext  bool   `json:"hasnext"`
+		FirstKey uint64 `json:"firstkey"`
+		LastKey  uint64 `json:"lastkey"`
 	}
 )
 
 // SQLGetAllCategory 获取所有分类
-func SQLGetAllCategory(db *sql.DB, redisDB *redis.Client) (categories []Category, err error) {
+func SQLGetAllCategory(db *sql.DB, redisDB *redis.Client) (categories []Tag, err error) {
 	rows, err := db.Query("SELECT id FROM tags where is_hidden = 0")
 	defer rowsClose(rows)
 	logger := util.GetLogger()
@@ -69,8 +72,9 @@ func SQLGetAllCategory(db *sql.DB, redisDB *redis.Client) (categories []Category
 }
 
 // SQLGetNotEmptyCategory 获取非空的分类
-func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Category, err error) {
-	rows, err := db.Query("SELECT id FROM tags where topic_count != 0 and is_hidden = 0")
+func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Tag, err error) {
+	rows, err := db.Query("SELECT id FROM tags")
+
 	defer rowsClose(rows)
 	logger := util.GetLogger()
 
@@ -93,7 +97,7 @@ func SQLGetNotEmptyCategory(db *sql.DB, redisDB *redis.Client) (categories []Cat
 
 }
 
-func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint64) (items []Category) {
+func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint64) (items []Tag) {
 	var err error
 	var rows *sql.Rows
 	var categoryListStr []string
@@ -107,8 +111,8 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 		categoryListStr = append(categoryListStr, strconv.FormatInt(int64(v), 10))
 	}
 	qFieldList := []string{
-		"id", "name", "urlname",
-		"description", "is_hidden", "parent_id", "position",
+		"id", "name", "url_name",
+		"description", "parent_id",
 		"color", "icon_img",
 	}
 	sql := fmt.Sprintf("SELECT %s FROM tags WHERE id IN (%s)",
@@ -121,11 +125,11 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 	}
 
 	for rows.Next() {
-		item := Category{}
+		item := Tag{}
 		err = rows.Scan(
 			&item.ID, &item.Name, &item.URLName,
-			&item.Description, &item.Hidden,
-			&item.ParentID, &item.Position,
+			&item.Description,
+			&item.ParentID,
 			&item.Color, &item.IconIMG,
 		)
 		if err != nil {
@@ -139,22 +143,22 @@ func sqlGetCategoryByList(db *sql.DB, redisDB *redis.Client, categoryList []uint
 }
 
 // SQLCategoryGetByID 通过id获取节点
-func SQLCategoryGetByID(db *sql.DB, cid string) (Category, error) {
+func SQLCategoryGetByID(db *sql.DB, cid string) (Tag, error) {
 	return sqlCategoryGet(db, cid, "", "")
 }
 
 // SQLCategoryGetByName 通过name获取节点
-func SQLCategoryGetByName(db *sql.DB, name string) (Category, error) {
+func SQLCategoryGetByName(db *sql.DB, name string) (Tag, error) {
 	return sqlCategoryGet(db, "", name, "")
 }
 
 // SQLCategoryGetByURLName 通过urlname获取节点
-func SQLCategoryGetByURLName(db *sql.DB, urlname string) (Category, error) {
+func SQLCategoryGetByURLName(db *sql.DB, urlname string) (Tag, error) {
 	return sqlCategoryGet(db, "", "", urlname)
 }
 
-func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Category, error) {
-	obj := Category{}
+func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Tag, error) {
+	obj := Tag{}
 	var rows *sql.Rows
 	var err error
 	isAdd := false
@@ -192,7 +196,7 @@ func sqlCategoryGet(db *sql.DB, cid string, name string, urlname string) (Catego
 // SQLCategoryList 获取分类列表
 func SQLCategoryList(db *sql.DB, redisDB *redis.Client) CategoryPageInfo {
 	// tb := "category"
-	var items []Category
+	var items []Tag
 	// var keys [][]byte
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64

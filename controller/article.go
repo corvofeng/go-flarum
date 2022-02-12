@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"zoe/model"
@@ -80,20 +79,20 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取帖子所在的节点
-	cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
+	// cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
 
 	err = nil
-	cobj.Hidden = false
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
+	// cobj.Hidden = false
+	// if err != nil {
+	// 	w.Write([]byte(err.Error()))
+	// 	return
+	// }
 
-	if cobj.Hidden && !currentUser.IsAdmin() {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
-		return
-	}
+	// if cobj.Hidden && !currentUser.IsAdmin() {
+	// 	w.WriteHeader(http.StatusNotFound)
+	// 	w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
+	// 	return
+	// }
 
 	// Authorized
 	if scf.Authorized && currentUser.Flag < 5 {
@@ -129,7 +128,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		BasePageData
 		Aobj       articleForDetail
 		Author     model.User
-		Cobj       model.Category
+		Cobj       model.Tag
 		Relative   model.ArticleRelative
 		PageInfo   model.CommentPageInfo
 		Views      uint64
@@ -140,7 +139,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	tpl := h.CurrentTpl(r)
 	evn := &pageData{}
 	evn.SiteCf = scf
-	evn.Title = aobj.Title + " - " + cobj.Name + " - " + scf.Name
+	// evn.Title = aobj.Title + " - " + cobj.Name + " - " + scf.Name
 	// evn.Keywords = aobj.Tags
 	// evn.Description = cobj.Name + " - " + aobj.Title + " - " + aobj.Tags
 	evn.IsMobile = tpl == "mobile"
@@ -151,7 +150,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
 	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
 
-	author, _ := model.SQLUserGetByID(h.App.GormDB, aobj.UID)
+	author, _ := model.SQLUserGetByID(h.App.GormDB, aobj.UserID)
 
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
@@ -178,15 +177,15 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(aobj.Tags) > 0 {
-		var tags []string
-		for _, v := range strings.Split(aobj.Tags, ",") {
-			tags = append(tags, `<a href="/tag/`+v+`">`+v+`</a>`)
-		}
-		evn.Aobj.TagStr = template.HTML(strings.Join(tags, ", "))
-	}
+	// if len(aobj.Tags) > 0 {
+	// 	var tags []string
+	// 	for _, v := range strings.Split(aobj.Tags, ",") {
+	// 		tags = append(tags, `<a href="/tag/`+v+`">`+v+`</a>`)
+	// 	}
+	// 	evn.Aobj.TagStr = template.HTML(strings.Join(tags, ", "))
+	// }
 
-	evn.Cobj = cobj
+	// evn.Cobj = cobj
 	evn.Author = author
 	// evn.Relative = model.ArticleGetRelative(aobj.ID, aobj.Tags)
 	evn.PageInfo = pageInfo
@@ -326,6 +325,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	sqlDB := h.App.MySQLdb
+	gormDB := h.App.GormDB
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 	scf := h.App.Cf.Site
@@ -358,19 +358,16 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := uint64(time.Now().UTC().Unix())
-	aobj := model.Article{
-		ArticleBase: model.ArticleBase{
-			UID:        ctx.currentUser.ID,
-			Title:      diss.Data.Attributes.Title,
-			Content:    diss.Data.Attributes.Content,
-			ReplyCount: 1,
-			AddTime:    now,
-			EditTime:   now,
-			ClientIP:   ctx.realIP,
-		},
-
-		Active:        1, // 帖子为激活状态
-		FatherTopicID: 0, // 没有原始主题
+	aobj := model.Topic{
+		UserID:     ctx.currentUser.ID,
+		Title:      diss.Data.Attributes.Title,
+		Content:    diss.Data.Attributes.Content,
+		ReplyCount: 1,
+		AddTime:    now,
+		EditTime:   now,
+		ClientIP:   ctx.realIP,
+		// Active:        1, // 帖子为激活状态
+		// FatherTopicID: 0, // 没有原始主题
 	}
 	tagsArray := flarum.RelationArray{}
 	for _, rela := range diss.Data.Relationships.Tags.Data {
@@ -382,7 +379,17 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		tagsArray.Data = append(tagsArray.Data, flarum.InitBaseResources(uint64(tagID), rela.Type))
 	}
 
-	_, err = aobj.CreateFlarumDiscussion(sqlDB, tagsArray)
+	for _, rela := range diss.Data.Relationships.Tags.Data {
+		var tag model.Tag
+		result := gormDB.First(&tag, rela.ID)
+		if result.Error != nil {
+			logger.Warning("Get wrong tag id", rela.ID)
+			continue
+		}
+		aobj.Tags = append(aobj.Tags, tag)
+	}
+
+	_, err = aobj.CreateFlarumDiscussion(gormDB, tagsArray)
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))

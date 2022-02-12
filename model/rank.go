@@ -69,7 +69,7 @@ func TimelyResort() {
 	if util.CheckError(err, "获取所有节点") {
 		return
 	}
-	categoryList = append(categoryList, Category{ID: 0, Name: "所有节点"})
+	categoryList = append(categoryList, Tag{ID: 0, Name: "所有节点"})
 
 	for _, v := range categoryList {
 		logger.Debugf("Start refresh category %d(%s)", v.ID, v.Name)
