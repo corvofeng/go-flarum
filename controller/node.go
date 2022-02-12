@@ -18,7 +18,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 
 	// var start uint64
 	var err error
-	var cobj model.Category
+	var cobj model.Tag
 	var page uint64
 	var pageInfo model.ArticlePageInfo
 
@@ -52,7 +52,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 
 	type pageData struct {
 		BasePageData
-		Cobj     model.Category
+		Cobj     model.Tag
 		PageInfo model.ArticlePageInfo
 	}
 
@@ -102,7 +102,7 @@ func (h *BaseHandler) CategoryDetailNew(w http.ResponseWriter, r *http.Request) 
 			nodeData.Data = append(nodeData.Data,
 				model.RestfulTopic{
 					ID:    a.ID,
-					UID:   a.UID,
+					UID:   a.UserID,
 					Title: a.Title,
 					Author: model.RestfulUser{
 						Name:   a.Name,

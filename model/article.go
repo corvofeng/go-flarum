@@ -16,12 +16,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// ArticleBase 基础的文档类, 在数据库表中的字段
-type ArticleBase struct {
+// Topic 基础的文档类, 在数据库表中的字段
+type Topic struct {
 	gorm.Model
-	ID  uint64 `json:"id"`
-	UID uint64 `gorm:"column:user_id;index"`
-	CID uint64 `gorm:"column:category_id;index"`
+	ID     uint64 `gorm:"primaryKey"`
+	UserID uint64 `gorm:"column:user_id;index"`
+	// CID uint64 `gorm:"column:category_id;index"`
 
 	Title   string `json:"title"`
 	Content string `json:"content"`
@@ -36,18 +36,25 @@ type ArticleBase struct {
 	EditTime uint64 `json:"edittime"`
 
 	ClientIP string `json:"clientip"`
+
+	Tags []Tag `gorm:"many2many:topic_tags;"`
+}
+
+type TopicTag struct {
+	gorm.Model
+	TopicID uint64 `gorm:"primaryKey"`
+	TagID   uint64 `gorm:"primaryKey"`
 }
 
 // 设置comment内容
-func (ArticleBase) TableName() string {
-	return "topic"
-}
+// func (Topic) TableName() string {
+// 	return "topic"
+// }
 
 // Article store in database
 type Article struct {
-	ArticleBase
+	Topic
 	RUID              uint64 `json:"ruid"`
-	Tags              string `json:"tags"`
 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
 	CloseComment      bool   `json:"closecomment"`
 	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
@@ -62,14 +69,14 @@ type Article struct {
 
 // ArticleMini 缩略版的Article信息
 type ArticleMini struct {
-	ArticleBase
+	Topic
 	Ruid   uint64 `json:"ruid"`
 	Hidden bool   `json:"hidden"`
 }
 
 // ArticleListItem data strucy only used in page.
 type ArticleListItem struct {
-	ArticleBase
+	Topic
 	Name        string `json:"name"`
 	Avatar      string `json:"avatar"`
 	Cname       string `json:"cname"`
@@ -148,7 +155,7 @@ func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid u
 	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
 	}
-	obj.ArticleBase = articleBaseList[0]
+	obj.Topic = articleBaseList[0]
 	obj.GetArticleCntFromRedisDB(db, redisDB)
 
 	return obj, nil
@@ -194,11 +201,10 @@ func (article *Article) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
 	row, err := tx.Exec(
 		("INSERT INTO `topic` " +
-			" (`node_id`, `user_id`, `title`, `content`, created_at, updated_at, client_ip, reply_count, active)" +
+			" (`user_id`, `title`, `content`, created_at, updated_at, client_ip, reply_count, active)" +
 			" VALUES " +
 			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		article.CID,
-		article.UID,
+		article.UserID,
 		article.Title,
 		article.Content,
 		article.AddTime,
@@ -232,46 +238,63 @@ func (article *Article) SQLCreateTopic(db *sql.DB) bool {
 }
 
 // CreateFlarumDiscussion 创建flarum的帖子
-func (article *Article) CreateFlarumDiscussion(db *sql.DB, tags flarum.RelationArray) (bool, error) {
-	tx, err := db.Begin()
+// 帖子中, category和tag是不同的数据
+// category是帖子比较大的分类, 每个帖子只能有一个
+// tag只是这个帖子具有的某种特征, 每个帖子可以有多个tag
+func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
 	logger := util.GetLogger()
-	defer clearTransaction(tx)
-	if err != nil {
-		return false, err
+	tx := gormDB.Begin()
+	fmt.Println("get user id", topic.UserID, topic.Tags)
+	result := tx.Create(&topic)
+
+	if result.Error != nil {
+		logger.Error("Can't creat topic with error", result.Error)
+		return false, result.Error
 	}
-	if ok, err := article.sqlCreateTopic(tx); !ok {
-		return false, err
-	}
-	logger.Debugf("Create article %d success", article.ID)
 
 	comment := Comment{
 		CommentBase: CommentBase{
-			AID:      article.ID,
-			UID:      article.UID,
-			Content:  article.Content,
+			AID:      topic.ID,
+			UID:      topic.UserID,
+			Content:  topic.Content,
 			Number:   1,
-			ClientIP: article.ClientIP,
-			AddTime:  article.AddTime,
+			ClientIP: topic.ClientIP,
 		},
 	}
-	if ok, err := comment.sqlSaveComment(tx); !ok {
-		return false, err
+	result = tx.Create(&comment.CommentBase)
+	if result.Error != nil {
+		logger.Error("Can't create first commet for topic with error", result.Error)
+		return false, result.Error
 	}
-	article.LastPostID = comment.ID
-	article.FirstPostID = comment.ID
-	if ok, err := article.updateFlarumPost(tx); !ok {
-		return false, err
+	topic.LastPostID = comment.ID
+	topic.FirstPostID = comment.ID
+
+	// if ok, err := article.updateFlarumTag(tx, tags); !ok {
+	// 	return false, err
+	// }
+	// logger.Debugf("Update article post and tag %d success", article.ID)
+	for _, tid := range tags.Data {
+		fmt.Println(tid)
 	}
 
-	if ok, err := article.updateFlarumTag(tx, tags); !ok {
-		return false, err
-	}
-	logger.Debugf("Update article post and tag %d success", article.ID)
+	tx.Save(&topic)
 
-	if err := tx.Commit(); err != nil {
-		logger := util.GetLogger()
-		logger.Error("Create topic with error", err)
-		return false, err
+	// if ok, err := comment.sqlSaveComment(tx); !ok {
+	// 	return false, err
+	// }
+	// if ok, err := article.updateFlarumPost(tx); !ok {
+	// 	return false, err
+	// }
+
+	// if err := tx.Commit(); err != nil {
+	// 	logger := util.GetLogger()
+	// 	logger.Error("Create topic with error", err)
+	// 	return false, err
+	// }
+	result = tx.Commit()
+	if result.Error != nil {
+		logger.Error("Create reply with error", result.Error)
+		return false, result.Error
 	}
 
 	return true, nil
@@ -333,7 +356,6 @@ func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *r
 		"UPDATE `topic` "+
 			"set title=?,"+
 			"content = ?,"+
-			"node_id=?,"+
 			"user_id=?,"+
 			"updated_at=?,"+
 			"client_ip=?,"+
@@ -341,8 +363,7 @@ func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *r
 			" where id=?",
 		article.Title,
 		article.Content,
-		article.CID,
-		article.UID,
+		article.UserID,
 		article.EditTime,
 		article.ClientIP,
 		oldArticle.ID,
@@ -356,13 +377,13 @@ func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *r
 }
 
 // ToArticleListItem 转换为可以做列表的内容
-func (ab *ArticleBase) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
+func (ab *Topic) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
 	item := ArticleListItem{
-		ArticleBase: *ab,
+		Topic: *ab,
 	}
 	item.EditTimeFmt = item.UpdatedAt.UTC().String()
 	item.AddTimeFmt = item.CreatedAt.UTC().String()
-	item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
+	// item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
 	if item.LastPostID != 0 {
 		lastComment, err := SQLCommentByID(gormDB, sqlDB, redisDB, item.LastPostID, tz)
 		if err != nil {
@@ -405,7 +426,7 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 }
 
 // sqlGetArticleBaseByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
-func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []ArticleBase) {
+func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
 	logger := util.GetLogger()
 	result := gormDB.Find(&items, articleList)
 	if result.Error != nil {

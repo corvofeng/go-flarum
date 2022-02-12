@@ -61,7 +61,7 @@ func FlarumCreateLocale(coreData *flarum.CoreData, locale string) {
 }
 
 // FlarumCreateTag 创建tag资源
-func FlarumCreateTag(cat Category) flarum.Resource {
+func FlarumCreateTag(cat Tag) flarum.Resource {
 	obj := flarum.NewResource(flarum.ETAG, cat.ID)
 
 	data := obj.Attributes.(*flarum.Tag)
@@ -116,7 +116,7 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 
 	obj.BindRelations(
 		"User",
-		flarum.RelationDict{Data: flarum.InitBaseResources(article.UID, "users")},
+		flarum.RelationDict{Data: flarum.InitBaseResources(article.UserID, "users")},
 	)
 	obj.BindRelations(
 		"Tags",

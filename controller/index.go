@@ -172,7 +172,7 @@ func createFlarumPageAPIDoc(
 				coreData.AppendResources(user)
 			}
 		}
-		getUser(article.UID)
+		getUser(article.UserID)
 		d := diss.Attributes.(*flarum.Discussion)
 		if d.LastPostID != 0 {
 			getUser(d.LastUserID)
@@ -223,11 +223,11 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	var pageInfo model.ArticlePageInfo
 	for _, item := range coreData.APIDocument.Included {
 		if item.Type == "discussions" {
-			ab := model.ArticleBase{
+			ab := model.Topic{
 				ID:    item.GetID(),
 				Title: item.Attributes.(*flarum.Discussion).Title,
 			}
-			pageInfo.Items = append(pageInfo.Items, model.ArticleListItem{ArticleBase: ab})
+			pageInfo.Items = append(pageInfo.Items, model.ArticleListItem{Topic: ab})
 		}
 	}
 	evn := InitPageData(r)
