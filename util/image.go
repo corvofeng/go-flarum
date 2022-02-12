@@ -3,14 +3,15 @@ package util
 import (
 	"bytes"
 	"errors"
-	"github.com/disintegration/imaging"
-	"github.com/o1egl/govatar"
 	"image"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"net/http"
 	"os"
+
+	"github.com/disintegration/imaging"
+	"github.com/o1egl/govatar"
 )
 
 var imgTable = map[string]string{

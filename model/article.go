@@ -364,7 +364,7 @@ func (ab *ArticleBase) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB
 	item.AddTimeFmt = util.TimeFmt(item.AddTime, util.TIME_FMT, tz)
 	item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
 	if item.LastPostID != 0 {
-		lastComment, err := SQLGetCommentByID(gormDB, sqlDB, redisDB, item.LastPostID, tz)
+		lastComment, err := SQLCommentByID(gormDB, sqlDB, redisDB, item.LastPostID, tz)
 		if err != nil {
 			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
 		} else {
@@ -730,9 +730,11 @@ func (article *Article) toKeyForComments() string {
 // CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
 // 注意这里是有顺序的, 顺序为发帖时间
 func (article *Article) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+	logger := util.GetLogger()
+	logger.Debugf("Cache comment list for: %d, and %d comments", article.ID, len(comments))
 	for _, c := range comments {
 		_, err := rankRedisDB.ZAddNX(article.toKeyForComments(), &redis.Z{
-			Score:  float64(c.AddTime),
+			Score:  float64(c.CreatedAt.Unix()),
 			Member: c.ID},
 		).Result()
 		util.CheckError(err, "更新redis中的话题的评论信息")
@@ -741,12 +743,18 @@ func (article *Article) CacheCommentList(redisDB *redis.Client, comments []Comme
 	return nil
 }
 
-// GetCommentList 获取帖子对应的评论列表
-func (article *Article) GetCommentList(redisDB *redis.Client) (comments []uint64) {
+// GetCommentIDList 获取帖子已经排序好的评论列表
+func (article *Article) GetCommentIDList(redisDB *redis.Client) (comments []uint64) {
 	rdsData, _ := rankRedisDB.ZRange(article.toKeyForComments(), 0, -1).Result()
 	for _, _cid := range rdsData {
 		cid, _ := strconv.ParseUint(_cid, 10, 64)
 		comments = append(comments, cid)
 	}
 	return
+}
+
+func (article *Article) CleanCache() {
+	logger := util.GetLogger()
+	rankRedisDB.Del(article.toKeyForComments())
+	logger.Info("Delete comment list cache for: ", article.ID)
 }

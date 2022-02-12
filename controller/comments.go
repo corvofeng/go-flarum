@@ -120,10 +120,10 @@ func createFlarumReplyAPIDoc(
 	}
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
-		pageInfo := model.SQLCommentListByPage(gormDB, sqlDB, redisDB, rf.AID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByTopic(gormDB, sqlDB, redisDB, rf.AID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == ePost {
-		pageInfo := model.SQLCommentListByID(gormDB, sqlDB, redisDB, rf.CID, rf.Limit, tz)
+		pageInfo := model.SQLCommentListByCID(gormDB, sqlDB, redisDB, rf.CID, rf.Limit, tz)
 		comments = pageInfo.Items
 	} else if rf.FT == eUserPost {
 		pageInfo := model.SQLCommentListByUser(gormDB, sqlDB, redisDB, rf.UID, rf.Limit, tz)
@@ -138,6 +138,7 @@ func createFlarumReplyAPIDoc(
 	}
 
 	commentsLen := uint64(len(comments))
+	logger.Debugf("Get %d comments for %d", commentsLen, rf.AID)
 	if commentsLen == 0 {
 		logger.Errorf("Can't get any comment for %d", rf.AID)
 	}
@@ -247,7 +248,7 @@ func createFlarumReplyAPIDoc(
 			<-hasUpdateComments
 		}
 		article, _ := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, rf.AID)
-		postRelation := model.FlarumCreatePostRelations([]flarum.Resource{}, article.GetCommentList(redisDB))
+		postRelation := model.FlarumCreatePostRelations([]flarum.Resource{}, article.GetCommentIDList(redisDB))
 		curDisscussion.BindRelations("Posts", postRelation)
 	}
 
@@ -543,7 +544,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	cobj, err := model.SQLGetCommentByID(h.App.GormDB, sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
+	cobj, err := model.SQLCommentByID(h.App.GormDB, sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取评论"))
 		return
