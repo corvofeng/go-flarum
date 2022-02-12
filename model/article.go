@@ -360,8 +360,8 @@ func (ab *ArticleBase) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB
 	item := ArticleListItem{
 		ArticleBase: *ab,
 	}
-	item.EditTimeFmt = util.TimeFmt(item.EditTime, util.TIME_FMT, tz)
-	item.AddTimeFmt = util.TimeFmt(item.AddTime, util.TIME_FMT, tz)
+	item.EditTimeFmt = item.UpdatedAt.UTC().String()
+	item.AddTimeFmt = item.CreatedAt.UTC().String()
 	item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
 	if item.LastPostID != 0 {
 		lastComment, err := SQLCommentByID(gormDB, sqlDB, redisDB, item.LastPostID, tz)
