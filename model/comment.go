@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"strconv"
 	"strings"
-	"time"
 
 	"zoe/util"
 
@@ -178,7 +177,8 @@ func (cb *CommentBase) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Cli
 		CommentBase: *cb,
 		Likes:       cb.getUserLikes(db, redisDB),
 	}
-	c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
+	// c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
+	c.AddTimeFmt = cb.CreatedAt.String()
 
 	// 预防XSS漏洞
 	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
