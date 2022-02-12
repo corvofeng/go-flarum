@@ -70,7 +70,7 @@ func PreProcessUserMention(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client
 			util.GetLogger().Warning("Can't process mention", mentionStr[0])
 			continue
 		}
-		comment, err := SQLGetCommentByID(gormDB, sqlDB, redisDB, cid, tz)
+		comment, err := SQLCommentByID(gormDB, sqlDB, redisDB, cid, tz)
 		if err != nil {
 			util.GetLogger().Warningf("Can't comment %d with error %v", cid, err)
 			continue
@@ -223,27 +223,8 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 	var rows *sql.Rows
 	defer rowsClose(rows)
 
-	// logger := util.GetLogger()
-	// rows, err = db.Query("SELECT id FROM reply where topic_id = ? LIMIT ?", topicID, limit)
-	// if err != nil {
-	// 	logger.Errorf("Query failed,err:%v", err)
-	// 	return
-	// }
-
-	// var commentList []uint64
-	// for rows.Next() {
-	// 	var item uint64
-	// 	err = rows.Scan(&item)
-	// 	if err != nil {
-	// 		logger.Errorf("Scan failed,err:%v", err)
-	// 		continue
-	// 	}
-	// 	commentList = append(commentList, item)
-	// }
-	// baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
-
 	var baseComments []CommentBase
-	gormDB.Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
+	gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
 	}
@@ -281,26 +262,28 @@ func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, 
 	return
 }
 
-// SQLGetCommentByID 获取一条评论
-func SQLGetCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
+// SQLCommentByID 获取一条评论
+func SQLCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
 	logger := util.GetLogger()
-	comments := sqlGetCommentsBaseByList(db, redisDB, []uint64{cid})
-	if len(comments) == 0 {
-		logger.Debugf("Error get comment(%d)", cid)
-		return Comment{}, fmt.Errorf("Can't find comment")
+	var c CommentBase
+	result := gormDB.First(&c, cid)
+
+	if result.Error != nil {
+		logger.Error("Can't find commet with error", result.Error)
+		return Comment{}, result.Error
 	}
-	return comments[0].toComment(gormDB, db, redisDB, tz), nil
+	return c.toComment(gormDB, db, redisDB, tz), nil
 }
 
-// SQLCommentListByID 获取某条评论
-func SQLCommentListByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
+// SQLCommentListByCID 获取某条评论
+func SQLCommentListByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comment, err := SQLGetCommentByID(gormDB, db, redisDB, commentID, tz)
+	comment, err := SQLCommentByID(gormDB, db, redisDB, commentID, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for cid(%d)", commentID)
 	}
@@ -335,8 +318,8 @@ func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, co
 	}
 }
 
-// SQLCommentListByPage 获取帖子的所有评论
-func SQLCommentListByPage(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
+// SQLCommentListByTopic 获取帖子的所有评论
+func SQLCommentListByTopic(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -471,15 +454,16 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	defer clearGormTransaction(tx)
 
 	var topic ArticleBase
-	result := gormDB.First(&topic, &comment.ID)
+	result := gormDB.First(&topic, &comment.AID)
 	if result.Error != nil {
-		logger.Error("CCan't find topic with error", result.Error)
+		logger.Error("Can't find topic with error", result.Error)
 		return false, result.Error
 	}
-	var lastComment Comment
+
+	var lastComment CommentBase
 	result = gormDB.First(&lastComment, topic.LastPostID)
 	if result.Error != nil {
-		logger.Error("CCan't find last commet with error", result.Error)
+		logger.Error("Can't find last commet with error", result.Error)
 		return false, result.Error
 	}
 	comment.Number = lastComment.Number + 1
@@ -488,6 +472,7 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	if result.Error != nil {
 		return false, result.Error
 	}
+	topic.ReplyCount += 1
 	topic.LastPostID = comment.ID
 	tx.Save(&topic)
 	logger.Debugf("Update comment number %d success", comment.ID)
