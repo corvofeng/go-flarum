@@ -72,12 +72,6 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 
 	currentUser, _ := h.CurrentUser(w, r)
 
-	if aobj.Hidden && !currentUser.IsAdmin() {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
-		return
-	}
-
 	// 获取帖子所在的节点
 	// cobj, err := model.SQLCategoryGetByID(sqlDB, strconv.FormatUint(aobj.CID, 10))
 
@@ -113,7 +107,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	)
 
 	type articleForDetail struct {
-		model.Article
+		model.Topic
 		ContentFmt  template.HTML
 		TagStr      template.HTML
 		Name        string
@@ -155,7 +149,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 	if author.ID == 2 {
 		// 这部分的网页是转载而来的, 所以需要保持原样式, 这里要牺牲XSS的安全性了
 		evn.Aobj = articleForDetail{
-			Article:     aobj,
+			Topic:       aobj,
 			ContentFmt:  template.HTML(aobj.Content),
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
@@ -166,7 +160,7 @@ func (h *BaseHandler) ArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		evn.Aobj = articleForDetail{
-			Article:     aobj,
+			Topic:       aobj,
 			ContentFmt:  template.HTML(model.ContentFmt(aobj.Content)),
 			CommentsCnt: commentsCnt,
 			Name:        author.Name,
@@ -285,7 +279,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	rf := replyFilter{
 		FT:    eArticle,
 		AID:   aid,
-		Limit: article.ReplyCount,
+		Limit: article.CommentCount,
 
 		LastReadPostNumber: 0,
 	}
@@ -359,13 +353,13 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 
 	now := uint64(time.Now().UTC().Unix())
 	aobj := model.Topic{
-		UserID:     ctx.currentUser.ID,
-		Title:      diss.Data.Attributes.Title,
-		Content:    diss.Data.Attributes.Content,
-		ReplyCount: 1,
-		AddTime:    now,
-		EditTime:   now,
-		ClientIP:   ctx.realIP,
+		UserID:       ctx.currentUser.ID,
+		Title:        diss.Data.Attributes.Title,
+		Content:      diss.Data.Attributes.Content,
+		CommentCount: 1,
+		AddTime:      now,
+		EditTime:     now,
+		ClientIP:     ctx.realIP,
 		// Active:        1, // 帖子为激活状态
 		// FatherTopicID: 0, // 没有原始主题
 	}

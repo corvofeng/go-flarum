@@ -39,7 +39,6 @@ type (
 		ShowPostTopAd bool
 		ShowPostBotAd bool
 		ShowSideAd    bool
-		HotNodes      []model.CategoryMini
 		NewestNodes   []model.Tag
 		SiteInfo      model.SiteInfo
 		PrimaryColor  string
@@ -82,8 +81,7 @@ type (
 		// 此处的变量为兼容旧的youbbs变量
 		PageInfo   model.ArticlePageInfo
 		Cobj       model.Tag
-		Aobj       model.Article
-		MainNodes  []model.CategoryMini
+		Aobj       model.Topic
 		FlarumInfo interface{}
 
 		FlarumJSPrefix string

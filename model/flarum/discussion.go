@@ -32,10 +32,10 @@ type Discussion struct {
 	// 第一个评论的信息, 通常由作者创建
 	CreatedAt   string `json:"createdAt"`
 	FirstPostID uint64
-	FirstUserID string
+	FirstUserID uint64
 
 	// 最后一次评论的信息
-	LastPostID   uint64
+	// LastPostID   uint64
 	LastPostedAt string `json:"lastPostedAt"`
 	LastUserID   uint64
 

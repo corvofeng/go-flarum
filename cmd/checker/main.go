@@ -28,7 +28,7 @@ func main() {
 	// app.GormDB.AutoMigrate(model.CommentBase{})
 	// app.GormDB.AutoMigrate(model.ArticleBase{})
 
-	pageInfo := model.SQLArticleGetByCID(
+	pageInfo := model.SQLTopicGetByTag(
 		app.GormDB, app.MySQLdb, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)

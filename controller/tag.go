@@ -101,7 +101,7 @@ func createFlarumTagAPIDoc(
 		}
 	}
 
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	categories, err := model.SQLGetTags(gormDB)
 	if err != nil {
 		logger.Info("Can't get categories")
 	}
@@ -124,12 +124,12 @@ func createFlarumTagAPIDoc(
 		tag := model.FlarumCreateTag(category)
 		res = append(res, tag)
 	}
-	article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, 1)
-	if err != nil {
-		logger.Info("Can't get article", err.Error())
-	}
-	diss := model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz))
-	apiDoc.AppendResources(diss)
+	// article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, 1)
+	// if err != nil {
+	// 	logger.Info("Can't get article", err.Error())
+	// }
+	// diss := model.FlarumCreateDiscussion(article)
+	// apiDoc.AppendResources(diss)
 
 	apiDoc.SetData(res)
 	model.FlarumCreateLocale(&coreData, reqctx.locale)

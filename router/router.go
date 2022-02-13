@@ -16,58 +16,7 @@ func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
 	sp.Use(ct.TrackerMiddleware)
 
-	if app.IsFlarum() {
-		NewFlarumRouter(app, sp)
-	} else {
-		NewzoeRouter(app, sp)
-	}
-	return sp
-}
-
-// NewzoeRouter zoe的router
-func NewzoeRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
-	h := ct.BaseHandler{App: app}
-	sp.Use(h.InitMiddlewareContext)
-	sp.Use(h.AuthMiddleware)
-
-	sp.HandleFunc(pat.Get("/"), h.ArticleHomeList)
-	sp.HandleFunc(pat.Get("/view"), h.ViewAtTpl)
-	// sp.HandleFunc(pat.Get("/feed"), h.FeedHandler)
-	sp.HandleFunc(pat.Get("/robots.txt"), h.Robots)
-
-	fs := http.FileServer(http.Dir("static/captcha"))
-	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
-
-	sp.HandleFunc(pat.Get("/node/:cid"), h.CategoryDetailNew)
-	sp.HandleFunc(pat.Get("/member/:uid"), h.UserDetail)
-	// sp.HandleFunc(pat.Get("/tag/:tag"), h.TagDetail)
-	sp.HandleFunc(pat.Get("/search"), h.SearchDetail)
-
-	sp.HandleFunc(pat.Get("/logout"), h.UserLogout)
-	// sp.HandleFunc(pat.Get("/notification"), h.UserNotification)
-
-	sp.HandleFunc(pat.Get("/topic/:aid"), h.ArticleDetail)
-	// sp.HandleFunc(pat.Post("/topic/:aid"), h.ArticleDetailPost)
-
-	sp.HandleFunc(pat.Get("/setting"), h.UserSetting)
-	sp.HandleFunc(pat.Post("/setting"), h.UserSettingPost)
-
-	// sp.HandleFunc(pat.Get("/newpost/:cid"), h.ArticleAdd)
-	// sp.HandleFunc(pat.Post("/newpost/:cid"), h.ArticleAddPost)
-
-	sp.HandleFunc(pat.Get("/login"), h.UserLogin)
-	sp.HandleFunc(pat.Post("/login"), h.UserLoginPost)
-	sp.HandleFunc(pat.Get("/register"), h.UserLogin)
-	sp.HandleFunc(pat.Post("/register"), h.UserLoginPost)
-
-	// sp.HandleFunc(pat.Get("/qqlogin"), h.QQOauthHandler)
-	// sp.HandleFunc(pat.Get("/oauth/qq/callback"), h.QQOauthCallback)
-	// sp.HandleFunc(pat.Get("/wblogin"), h.WeiboOauthHandler)
-	// sp.HandleFunc(pat.Get("/oauth/wb/callback"), h.WeiboOauthCallback)
-
-	sp.HandleFunc(pat.Post("/content/preview"), h.ContentPreviewPost)
-	// sp.HandleFunc(pat.Post("/file/upload"), h.FileUpload)
-
+	NewFlarumRouter(app, sp)
 	return sp
 }
 

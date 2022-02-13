@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,70 +14,6 @@ import (
 
 	"github.com/go-redis/redis/v7"
 )
-
-// ArticleHomeList 文章主页
-func (h *BaseHandler) ArticleHomeList(w http.ResponseWriter, r *http.Request) {
-	btn, key, score := r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
-	var start uint64
-	var err error
-	var count uint64
-
-	rsp := response{}
-	if len(key) > 0 {
-		start, err = strconv.ParseUint(key, 10, 64)
-		if err != nil {
-			rsp = response{400, "key type err"}
-			h.jsonify(w, rsp)
-			return
-		}
-	}
-	if len(score) > 0 {
-		_, err = strconv.ParseUint(score, 10, 64)
-		if err != nil {
-			rsp = response{400, "scope type err"}
-			h.jsonify(w, rsp)
-			return
-		}
-	}
-
-	scf := h.App.Cf.Site
-
-	// type pageData struct {
-	// 	BasePageData
-	// 	SiteInfo   model.SiteInfo
-	// 	PageInfo   model.ArticlePageInfo
-	// 	Links      []model.Link
-	// 	FlarumInfo interface{}
-	// }
-
-	sqlDB := h.App.MySQLdb
-	redisDB := h.App.RedisDB
-	// 获取全部的帖子数目
-	err = sqlDB.QueryRow("SELECT COUNT(*) FROM topic").Scan(&count)
-	if err != nil {
-		log.Printf("Error %s", err)
-		rsp = response{400, "Failed to get the count"}
-		h.jsonify(w, rsp)
-		return
-	}
-
-	// 获取贴子列表
-	pageInfo := model.SQLArticleList(h.App.GormDB, sqlDB, redisDB, start, btn, uint64(scf.HomeShowNum), scf.TimeZone)
-	categories, err := model.SQLGetAllCategory(sqlDB, redisDB)
-
-	tpl := h.CurrentTpl(r)
-	evn := InitPageData(r)
-	evn.Keywords = evn.Title
-	evn.IsMobile = tpl == "mobile"
-	evn.ShowSideAd = false
-	evn.PageName = "home"
-	evn.NewestNodes = categories
-	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-	evn.PageInfo = pageInfo
-
-	h.Render(w, tpl, evn, "layout.html", "index.html")
-}
 
 // 记录当前的过滤器内容
 type filterType string
@@ -109,6 +44,7 @@ func createFlarumPageAPIDoc(
 ) (flarum.CoreData, error) {
 	var err error
 	var articlePageInfo model.ArticlePageInfo
+	var topics []model.Topic
 	coreData := flarum.NewCoreData()
 
 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
@@ -131,12 +67,13 @@ func createFlarumPageAPIDoc(
 	}
 
 	if df.FT == eCategory {
-		articlePageInfo = model.SQLArticleGetByCID(gormDB, sqlDB, redisDB, df.CID, page, df.Limit, tz)
+		topics = model.SQLTopicGetByTag(gormDB, sqlDB, redisDB, df.CID, page, df.Limit, tz)
 	} else if df.FT == eUserPost {
-		articlePageInfo = model.SQLArticleGetByUID(gormDB, sqlDB, redisDB, df.UID, page, df.Limit, tz)
+		articlePageInfo = model.SQLTopicGetByUID(gormDB, sqlDB, redisDB, df.UID, page, df.Limit, tz)
+		// topics = articlePageInfo.Items
 	}
 
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	categories, err := model.SQLGetTags(gormDB)
 
 	// 添加所有分类的信息
 	var flarumTags []flarum.Resource
@@ -154,8 +91,8 @@ func createFlarumPageAPIDoc(
 
 	var res []flarum.Resource
 	// 添加当前页面的的帖子与用户信息, 已经去重
-	for _, article := range articlePageInfo.Items {
-		diss := model.FlarumCreateDiscussion(article)
+	for _, topic := range topics {
+		diss := model.FlarumCreateDiscussion(topic)
 		res = append(res, diss)
 		coreData.AppendResources(diss)
 		getUser := func(uid uint64) {
@@ -172,11 +109,13 @@ func createFlarumPageAPIDoc(
 				coreData.AppendResources(user)
 			}
 		}
-		getUser(article.UserID)
-		d := diss.Attributes.(*flarum.Discussion)
-		if d.LastPostID != 0 {
-			getUser(d.LastUserID)
-		}
+
+		getUser(topic.UserID)
+		getUser(topic.LastPostUserID)
+		// d := diss.Attributes.(*flarum.Discussion)
+		// if topic.LastPostUserID {
+		// getUser()
+		// }
 	}
 	apiDoc.SetData(res)
 
@@ -202,14 +141,24 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	scf := h.App.Cf.Site
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	// logger := ctx.GetLogger()
+	gormDB := h.App.GormDB
+	logger := ctx.GetLogger()
 	page := uint64(1)
 
 	tpl := h.CurrentTpl(r)
 
+	_tag, _ := h.safeGetParm(r, "tag")
+	var tag model.Tag
+	if _tag != "" {
+		tag, err = model.SQLGetTagByUrlName(gormDB, _tag)
+		if err != nil {
+			logger.Errorf("Can't get tag by url name: %s, %s", _tag, err)
+		}
+	}
+
 	df := dissFilter{
 		FT:    eCategory,
-		CID:   0,
+		CID:   tag.ID,
 		Page:  page,
 		Limit: 10,
 	}
@@ -243,6 +192,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	scf := h.App.Cf.Site
+	gormDB := h.App.GormDB
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	var page uint64
@@ -261,8 +211,9 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	// _sort := r.FormValue("sort")
 	// strings.Split(_sort, ",")
 
-	// 当前的过滤方式 filter[q]:  tag:r_funny
-	_filter := r.FormValue("filter[q]")
+	// 当前的过滤方式 filter[tag]:  tag:r_funny
+	_tag_filter := r.FormValue("filter[tag]")
+	_author_filter := r.FormValue("filter[author]")
 
 	// 当前的偏移数目, 可得到页码数目, 页码从1开始
 	_offset := r.FormValue("page[offset]")
@@ -276,9 +227,9 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		page = data / pageLimit
 	}
 	page = page + 1
-	logger.Debugf("Get _filter: `%s`, page: `%d`", _filter, page)
+	logger.Debugf("Get _filter: `%s`, page: `%d`", _tag_filter, page)
 
-	if _filter == "" {
+	if _tag_filter == "" {
 		df := dissFilter{
 			FT:    eCategory,
 			Page:  page,
@@ -287,9 +238,9 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		}
 		coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	} else {
-		data := strings.Trim(_filter, " ")
-		if strings.HasPrefix(data, "tag:") {
-			cate, err := model.SQLCategoryGetByURLName(sqlDB, data[4:])
+		// data := strings.Trim(_filter, " ")
+		if _tag_filter != "" {
+			cate, err := model.SQLGetTagByUrlName(gormDB, _tag_filter)
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
@@ -301,8 +252,22 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				Limit: pageLimit,
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
-		} else if strings.HasPrefix(data, "author:") {
-			user, err := model.SQLUserGetByName(h.App.GormDB, data[7:])
+			// } else if strings.HasPrefix(data, "author:") {
+			// 	user, err := model.SQLUserGetByName(h.App.GormDB, data[7:])
+			// 	if err != nil {
+			// 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create user"+err.Error()))
+			// 		return
+			// 	}
+			// 	df := dissFilter{
+			// 		FT:    eUserPost,
+			// 		Page:  page,
+			// 		UID:   user.ID,
+			// 		Limit: pageLimit,
+			// 	}
+			// 	coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+
+		} else if _author_filter != "" {
+			user, err := model.SQLUserGetByName(h.App.GormDB, _author_filter)
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create user"+err.Error()))
 				return
@@ -315,7 +280,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 		} else {
-			logger.Warning("Can't use filter:", _filter)
+			// logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))
 			return
 		}

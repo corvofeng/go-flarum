@@ -44,11 +44,11 @@ type RankMap struct {
 }
 
 func getWeight(rankMap *RankMap, aid uint64) float64 {
-	article, err := SQLArticleGetByID(rankMap.GormDB, rankMap.SQLDB, rankMap.RedisDB, aid)
+	topic, err := SQLArticleGetByID(rankMap.GormDB, rankMap.SQLDB, rankMap.RedisDB, aid)
 	if util.CheckError(err, "查询帖子") {
 		return 0
 	}
-	return article.GetWeight(
+	return topic.GetWeight(
 		rankMap.SQLDB,
 		rankMap.RedisDB,
 	)
@@ -64,7 +64,7 @@ func cid2Key(cid uint64) string {
 // TimelyResort 刷新Redis数据库中每个帖子的权重
 func TimelyResort() {
 	// 刷新所有节点的排序
-	categoryList, err := SQLGetNotEmptyCategory(rankMap.SQLDB, rankMap.RedisDB)
+	categoryList, err := SQLGetTags(rankMap.GormDB)
 	logger := util.GetLogger()
 	if util.CheckError(err, "获取所有节点") {
 		return

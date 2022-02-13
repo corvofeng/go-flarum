@@ -38,6 +38,18 @@ func main() {
 		fmt.Println(c.ID, c.CreatedAt.UTC().String())
 	}
 
+	// 调试tags
+	// fmt.Println(model.SQLGetTags(app.GormDB))
+	// fmt.Println(model.SQLGetTagByUrlName(app.GormDB, "r_funny"))
+
+	// 测试通过tag查找帖子
+	tag, err := model.SQLGetTagByUrlName(app.GormDB, "r_funny")
+	fmt.Println(tag, err)
+	var topics []model.Topic
+	// fmt.Println(app.GormDB.Debug().Model(&topics).Association("Tags").Find(&[]model.Tag{tag}))
+	fmt.Println(app.GormDB.Debug().Limit(10).Offset(0).Model(&tag).Association("Topics").Find(&topics))
+	fmt.Println(topics)
+
 	// article.CleanCache()
 	// app.RedisDB.Del(article.toKeyForComments())
 	// pageInfo := model.SQLArticleGetByCID(

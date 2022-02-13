@@ -29,7 +29,7 @@ func main() {
 
 	logger.Info(app.GormDB, app.MySQLdb, app.RedisDB)
 	model.RankMapInit(app.GormDB, app.MySQLdb, app.RedisDB)
-	model.SQLArticleGetByCID(
+	model.SQLTopicGetByTag(
 		app.GormDB, app.MySQLdb, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
