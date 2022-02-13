@@ -8,10 +8,12 @@ import (
 	"zoe/model/flarum"
 
 	"github.com/go-redis/redis/v7"
+	"gorm.io/gorm"
 )
 
 func createFlarumAdminAPIDoc(
 	reqctx *ReqContext,
+	gormDB *gorm.DB,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	siteInfo model.SiteInfo,
@@ -34,7 +36,7 @@ func createFlarumAdminAPIDoc(
 		}
 	}
 	// 添加当前站点信息
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	categories, err := model.SQLGetTags(gormDB)
 	if err != nil {
 		logger.Error("Get all categories error", err)
 	}
@@ -89,11 +91,12 @@ func AdminHome(w http.ResponseWriter, r *http.Request) {
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
+	gormDB := h.App.GormDB
 	// logger := ctx.GetLogger()
 	fmt.Println(h.App.Cf.Main.ExtensionsDir)
 
 	coreData, err := createFlarumAdminAPIDoc(
-		ctx, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), scf.TimeZone)
+		ctx, gormDB, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

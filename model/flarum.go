@@ -98,25 +98,23 @@ func FlarumCreateTag(cat Tag) flarum.Resource {
 }
 
 // FlarumCreateDiscussion 创建帖子资源
-func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
-	lastComment := article.LastComment
-	obj := flarum.NewResource(flarum.EDiscussion, article.ID)
+func FlarumCreateDiscussion(topic Topic) flarum.Resource {
+	obj := flarum.NewResource(flarum.EDiscussion, topic.ID)
 	data := obj.Attributes.(*flarum.Discussion)
-	data.Title = article.Title
-	data.CommentCount = article.ReplyCount
-	data.CreatedAt = article.AddTimeFmt
-	data.LastPostID = article.LastPostID
-	data.FirstPostID = article.FirstPostID
+	data.Title = topic.Title
+	data.CommentCount = topic.CommentCount
+	data.CreatedAt = topic.CreatedAt.String()
+	data.FirstPostID = topic.FirstPostID
 	data.CanReply = true
-	if lastComment != nil {
-		data.LastPostNumber = lastComment.Number
-		data.LastPostedAt = lastComment.AddTimeFmt
-		data.LastUserID = lastComment.UID
-	}
+
+	data.LastPostNumber = topic.LastPostID
+	data.LastPostedAt = topic.LastPostAt.String()
+	// data.LastPostID = article.LastPostID
+	data.LastUserID = topic.LastPostUserID
 
 	obj.BindRelations(
 		"User",
-		flarum.RelationDict{Data: flarum.InitBaseResources(article.UserID, "users")},
+		flarum.RelationDict{Data: flarum.InitBaseResources(topic.UserID, "users")},
 	)
 	obj.BindRelations(
 		"Tags",
@@ -138,13 +136,13 @@ func FlarumCreateDiscussion(article ArticleListItem) flarum.Resource {
 		},
 	)
 
-	if article.LastPostID != 0 {
-		data.LastPostID = article.LastPostID
-		data.LastUserID = lastComment.UID
+	if topic.LastPostID != 0 {
+		// data.LastPostID = article.LastPostID
+		data.LastUserID = topic.LastPostUserID
 		obj.BindRelations(
 			"LastPostedUser",
 			flarum.RelationDict{
-				Data: flarum.InitBaseResources(lastComment.UID, "users"),
+				Data: flarum.InitBaseResources(topic.LastPostUserID, "users"),
 			},
 		)
 	}

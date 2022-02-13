@@ -472,8 +472,11 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	if result.Error != nil {
 		return false, result.Error
 	}
-	topic.ReplyCount += 1
+	topic.CommentCount += 1
 	topic.LastPostID = comment.ID
+	topic.LastPostUserID = comment.UID
+	topic.LastPostAt = comment.CreatedAt
+
 	tx.Save(&topic)
 	logger.Debugf("Update comment number %d success", comment.ID)
 

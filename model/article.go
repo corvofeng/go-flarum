@@ -21,16 +21,18 @@ type Topic struct {
 	gorm.Model
 	ID     uint64 `gorm:"primaryKey"`
 	UserID uint64 `gorm:"column:user_id;index"`
-	// CID uint64 `gorm:"column:category_id;index"`
 
 	Title   string `json:"title"`
 	Content string `json:"content"`
 
 	FirstPostID uint64
-	LastPostID  uint64
 
-	ClickCnt   uint64 `json:"clickcnt"` // 不保证精确性
-	ReplyCount uint64
+	LastPostID     uint64
+	LastPostUserID uint64
+	LastPostAt     time.Time
+
+	ClickCnt     uint64 `json:"clickcnt"` // 不保证精确性
+	CommentCount uint64
 
 	AddTime  uint64 `json:"addtime"`
 	EditTime uint64 `json:"edittime"`
@@ -40,32 +42,29 @@ type Topic struct {
 	Tags []Tag `gorm:"many2many:topic_tags;"`
 }
 
+// TopicTags 帖子的标签
+// 使用gorm 的many2many, 不需要单独初始化了
 type TopicTag struct {
 	gorm.Model
 	TopicID uint64 `gorm:"primaryKey"`
 	TagID   uint64 `gorm:"primaryKey"`
 }
 
-// 设置comment内容
-// func (Topic) TableName() string {
-// 	return "topic"
-// }
-
 // Article store in database
-type Article struct {
-	Topic
-	RUID              uint64 `json:"ruid"`
-	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
-	CloseComment      bool   `json:"closecomment"`
-	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
-	StickTop          bool   `json:"stick_top"` // 是否置顶
+// type Article struct {
+// 	Topic
+// 	RUID              uint64 `json:"ruid"`
+// 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
+// 	CloseComment      bool   `json:"closecomment"`
+// 	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
+// 	StickTop          bool   `json:"stick_top"` // 是否置顶
 
-	// 帖子被管理员修改后, 已经保存的旧的帖子ID
-	FatherTopicID uint64 `json:"fathertopicid"`
+// 	// 帖子被管理员修改后, 已经保存的旧的帖子ID
+// 	FatherTopicID uint64 `json:"fathertopicid"`
 
-	// 记录当前帖子是否可以被用户看到, 与上面的hidden类似
-	Active uint64 `json:"active"`
-}
+// 	// 记录当前帖子是否可以被用户看到, 与上面的hidden类似
+// 	Active uint64 `json:"active"`
+// }
 
 // ArticleMini 缩略版的Article信息
 type ArticleMini struct {
@@ -149,14 +148,13 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid uint64) (Article, error) {
+func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid uint64) (Topic, error) {
 	articleBaseList := sqlGetArticleBaseByList(gormDB, db, redisDB, []uint64{aid})
-	obj := Article{}
+	var obj Topic
 	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
 	}
-	obj.Topic = articleBaseList[0]
-	obj.GetArticleCntFromRedisDB(db, redisDB)
+	obj = articleBaseList[0]
 
 	return obj, nil
 }
@@ -166,8 +164,8 @@ func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid u
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
-	return article.ReplyCount
+func (topic *Topic) GetCommentsSize(db *sql.DB) uint64 {
+	return topic.CommentCount
 }
 
 // GetWeight 获取当前帖子的权重
@@ -177,7 +175,7 @@ func (article *Article) GetCommentsSize(db *sql.DB) uint64 {
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (article *Article) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
+func (article *Topic) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 	var editTime time.Time
 	var now = time.Now()
 	if article.EditTime == 0 {
@@ -198,42 +196,19 @@ func (article *Article) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 	return weight
 }
 
-func (article *Article) sqlCreateTopic(tx *sql.Tx) (bool, error) {
-	row, err := tx.Exec(
-		("INSERT INTO `topic` " +
-			" (`user_id`, `title`, `content`, created_at, updated_at, client_ip, reply_count, active)" +
-			" VALUES " +
-			" (?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-		article.UserID,
-		article.Title,
-		article.Content,
-		article.AddTime,
-		article.EditTime,
-		article.ClientIP,
-		article.ReplyCount,
-		article.Active,
-	)
-	if err != nil {
-		return false, err
-	}
-	aid, err := row.LastInsertId()
-	article.ID = uint64(aid)
-	return true, nil
-}
-
 // SQLCreateTopic 创建主题
-func (article *Article) SQLCreateTopic(db *sql.DB) bool {
+func (article *Topic) SQLCreateTopic(db *sql.DB) bool {
 	tx, err := db.Begin()
 	defer clearTransaction(tx)
 	if err != nil {
 		return false
 	}
-	article.sqlCreateTopic(tx)
-	if err := tx.Commit(); err != nil {
-		logger := util.GetLogger()
-		logger.Error("Create topic with error", err)
-		return false
-	}
+	// article.sqlCreateTopic(tx)
+	// if err := tx.Commit(); err != nil {
+	// 	logger := util.GetLogger()
+	// 	logger.Error("Create topic with error", err)
+	// 	return false
+	// }
 	return true
 }
 
@@ -301,7 +276,7 @@ func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.Relation
 }
 
 // updateFlarumPost 更新评论信息
-func (article *Article) updateFlarumPost(tx *sql.Tx) (bool, error) {
+func (article *Topic) updateFlarumPost(tx *sql.Tx) (bool, error) {
 
 	_, err := tx.Exec(
 		"UPDATE `topic` SET"+
@@ -319,7 +294,7 @@ func (article *Article) updateFlarumPost(tx *sql.Tx) (bool, error) {
 }
 
 // updateFlarumTag 更新评论信息
-func (article *Article) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bool, error) {
+func (article *Topic) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bool, error) {
 	for _, rela := range tags.Data {
 		_, err := tx.Exec(
 			("INSERT INTO `topic_tag` " +
@@ -337,7 +312,7 @@ func (article *Article) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (
 }
 
 // SQLArticleUpdate 更新当前帖子
-func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) bool {
+func (article *Topic) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) bool {
 	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
 	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
 	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.
@@ -345,33 +320,33 @@ func (article *Article) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *r
 
 	// 以当前帖子为模板创建一个新的帖子
 	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	oldArticle, err := SQLArticleGetByID(gormDB, db, redisDB, article.ID)
-	oldArticle.Active = 0
-	if util.CheckError(err, "修改时拷贝") {
-		return false
-	}
-	oldArticle.SQLCreateTopic(db)
+	// oldArticle, err := SQLArticleGetByID(gormDB, db, redisDB, article.ID)
+	// oldArticle.Active = 0
+	// if util.CheckError(err, "修改时拷贝") {
+	// 	return false
+	// }
+	// oldArticle.SQLCreateTopic(db)
 
-	_, err = db.Exec(
-		"UPDATE `topic` "+
-			"set title=?,"+
-			"content = ?,"+
-			"user_id=?,"+
-			"updated_at=?,"+
-			"client_ip=?,"+
-			"father_topic_id = ?"+
-			" where id=?",
-		article.Title,
-		article.Content,
-		article.UserID,
-		article.EditTime,
-		article.ClientIP,
-		oldArticle.ID,
-		article.ID,
-	)
-	if util.CheckError(err, "更新帖子") {
-		return false
-	}
+	// _, err = db.Exec(
+	// 	"UPDATE `topic` "+
+	// 		"set title=?,"+
+	// 		"content = ?,"+
+	// 		"user_id=?,"+
+	// 		"updated_at=?,"+
+	// 		"client_ip=?,"+
+	// 		"father_topic_id = ?"+
+	// 		" where id=?",
+	// 	article.Title,
+	// 	article.Content,
+	// 	article.UserID,
+	// 	article.EditTime,
+	// 	article.ClientIP,
+	// 	oldArticle.ID,
+	// 	article.ID,
+	// )
+	// if util.CheckError(err, "更新帖子") {
+	// 	return false
+	// }
 
 	return true
 }
@@ -440,40 +415,45 @@ func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 }
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
-func SQLArticleGetByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, nodeID, page, limit uint64, tz int) ArticlePageInfo {
-	var pageInfo ArticlePageInfo
-	articleList := GetTopicListByPageNum(nodeID, page, limit)
-	logger := util.GetLogger()
-	logger.Debug("Get article list", page, limit, articleList)
-	if len(articleList) == 0 {
-		// TODO: remove it
-		articleIteratorStart := GetCIDArticleMax(nodeID)
-		pageInfo = SQLCIDArticleList(gormDB, db, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
-		// 先前没有缓存, 需要加入到rank map中
-		var items []ArticleRankItem
-		for _, a := range pageInfo.Items {
-			items = append(items, ArticleRankItem{
-				AID:     a.ID,
-				SQLDB:   db,
-				RedisDB: redisDB,
-				Weight:  a.ClickCnt,
-			})
-		}
-		AddNewArticleList(nodeID, items)
-	} else {
-		pageInfo = SQLArticleGetByList(gormDB, db, redisDB, articleList, tz)
-	}
-	pageInfo.PageNum = page
-	pageInfo.PageNext = page + 1
-	pageInfo.PagePrev = page - 1
-	if len(articleList) == int(limit) {
-		pageInfo.HasNext = true
-	}
-	return pageInfo
+func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, page, limit uint64, tz int) []Topic {
+	start := (page - 1) * limit
+	// end := (page)*limit - 1
+	return SQLCIDArticleList(gormDB, db, redisDB, tagID, start, limit, tz)
+
+	// var pageInfo ArticlePageInfo
+	// articleList := GetTopicListByPageNum(nodeID, page, limit)
+	// logger := util.GetLogger()
+	// logger.Debug("Get article list", page, limit, articleList)
+	// if len(articleList) == 0 {
+	// 	// TODO: remove it
+	// 	articleIteratorStart := GetCIDArticleMax(nodeID)
+	// 	pageInfo = SQLCIDArticleList(gormDB, db, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
+	// 	// 先前没有缓存, 需要加入到rank map中
+	// 	var items []ArticleRankItem
+	// 	for _, a := range pageInfo.Items {
+	// 		items = append(items, ArticleRankItem{
+	// 			AID:     a.ID,
+	// 			SQLDB:   db,
+	// 			RedisDB: redisDB,
+	// 			Weight:  a.ClickCnt,
+	// 		})
+	// 	}
+	// 	AddNewArticleList(nodeID, items)
+	// } else {
+	// 	pageInfo = SQLArticleGetByList(gormDB, db, redisDB, articleList, tz)
+	// }
+	// pageInfo.PageNum = page
+	// pageInfo.PageNext = page + 1
+	// pageInfo.PagePrev = page - 1
+	// if len(articleList) == int(limit) {
+	// 	pageInfo.HasNext = true
+	// }
+	// return pageInfo
 }
 
-// SQLArticleGetByUID 根据创建用户获取帖子列表
-func SQLArticleGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
+// SQLTopicGetByUID 根据创建用户获取帖子列表
+func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
+
 	var rows *sql.Rows
 	var err error
 	var pageInfo ArticlePageInfo
@@ -536,92 +516,26 @@ func SQLArticleSetCommentCnt(sqlDB *sql.DB, aid uint64, replyCnt uint64) {
 // SQLCIDArticleList 返回某个节点的主题
 // nodeID 为0 表示全部主题
 // TODO: delete it
-func SQLCIDArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, nodeID, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
-	var hasPrev, hasNext bool
-	var firstKey, firstScore, lastKey, lastScore uint64
-	var rows *sql.Rows
-	var err error
+func SQLCIDArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
 	logger := util.GetLogger()
-	valueList := "id"
-	selectList := " active != 0 "
-	var articleList []uint64
-	if nodeID == 0 {
-		if btnAct == "" || btnAct == "next" {
-			rows, err = db.Query(
-				"SELECT "+valueList+" FROM topic WHERE id > ? and "+selectList+" ORDER BY id limit ?",
-				start, limit,
-			)
-		} else if btnAct == "prev" {
-			rows, err = db.Query(
-				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE id < ? and "+selectList+" ORDER BY id DESC limit ?) as t ORDER BY id",
-				start, limit,
-			)
-		} else {
-			logger.Error("Get wrond button action")
+	var topics []Topic
+	// var err error
+	if tagID != 0 {
+		tag, err := SQLGetTagByID(gormDB, tagID)
+		if err != nil {
+			logger.Error("Can't get tag by id", tagID)
+		}
+		err = gormDB.Limit(int(limit)).Offset(int(start)).Model(&tag).Association("Topics").Find(&topics)
+		if err != nil {
+			logger.Error("Can't get topics by tag id", tagID)
 		}
 	} else {
-		if btnAct == "" || btnAct == "next" {
-			rows, err = db.Query(
-				"SELECT "+valueList+" FROM topic WHERE node_id = ? And id > ? and "+selectList+" ORDER BY id limit ?",
-				nodeID, start, limit,
-			)
-		} else if btnAct == "prev" {
-			rows, err = db.Query(
-				"SELECT * FROM (SELECT "+valueList+" FROM topic WHERE node_id = ? and id < ? and "+selectList+" ORDER BY id DESC limit ?) as t ORDER BY id",
-				nodeID, start, limit,
-			)
-		} else {
-			logger.Error("Get wrond button action")
+		rlt := gormDB.Limit(int(limit)).Offset(int(start)).Find(&topics)
+		if rlt.Error != nil {
+			logger.Info("Can't get all topics", rlt.Error)
 		}
 	}
-
-	defer rowsClose(rows)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return ArticlePageInfo{}
-	}
-
-	for rows.Next() {
-		var aid uint64
-		err = rows.Scan(&aid) //不scan会导致连接不释放
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			continue
-		}
-		articleList = append(articleList, aid)
-	}
-
-	pageInfo := SQLArticleGetByList(gormDB, db, redisDB, articleList, tz)
-
-	if len(articleList) > 0 {
-		firstKey = articleList[0]
-		lastKey = articleList[len(articleList)-1]
-		hasNext = true
-		hasPrev = true
-
-		// 前一页, 后一页的判断其实比较复杂的, 这里只针对最容易的情况进行了判断,
-		// 因为帖子较多时, 这算是一种近似
-
-		// 如果最开始的帖子ID为1, 那肯定是没有了前一页了
-		if articleList[0] == 1 || start < uint64(limit) {
-			hasPrev = false
-		}
-
-		// 查询出的数量比要求的数量要少, 说明没有下一页
-		if uint64(len(articleList)) < limit {
-			hasNext = false
-		}
-	}
-
-	return ArticlePageInfo{
-		Items:      pageInfo.Items,
-		HasPrev:    hasPrev,
-		HasNext:    hasNext,
-		FirstKey:   firstKey,
-		FirstScore: firstScore,
-		LastKey:    lastKey,
-		LastScore:  lastScore,
-	}
+	return topics
 }
 
 // only for rank
@@ -670,7 +584,7 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 }
 
 // IncrArticleCntFromRedisDB 增加点击次数
-func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
+func (article *Topic) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
 	var clickCnt uint64 = 0
 	aid := article.ID
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
@@ -719,7 +633,7 @@ func (article *Article) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.
  * sqlDB (*sql.DB): TODO
  * redisDB (*redis.Client): TODO
  */
-func (article *Article) GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
+func (article *Topic) GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
 	article.ClickCnt = GetArticleCntFromRedisDB(sqlDB, redisDB, article.ID)
 	return article.ClickCnt
 }
@@ -738,19 +652,19 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) 
 }
 
 // SQLArticleList 返回所有节点的主题
-func SQLArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) ArticlePageInfo {
+func SQLArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) []Topic {
 	return SQLCIDArticleList(
-		gormDB, db, redisDB, 0, start, btnAct, limit, tz,
+		gormDB, db, redisDB, 0, start, limit, tz,
 	)
 }
 
-func (article *Article) toKeyForComments() string {
+func (article *Topic) toKeyForComments() string {
 	return fmt.Sprintf("comments-article-%d", article.ID)
 }
 
 // CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
 // 注意这里是有顺序的, 顺序为发帖时间
-func (article *Article) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+func (article *Topic) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
 	logger := util.GetLogger()
 	logger.Debugf("Cache comment list for: %d, and %d comments", article.ID, len(comments))
 	for _, c := range comments {
@@ -765,7 +679,7 @@ func (article *Article) CacheCommentList(redisDB *redis.Client, comments []Comme
 }
 
 // GetCommentIDList 获取帖子已经排序好的评论列表
-func (article *Article) GetCommentIDList(redisDB *redis.Client) (comments []uint64) {
+func (article *Topic) GetCommentIDList(redisDB *redis.Client) (comments []uint64) {
 	rdsData, _ := rankRedisDB.ZRange(article.toKeyForComments(), 0, -1).Result()
 	for _, _cid := range rdsData {
 		cid, _ := strconv.ParseUint(_cid, 10, 64)
@@ -774,7 +688,7 @@ func (article *Article) GetCommentIDList(redisDB *redis.Client) (comments []uint
 	return
 }
 
-func (article *Article) CleanCache() {
+func (article *Topic) CleanCache() {
 	logger := util.GetLogger()
 	rankRedisDB.Del(article.toKeyForComments())
 	logger.Info("Delete comment list cache for: ", article.ID)

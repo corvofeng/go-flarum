@@ -174,7 +174,7 @@ func createFlarumReplyAPIDoc(
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
 		} else {
-			diss := model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz))
+			diss := model.FlarumCreateDiscussion(article)
 			curDisscussion = &diss
 			apiDoc.AppendResources(*curDisscussion)
 		}
@@ -216,7 +216,7 @@ func createFlarumReplyAPIDoc(
 			if err != nil {
 				logger.Warning("Can't get article: ", comment.AID, err)
 			} else {
-				apiDoc.AppendResources(model.FlarumCreateDiscussion(article.ToArticleListItem(gormDB, sqlDB, redisDB, tz)))
+				apiDoc.AppendResources(model.FlarumCreateDiscussion(article))
 			}
 			allDiscussions[comment.AID] = true
 		}
@@ -253,11 +253,11 @@ func createFlarumReplyAPIDoc(
 	}
 
 	// 添加当前站点信息
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	tags, err := model.SQLGetTags(gormDB)
 	if err != nil {
 		logger.Error("Get all categories error", err)
 	}
-	for _, category := range categories {
+	for _, category := range tags {
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
 	coreData.AppendResources(model.FlarumCreateForumInfo(
@@ -473,7 +473,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		rf = replyFilter{
 			FT:    eArticle,
 			AID:   aid,
-			Limit: article.ReplyCount,
+			Limit: article.CommentCount,
 		}
 
 		if _near != "" {

@@ -17,6 +17,7 @@ import (
 	"github.com/go-redis/redis/v7"
 	"github.com/rs/xid"
 	"goji.io/pat"
+	"gorm.io/gorm"
 )
 
 // UserLogin 用户登录与注册页面
@@ -474,6 +475,7 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 
 func createFlarumUserAPIDoc(
 	reqctx *ReqContext,
+	gormDB *gorm.DB,
 	sqlDB *sql.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	tz int,
@@ -497,7 +499,7 @@ func createFlarumUserAPIDoc(
 		}
 	}
 	// 添加当前站点信息
-	categories, err := model.SQLGetNotEmptyCategory(sqlDB, redisDB)
+	categories, err := model.SQLGetTags(gormDB)
 	if err != nil {
 		logger.Error("Get all categories error", err)
 	}
@@ -584,10 +586,11 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
+	gormDB := h.App.GormDB
 	scf := h.App.Cf.Site
 	tpl := h.CurrentTpl(r)
 
-	coreData, err := createFlarumUserAPIDoc(ctx, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
+	coreData, err := createFlarumUserAPIDoc(ctx, gormDB, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
 	}
