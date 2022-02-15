@@ -111,11 +111,12 @@ func createFlarumPageAPIDoc(
 		}
 
 		getUser(topic.UserID)
-		getUser(topic.LastPostUserID)
-		// d := diss.Attributes.(*flarum.Discussion)
-		// if topic.LastPostUserID {
-		// getUser()
-		// }
+
+		if topic.LastPostUserID == 0 {
+			logger.Warning("Can't get last post uer id for", topic.ID)
+		} else {
+			getUser(topic.LastPostUserID)
+		}
 	}
 	apiDoc.SetData(res)
 
