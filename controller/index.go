@@ -28,11 +28,12 @@ const (
 )
 
 type dissFilter struct {
-	FT    filterType
-	CID   uint64
-	UID   uint64
-	Page  uint64
-	Limit uint64
+	FT         filterType
+	CID        uint64
+	UID        uint64
+	Page       uint64
+	PageOffset uint64
+	pageLimit  uint64
 }
 
 func createFlarumPageAPIDoc(
@@ -43,12 +44,11 @@ func createFlarumPageAPIDoc(
 	tz int,
 ) (flarum.CoreData, error) {
 	var err error
-	var articlePageInfo model.ArticlePageInfo
 	var topics []model.Topic
+	var hasNext bool = false
 	coreData := flarum.NewCoreData()
 
 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
-	page := df.Page
 
 	inAPI := reqctx.inAPI
 	siteInfo := model.GetSiteInfo(redisDB)
@@ -67,9 +67,10 @@ func createFlarumPageAPIDoc(
 	}
 
 	if df.FT == eCategory {
-		topics = model.SQLTopicGetByTag(gormDB, sqlDB, redisDB, df.CID, page, df.Limit, tz)
+		topics = model.SQLTopicGetByTag(gormDB, sqlDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1, tz)
 	} else if df.FT == eUserPost {
-		articlePageInfo = model.SQLTopicGetByUID(gormDB, sqlDB, redisDB, df.UID, page, df.Limit, tz)
+		// articlePageInfo := model.SQLTopicGetByUID(gormDB, sqlDB, redisDB, df.UID, page, df.Limit, tz)
+		// articlePageInfo.Items
 		// topics = articlePageInfo.Items
 	}
 
@@ -91,7 +92,12 @@ func createFlarumPageAPIDoc(
 
 	var res []flarum.Resource
 	// 添加当前页面的的帖子与用户信息, 已经去重
-	for _, topic := range topics {
+	for idx, topic := range topics {
+		if idx == int(df.pageLimit) {
+			hasNext = true
+			continue
+		}
+
 		diss := model.FlarumCreateDiscussion(topic)
 		res = append(res, diss)
 		coreData.AppendResources(diss)
@@ -121,13 +127,12 @@ func createFlarumPageAPIDoc(
 	apiDoc.SetData(res)
 
 	scf := appConf.Site
-	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=" + fmt.Sprintf("%d", df.Limit)
-	if page != 1 {
-		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", page*df.Limit)
+	apiDoc.Links["first"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Blimit%5D=" + fmt.Sprintf("%d", df.pageLimit)
+	if df.PageOffset != 0 {
+		apiDoc.Links["prev"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", df.PageOffset-df.pageLimit)
 	}
-
-	if articlePageInfo.HasNext {
-		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", (page+1)*20)
+	if hasNext {
+		apiDoc.Links["next"] = scf.MainDomain + model.FlarumAPIPath + "/discussions?sort=&page%5Boffset%5D=" + fmt.Sprintf("%d", df.PageOffset+df.pageLimit)
 	}
 	model.FlarumCreateLocale(&coreData, reqctx.locale)
 
@@ -158,10 +163,10 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	df := dissFilter{
-		FT:    eCategory,
-		CID:   tag.ID,
-		Page:  page,
-		Limit: 10,
+		FT:        eCategory,
+		CID:       tag.ID,
+		Page:      page,
+		pageLimit: 10,
 	}
 	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {
@@ -196,12 +201,11 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	gormDB := h.App.GormDB
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	var page uint64
 	var err error
 
 	logger := h.App.Logger
 	coreData := flarum.NewCoreData()
-	const pageLimit = 10
+	// const pageLimit = 20
 	// apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 
 	// 需要返回的relations TODO: use it
@@ -218,24 +222,20 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 
 	// 当前的偏移数目, 可得到页码数目, 页码从1开始
 	_offset := r.FormValue("page[offset]")
-	if _offset != "" {
-		data, err := strconv.ParseUint(_offset, 10, 64)
-		if err != nil {
-			logger.Error("Parse offset err:", err)
-			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get offset"+err.Error()))
-			return
-		}
-		page = data / pageLimit
+	pageOffset, err := strconv.ParseUint(_offset, 10, 64)
+	if err != nil {
+		logger.Error("Parse offset err:", err)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get offset"+err.Error()))
+		return
 	}
-	page = page + 1
-	logger.Debugf("Get _filter: `%s`, page: `%d`", _tag_filter, page)
+	logger.Debugf("Get _filter: `%s`, page: `%d`", _tag_filter, pageOffset)
 
 	if _tag_filter == "" {
 		df := dissFilter{
-			FT:    eCategory,
-			Page:  page,
-			Limit: pageLimit,
-			CID:   0,
+			FT:         eCategory,
+			PageOffset: pageOffset,
+			pageLimit:  uint64(h.App.Cf.Site.PageLimit),
+			CID:        0,
 		}
 		coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	} else {
@@ -247,10 +247,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			df := dissFilter{
-				FT:    eCategory,
-				Page:  page,
-				CID:   cate.ID,
-				Limit: pageLimit,
+				FT:         eCategory,
+				PageOffset: pageOffset,
+				CID:        cate.ID,
+				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 			// } else if strings.HasPrefix(data, "author:") {
@@ -274,12 +274,16 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			df := dissFilter{
-				FT:    eUserPost,
-				Page:  page,
-				UID:   user.ID,
-				Limit: pageLimit,
+				FT:         eUserPost,
+				PageOffset: pageOffset,
+				UID:        user.ID,
+				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+			if err != nil {
+				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create flarum page"+err.Error()))
+				return
+			}
 		} else {
 			// logger.Warning("Can't use filter:", _filter)
 			h.flarumErrorJsonify(w, createSimpleFlarumError("过滤器未实现"))

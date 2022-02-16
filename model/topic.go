@@ -50,22 +50,6 @@ type TopicTag struct {
 	TagID   uint64 `gorm:"primaryKey"`
 }
 
-// Article store in database
-// type Article struct {
-// 	Topic
-// 	RUID              uint64 `json:"ruid"`
-// 	AnonymousComments bool   `json:"annoymous_comments"` // 是否允许匿名评论
-// 	CloseComment      bool   `json:"closecomment"`
-// 	Hidden            bool   `json:"hidden"`    // Depreacte, do not use it.
-// 	StickTop          bool   `json:"stick_top"` // 是否置顶
-
-// 	// 帖子被管理员修改后, 已经保存的旧的帖子ID
-// 	FatherTopicID uint64 `json:"fathertopicid"`
-
-// 	// 记录当前帖子是否可以被用户看到, 与上面的hidden类似
-// 	Active uint64 `json:"active"`
-// }
-
 // ArticleMini 缩略版的Article信息
 type ArticleMini struct {
 	Topic
@@ -415,9 +399,8 @@ func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 }
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
-func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, page, limit uint64, tz int) []Topic {
-	start := (page - 1) * limit
-	// end := (page)*limit - 1
+func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, pageOffset, limit uint64, tz int) []Topic {
+	start := pageOffset
 	return SQLCIDArticleList(gormDB, db, redisDB, tagID, start, limit, tz)
 
 	// var pageInfo ArticlePageInfo
