@@ -203,6 +203,8 @@ func (article *Topic) SQLCreateTopic(db *sql.DB) bool {
 func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
 	logger := util.GetLogger()
 	tx := gormDB.Begin()
+	defer clearGormTransaction(tx)
+
 	fmt.Println("get user id", topic.UserID, topic.Tags)
 	result := tx.Create(&topic)
 

@@ -50,9 +50,14 @@ func rowsClose(rows *sql.Rows) {
 		rows.Close()
 	}
 }
-func clearGormTransaction(db *gorm.DB) {
-	if err := db.Rollback(); err != nil {
-		fmt.Println("error in gorm transaction", err)
+
+// clearGormTransaction gorm的事务清理
+// 使用方式:
+// tx := gormDB.Begin()
+// defer clearGormTransaction(tx)
+func clearGormTransaction(tx *gorm.DB) {
+	if err := recover(); err != nil {
+		tx.Rollback()
 	}
 }
 
