@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"strconv"
-	"strings"
 
 	"zoe/util"
 
@@ -14,8 +13,8 @@ import (
 )
 
 type (
-	// CommentBase 会在数据库中保存的信息
-	CommentBase struct {
+	// Reply 会在数据库中保存的信息
+	Reply struct {
 		gorm.Model
 		ID       uint64 `gorm:"primaryKey"`
 		AID      uint64 `gorm:"column:topic_id"`
@@ -26,9 +25,15 @@ type (
 		AddTime  uint64 `json:"addtime"`
 	}
 
+	ReplyLikes struct {
+		gorm.Model
+		UserID  uint64 `gorm:"column:user_id;index"`
+		ReplyID uint64 `gorm:"column:reply_id;index"`
+	}
+
 	// Comment 评论信息
 	Comment struct {
-		CommentBase
+		Reply
 		UserName   string `json:"username"`
 		Avatar     string `json:"avatar"`
 		ContentFmt template.HTML
@@ -52,11 +57,6 @@ type (
 		LastKey  uint64            `json:"lastkey"`
 	}
 )
-
-// 设置comment内容
-func (CommentBase) TableName() string {
-	return "reply"
-}
 
 // PreProcessUserMention 预处理用户的引用
 // #14
@@ -83,101 +83,20 @@ func PreProcessUserMention(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client
 	return newPost
 }
 
-// sqlSaveComment 在数据库中存储评论
-func (comment *Comment) sqlSaveComment(tx *sql.Tx) (bool, error) {
-	rows, err := tx.Exec(
-		("INSERT INTO `reply`" +
-			"(`user_id`, `topic_id`, `number`, `client_ip`, `content`, `created_at`, `updated_at`)" +
-			"VALUES " +
-			"(?, ?, ?, ?, ?, ?, ?)"),
-		comment.UID,
-		comment.AID,
-		comment.Number,
-		comment.ClientIP,
-		comment.Content,
-		comment.AddTime,
-		comment.AddTime,
-	)
-	if util.CheckError(err, "回复失败") {
-		return false, err
-	}
-	cid, err := rows.LastInsertId()
-	comment.ID = uint64(cid)
-	return true, nil
-}
-
-// SQLSaveComment 在数据库中存储评论
-func (comment *Comment) SQLSaveComment(db *sql.DB) {
-	rows, err := db.Exec(
-		("INSERT INTO `reply`" +
-			"(`user_id`, `topic_id`, `client_ip`, `content`, `created_at`, `updated_at`)" +
-			"VALUES " +
-			"(?, ?, ?, ?, ?, ?)"),
-		comment.UID,
-		comment.AID,
-		comment.ClientIP,
-		comment.Content,
-		comment.AddTime,
-		comment.AddTime,
-	)
-	if util.CheckError(err, "回复失败") {
-		return
-	}
-	cid, err := rows.LastInsertId()
-	comment.ID = uint64(cid)
-}
-
-func sqlGetCommentsBaseByList(db *sql.DB, redisDB *redis.Client, commentsList []uint64) (items []CommentBase) {
-	var err error
-	var rows *sql.Rows
-	var commentListStr []string
+func sqlGetRepliesBaseByList(gormDB *gorm.DB, redisDB *redis.Client, repliesList []uint64) (items []Reply) {
 	logger := util.GetLogger()
-	defer rowsClose(rows)
-
-	if len(commentsList) == 0 {
-		logger.Warning("SQLArticleGetByList: Can't process the article list empty")
-		return
-	}
-
-	for _, v := range commentsList {
-		commentListStr = append(commentListStr, strconv.FormatInt(int64(v), 10))
-	}
-	qFieldList := []string{
-		"id", "user_id", "topic_id", "content",
-		"number", // "created_at",
-	}
-	sql := fmt.Sprintf("select %s from reply where id in (%s)",
-		strings.Join(qFieldList, ","),
-		strings.Join(commentListStr, ","))
-
-	rows, err = db.Query(sql)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return
-	}
-
-	for rows.Next() {
-		item := CommentBase{}
-		err = rows.Scan(
-			&item.ID, &item.UID, &item.AID, &item.Content,
-			&item.Number,
-			// &item.AddTime,
-		)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		items = append(items, item)
+	result := gormDB.Find(&items, repliesList)
+	if result.Error != nil {
+		logger.Errorf("Can't get replies list by ", repliesList)
 	}
 	return
 }
 
-func (cb *CommentBase) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tz int) Comment {
+func (cb *Reply) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tz int) Comment {
 	c := Comment{
-		CommentBase: *cb,
-		Likes:       cb.getUserLikes(db, redisDB),
+		Reply: *cb,
+		Likes: cb.getUserLikes(gormDB, db, redisDB),
 	}
-	// c.AddTimeFmt = util.TimeFmt(cb.AddTime, time.RFC3339, tz)
 	c.AddTimeFmt = cb.CreatedAt.String()
 
 	// 预防XSS漏洞
@@ -188,26 +107,13 @@ func (cb *CommentBase) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Cli
 	return c
 }
 
-func (cb *CommentBase) getUserLikes(db *sql.DB, redisDB *redis.Client) (likes []uint64) {
-	var rows *sql.Rows
-	defer rowsClose(rows)
-	logger := util.GetLogger()
-
-	sql := "SELECT reply_id, user_id FROM `reply_likes` where reply_id=?"
-	rows, err := db.Query(sql, cb.ID)
-	if err != nil {
-		logger.Error("Can't get likes", err.Error())
-		return
-	}
+func (cb *Reply) getUserLikes(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) (likes []uint64) {
+	rows, _ := gormDB.Model(&ReplyLikes{}).Where("reply_id = ?", cb.ID).Rows()
+	defer rows.Close()
 	for rows.Next() {
-		var cid uint64
-		var uid uint64
-		err = rows.Scan(&cid, &uid)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-		}
-
-		likes = append(likes, uid)
+		var r ReplyLikes
+		gormDB.ScanRows(rows, &r)
+		likes = append(likes, r.UserID)
 	}
 	return
 }
@@ -223,7 +129,7 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 	var rows *sql.Rows
 	defer rowsClose(rows)
 
-	var baseComments []CommentBase
+	var baseComments []Reply
 	gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
@@ -253,7 +159,7 @@ func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, 
 		commentList = append(commentList, item)
 	}
 	// baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
-	var baseComments []CommentBase
+	var baseComments []Reply
 	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
 
 	for _, bc := range baseComments {
@@ -265,7 +171,7 @@ func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, 
 // SQLCommentByID 获取一条评论
 func SQLCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
 	logger := util.GetLogger()
-	var c CommentBase
+	var c Reply
 	result := gormDB.First(&c, cid)
 
 	if result.Error != nil {
@@ -303,7 +209,8 @@ func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, co
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
-	baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
+
+	baseComments := sqlGetRepliesBaseByList(gormDB, redisDB, commentList)
 	for _, bc := range baseComments {
 		c := bc.toComment(gormDB, db, redisDB, tz)
 		items = append(items, c.toCommentListItem(db, redisDB, tz))
@@ -460,7 +367,7 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 		return false, result.Error
 	}
 
-	var lastComment CommentBase
+	var lastComment Reply
 	result = gormDB.First(&lastComment, topic.LastPostID)
 	if result.Error != nil {
 		logger.Error("Can't find last commet with error", result.Error)
@@ -468,7 +375,7 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	}
 	comment.Number = lastComment.Number + 1
 
-	result = tx.Create(&comment.CommentBase)
+	result = tx.Create(&comment.Reply)
 	if result.Error != nil {
 		return false, result.Error
 	}
@@ -630,16 +537,11 @@ func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
 }
 
 // DoLike 用户的点赞
-func (comment *Comment) DoLike(db *sql.DB, redisDB *redis.Client, user *User, isLiked bool) {
-	sql := ""
+func (comment *Comment) DoLike(gormDB *gorm.DB, redisDB *redis.Client, user *User, isLiked bool) {
 	if isLiked {
-		sql = "INSERT INTO `reply_likes` (`reply_id`, `user_id`) VALUES (?, ?)"
+		rl := ReplyLikes{UserID: user.ID, ReplyID: comment.ID}
+		gormDB.Create(&rl)
 	} else {
-		sql = "DELETE FROM `reply_likes` WHERE `reply_likes`.`reply_id` = ? AND `reply_likes`.`user_id` = ?"
-	}
-	_, err := db.Exec(sql, comment.ID, user.ID)
-	logger := util.GetLogger()
-	if err != nil {
-		logger.Warning("Can't do sql", sql, err.Error())
+		gormDB.Unscoped().Where("user_id = ? and reply_id = ?", user.ID, comment.ID).Delete(&ReplyLikes{})
 	}
 }

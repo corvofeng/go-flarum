@@ -133,7 +133,7 @@ type ArticleTag struct {
 
 // SQLArticleGetByID 通过 article id获取内容
 func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid uint64) (Topic, error) {
-	articleBaseList := sqlGetArticleBaseByList(gormDB, db, redisDB, []uint64{aid})
+	articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, []uint64{aid})
 	var obj Topic
 	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
@@ -214,7 +214,7 @@ func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.Relation
 	}
 
 	comment := Comment{
-		CommentBase: CommentBase{
+		Reply: Reply{
 			AID:      topic.ID,
 			UID:      topic.UserID,
 			Content:  topic.Content,
@@ -222,7 +222,7 @@ func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.Relation
 			ClientIP: topic.ClientIP,
 		},
 	}
-	result = tx.Create(&comment.CommentBase)
+	result = tx.Create(&comment.Reply)
 	if result.Error != nil {
 		logger.Error("Can't create first commet for topic with error", result.Error)
 		return false, result.Error
@@ -363,7 +363,7 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	articleBaseList := sqlGetArticleBaseByList(gormDB, db, redisDB, articleList)
+	articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, articleList)
 	m := make(map[uint64]ArticleListItem)
 
 	for _, articleBase := range articleBaseList {
@@ -386,13 +386,12 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 	}
 }
 
-// sqlGetArticleBaseByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
-func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
+// sqlGetTopicByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
+func sqlGetTopicByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
 	logger := util.GetLogger()
 	result := gormDB.Find(&items, articleList)
 	if result.Error != nil {
 		logger.Errorf("Can't get article list by ", articleList)
-
 	}
 	for _, article := range items {
 		article.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, article.ID)
@@ -401,39 +400,8 @@ func sqlGetArticleBaseByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 }
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
-func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, pageOffset, limit uint64, tz int) []Topic {
-	start := pageOffset
+func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
 	return SQLCIDArticleList(gormDB, db, redisDB, tagID, start, limit, tz)
-
-	// var pageInfo ArticlePageInfo
-	// articleList := GetTopicListByPageNum(nodeID, page, limit)
-	// logger := util.GetLogger()
-	// logger.Debug("Get article list", page, limit, articleList)
-	// if len(articleList) == 0 {
-	// 	// TODO: remove it
-	// 	articleIteratorStart := GetCIDArticleMax(nodeID)
-	// 	pageInfo = SQLCIDArticleList(gormDB, db, redisDB, nodeID, articleIteratorStart, "next", limit, tz)
-	// 	// 先前没有缓存, 需要加入到rank map中
-	// 	var items []ArticleRankItem
-	// 	for _, a := range pageInfo.Items {
-	// 		items = append(items, ArticleRankItem{
-	// 			AID:     a.ID,
-	// 			SQLDB:   db,
-	// 			RedisDB: redisDB,
-	// 			Weight:  a.ClickCnt,
-	// 		})
-	// 	}
-	// 	AddNewArticleList(nodeID, items)
-	// } else {
-	// 	pageInfo = SQLArticleGetByList(gormDB, db, redisDB, articleList, tz)
-	// }
-	// pageInfo.PageNum = page
-	// pageInfo.PageNext = page + 1
-	// pageInfo.PagePrev = page - 1
-	// if len(articleList) == int(limit) {
-	// 	pageInfo.HasNext = true
-	// }
-	// return pageInfo
 }
 
 // SQLTopicGetByUID 根据创建用户获取帖子列表

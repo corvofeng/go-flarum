@@ -332,7 +332,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 
 	now := util.TimeNow()
 	comment := model.Comment{
-		CommentBase: model.CommentBase{
+		Reply: model.Reply{
 			AID:      aid,
 			UID:      ctx.currentUser.ID,
 			Content:  reply.Data.Attributes.Content,
@@ -567,7 +567,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if val, ok := commentUtils.Data.Attributes["isLiked"]; ok {
-		cobj.DoLike(sqlDB, redisDB, ctx.currentUser, val.(bool))
+		cobj.DoLike(h.App.GormDB, redisDB, ctx.currentUser, val.(bool))
 	}
 	if val, ok := commentUtils.Data.Attributes["content"]; ok {
 		cobj.UpdateFlarumComment(sqlDB, val.(string), ctx.currentUser.ID)
