@@ -24,8 +24,9 @@ func main() {
 	// app.GormDB.AutoMigrate(flarum.Preferences{})
 
 	app.GormDB.AutoMigrate(model.User{})
-	app.GormDB.AutoMigrate(model.CommentBase{})
+	app.GormDB.AutoMigrate(model.Reply{})
 	app.GormDB.AutoMigrate(model.Topic{})
+	app.GormDB.AutoMigrate(model.ReplyLikes{})
 
 	logger.Info(app.GormDB, app.MySQLdb, app.RedisDB)
 	model.RankMapInit(app.GormDB, app.MySQLdb, app.RedisDB)
