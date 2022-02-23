@@ -180,32 +180,15 @@ func (article *Topic) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 	return weight
 }
 
-// SQLCreateTopic 创建主题
-func (article *Topic) SQLCreateTopic(db *sql.DB) bool {
-	tx, err := db.Begin()
-	defer clearTransaction(tx)
-	if err != nil {
-		return false
-	}
-	// article.sqlCreateTopic(tx)
-	// if err := tx.Commit(); err != nil {
-	// 	logger := util.GetLogger()
-	// 	logger.Error("Create topic with error", err)
-	// 	return false
-	// }
-	return true
-}
-
-// CreateFlarumDiscussion 创建flarum的帖子
+// CreateFlarumTopic 创建flarum的帖子
 // 帖子中, category和tag是不同的数据
 // category是帖子比较大的分类, 每个帖子只能有一个
 // tag只是这个帖子具有的某种特征, 每个帖子可以有多个tag
-func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
+func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
 	logger := util.GetLogger()
 	tx := gormDB.Begin()
 	defer clearGormTransaction(tx)
 
-	fmt.Println("get user id", topic.UserID, topic.Tags)
 	result := tx.Create(&topic)
 
 	if result.Error != nil {
@@ -230,52 +213,18 @@ func (topic *Topic) CreateFlarumDiscussion(gormDB *gorm.DB, tags flarum.Relation
 	topic.LastPostID = comment.ID
 	topic.FirstPostID = comment.ID
 
-	// if ok, err := article.updateFlarumTag(tx, tags); !ok {
-	// 	return false, err
-	// }
-	// logger.Debugf("Update article post and tag %d success", article.ID)
 	for _, tid := range tags.Data {
 		fmt.Println(tid)
 	}
 
 	tx.Save(&topic)
 
-	// if ok, err := comment.sqlSaveComment(tx); !ok {
-	// 	return false, err
-	// }
-	// if ok, err := article.updateFlarumPost(tx); !ok {
-	// 	return false, err
-	// }
-
-	// if err := tx.Commit(); err != nil {
-	// 	logger := util.GetLogger()
-	// 	logger.Error("Create topic with error", err)
-	// 	return false, err
-	// }
 	result = tx.Commit()
 	if result.Error != nil {
 		logger.Error("Create reply with error", result.Error)
 		return false, result.Error
 	}
 
-	return true, nil
-}
-
-// updateFlarumPost 更新评论信息
-func (article *Topic) updateFlarumPost(tx *sql.Tx) (bool, error) {
-
-	_, err := tx.Exec(
-		"UPDATE `topic` SET"+
-			" first_post_id=?,"+
-			" last_post_id=?"+
-			" where id=?",
-		article.FirstPostID,
-		article.LastPostID,
-		article.ID,
-	)
-	if util.CheckError(err, "更新帖子") {
-		return false, err
-	}
 	return true, nil
 }
 
@@ -295,46 +244,6 @@ func (article *Topic) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bo
 		}
 	}
 	return true, nil
-}
-
-// SQLArticleUpdate 更新当前帖子
-func (article *Topic) SQLArticleUpdate(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) bool {
-	// 更新记录必须要被保存, 配合数据库中的father_topic_id来实现
-	// 每次更新主题, 会将前帖子复制为一个新帖子(active=0不被看见),
-	// 当前帖子的id没有变化, 但是father_topic_id变为这个新的帖子.
-	// 通过father_topic_id组成了链表的关系
-
-	// 以当前帖子为模板创建一个新的帖子
-	// 对象中只有简单的数据结构, 浅拷贝即可, 需要将其设为不可见
-	// oldArticle, err := SQLArticleGetByID(gormDB, db, redisDB, article.ID)
-	// oldArticle.Active = 0
-	// if util.CheckError(err, "修改时拷贝") {
-	// 	return false
-	// }
-	// oldArticle.SQLCreateTopic(db)
-
-	// _, err = db.Exec(
-	// 	"UPDATE `topic` "+
-	// 		"set title=?,"+
-	// 		"content = ?,"+
-	// 		"user_id=?,"+
-	// 		"updated_at=?,"+
-	// 		"client_ip=?,"+
-	// 		"father_topic_id = ?"+
-	// 		" where id=?",
-	// 	article.Title,
-	// 	article.Content,
-	// 	article.UserID,
-	// 	article.EditTime,
-	// 	article.ClientIP,
-	// 	oldArticle.ID,
-	// 	article.ID,
-	// )
-	// if util.CheckError(err, "更新帖子") {
-	// 	return false
-	// }
-
-	return true
 }
 
 // ToArticleListItem 转换为可以做列表的内容
@@ -444,31 +353,8 @@ func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, p
 	return pageInfo
 }
 
-// SQLArticleSetClickCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
-func SQLArticleSetClickCnt(sqlDB *sql.DB, aid uint64, clickCnt uint64) {
-	_, err := sqlDB.Exec("UPDATE `topic`"+
-		" set hits = ?"+
-		" where id = ?",
-		clickCnt,
-		aid,
-	)
-	util.CheckError(err, "更新帖子点击次数")
-}
-
-// SQLArticleSetCommentCnt 更新每个帖子的权重, 用于将redis中的数据同步过去
-func SQLArticleSetCommentCnt(sqlDB *sql.DB, aid uint64, replyCnt uint64) {
-	_, err := sqlDB.Exec("UPDATE `topic`"+
-		" set reply_count = ?"+
-		" where id = ?",
-		replyCnt,
-		aid,
-	)
-	util.CheckError(err, "更新帖子评论数目")
-}
-
 // SQLCIDArticleList 返回某个节点的主题
-// nodeID 为0 表示全部主题
-// TODO: delete it
+// tagID 为0 表示全部主题
 func SQLCIDArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
 	logger := util.GetLogger()
 	var topics []Topic

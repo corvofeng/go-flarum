@@ -2,7 +2,6 @@ package cronjob
 
 import (
 	"database/sql"
-	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -66,12 +65,12 @@ func refreshRankMap(logger *logging.Logger) {
 // syncWithMySQL 将Redis中的统计数据同步给mysql
 func syncWithMySQL(logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client) {
 	logger.Info("===== start sync hits with the mysql =====")
-	data, _ := redisDB.HGetAll("article_views").Result()
-	for aid, clickCnt := range data {
-		_aid, _ := strconv.ParseUint(aid, 10, 64)
-		_clickCnt, _ := strconv.ParseUint(clickCnt, 10, 64)
-		// logger.Debugf("Set %4d with %d", _aid, _clickCnt)
-		model.SQLArticleSetClickCnt(sqlDB, _aid, _clickCnt)
-	}
+	// data, _ := redisDB.HGetAll("article_views").Result()
+	// for aid, clickCnt := range data {
+	// _aid, _ := strconv.ParseUint(aid, 10, 64)
+	// _clickCnt, _ := strconv.ParseUint(clickCnt, 10, 64)
+	// logger.Debugf("Set %4d with %d", _aid, _clickCnt)
+	// model.SQLArticleSetClickCnt(sqlDB, _aid, _clickCnt)
+	// }
 	logger.Info("=====  end  sync hits with the mysql =====")
 }
