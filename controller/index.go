@@ -55,6 +55,7 @@ func createFlarumPageAPIDoc(
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
 	allUsers := make(map[uint64]bool)
+	logger.Infof("query with %+v", df)
 
 	// 添加当前用户的session信息
 	if currentUser != nil {
@@ -166,7 +167,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		FT:        eCategory,
 		CID:       tag.ID,
 		Page:      page,
-		pageLimit: 10,
+		pageLimit: uint64(h.App.Cf.Site.HomeShowNum),
 	}
 	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {
