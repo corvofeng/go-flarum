@@ -383,7 +383,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		aobj.Tags = append(aobj.Tags, tag)
 	}
 
-	_, err = aobj.CreateFlarumDiscussion(gormDB, tagsArray)
+	_, err = aobj.CreateFlarumTopic(gormDB, tagsArray)
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
