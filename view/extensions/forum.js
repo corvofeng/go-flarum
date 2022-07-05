@@ -8,6 +8,7 @@ export * from './markdown/js/forum';
 export * from './likes/js/forum';
 export * from './auth-github/js/forum';
 export * from './analytics/js/forum';
+export * from './custom-footer/js/forum';
 // export * from './flarum-pipetables/js/forum';
 
 flarum.extensions["flarum-mentions"] = flarum_mentions;
