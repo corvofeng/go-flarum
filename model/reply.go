@@ -118,6 +118,17 @@ func (cb *Reply) getUserLikes(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client
 	return
 }
 
+func (cb *Reply) getUserComments(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) (comments []uint64) {
+	rows, _ := gormDB.Model(&Reply{}).Where("user_id = ?", cb.UID).Rows()
+	defer rows.Close()
+	for rows.Next() {
+		var r Reply
+		gormDB.ScanRows(rows, &r)
+		comments = append(comments, r.ID)
+	}
+	return
+}
+
 func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz int) CommentListItem {
 	item := CommentListItem{
 		Comment: *comment,

@@ -17,6 +17,11 @@ const (
 	tokenLength = 32
 )
 
+// use http request to get data from leetcode.com
+func getDataFromLeetcode(ID string) {
+
+}
+
 func SliceUniqInt(s []int) []int {
 	if len(s) == 0 {
 		return s

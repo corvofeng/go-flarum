@@ -76,6 +76,12 @@ func TestMention(t *testing.T) {
 			user,
 			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION> 测试输入 @helloworld#54`,
 		},
+		{
+			`@"一枚小猿"#p115 测试引用`,
+			mentionPost,
+			user,
+			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION> 测试输入 @helloworld#54`,
+		},
 	}
 
 	for _, data := range TESTCASES {

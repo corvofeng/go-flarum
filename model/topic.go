@@ -497,17 +497,17 @@ func SQLArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, start ui
 	)
 }
 
-func (article *Topic) toKeyForComments() string {
-	return fmt.Sprintf("comments-article-%d", article.ID)
+func (topic *Topic) toKeyForComments() string {
+	return fmt.Sprintf("comments-article-%d", topic.ID)
 }
 
 // CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
 // 注意这里是有顺序的, 顺序为发帖时间
-func (article *Topic) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+func (topic *Topic) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
 	logger := util.GetLogger()
-	logger.Debugf("Cache comment list for: %d, and %d comments", article.ID, len(comments))
+	logger.Debugf("Cache comment list for: %d, and %d comments", topic.ID, len(comments))
 	for _, c := range comments {
-		_, err := rankRedisDB.ZAddNX(article.toKeyForComments(), &redis.Z{
+		_, err := rankRedisDB.ZAddNX(topic.toKeyForComments(), &redis.Z{
 			Score:  float64(c.CreatedAt.Unix()),
 			Member: c.ID},
 		).Result()
@@ -518,8 +518,8 @@ func (article *Topic) CacheCommentList(redisDB *redis.Client, comments []Comment
 }
 
 // GetCommentIDList 获取帖子已经排序好的评论列表
-func (article *Topic) GetCommentIDList(redisDB *redis.Client) (comments []uint64) {
-	rdsData, _ := rankRedisDB.ZRange(article.toKeyForComments(), 0, -1).Result()
+func (topic *Topic) GetCommentIDList(redisDB *redis.Client) (comments []uint64) {
+	rdsData, _ := rankRedisDB.ZRange(topic.toKeyForComments(), 0, -1).Result()
 	for _, _cid := range rdsData {
 		cid, _ := strconv.ParseUint(_cid, 10, 64)
 		comments = append(comments, cid)

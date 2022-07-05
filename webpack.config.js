@@ -27,7 +27,12 @@ module.exports = [
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
-        const file = path.resolve(STATIC_DIR, app + '.js');
+        let file = path.resolve(STATIC_DIR, app + '.js');
+        if (fs.existsSync(file)) {
+          entries[app] = file;
+        }
+
+        file = path.resolve(STATIC_DIR, app + '.ts');
         if (fs.existsSync(file)) {
           entries[app] = file;
         }
@@ -60,6 +65,7 @@ module.exports = [
 
     module: config.module,
     externals: config.externals,
+    resolve: config.resolve,
     devtool: config.devtool,
 
     output: {
