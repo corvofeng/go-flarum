@@ -15,7 +15,7 @@ var (
 	// imgRegexp     = regexp.MustCompile(`(https?://[\w./:]+/[\w./]+\.(jpg|jpe|jpeg|gif|png))`)
 	// gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-]+/)?[\d]+)`)
 	gistRegexp    = regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+)`)
-	mentionRegexp = regexp.MustCompile(`\B@([a-zA-Z0-9\p{Han}]{1,32})#?([0-9]*)?\s?`)
+	mentionRegexp = regexp.MustCompile(`\B@\"?([a-zA-Z0-9\p{Han}]{1,32})\"?#?p?([0-9]*)?\s?`)
 	// flarumMentionRegexp = regexp.MustCompile(`&lt;[USER|POST]MENTION(.+?)\/MENTION&gt;`)
 
 	flarumMentionRegexp = regexp.MustCompile(`<(USER|POST)MENTION(.+?)MENTION>`)
