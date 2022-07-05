@@ -171,7 +171,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取帖子信息"))
+		h.flarumErrorMsg(w, "无法获取帖子信息")
 		return
 	}
 	// 设置语言信息
