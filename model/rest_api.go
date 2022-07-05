@@ -34,14 +34,3 @@ type RestfulTopic struct {
 	Replies     []RestfulReply `json:"replies"`
 	LastReplyAt string         `json:"last_reply_at"`
 }
-
-// Article2RestfulTopic convert Article obj to Restful
-// func Article2RestfulTopic(article Article, timeZone int) RestfulTopic {
-// 	topic := RestfulTopic{}
-// 	topic.ID = article.ID
-// 	topic.UID = article.UID
-// 	topic.Author = RestfulUser{}
-// 	topic.CreateAt = util.TimeFmt(article.AddTime, "2006-01-02 15:04", timeZone)
-
-// 	return topic
-// }

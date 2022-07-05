@@ -78,7 +78,6 @@ type (
 	PageData struct {
 		BasePageData
 
-		// 此处的变量为兼容旧的youbbs变量
 		PageInfo   model.ArticlePageInfo
 		Cobj       model.Tag
 		Aobj       model.Topic
