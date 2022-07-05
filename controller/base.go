@@ -276,28 +276,11 @@ func (h *BaseHandler) DelCookie(w http.ResponseWriter, name string) {
 func (h *BaseHandler) CurrentTpl(r *http.Request) string {
 	// 如果使用其他主题, 那么直接返回该主题
 	serverStyle := h.App.Cf.Main.ServerStyle
-	if serverStyle != "youbbs" {
-		return serverStyle
+	if serverStyle != "flarum" {
+		h.App.Logger.Errorf("Currently we don't support %s", serverStyle)
 	}
 
-	tpl := "desktop"
-	//tpl := "mobile"
-
-	cookieTpl := h.GetCookie(r, "tpl")
-	if len(cookieTpl) > 0 {
-		if cookieTpl == "desktop" || cookieTpl == "mobile" {
-			return cookieTpl
-		}
-	}
-
-	ua := r.Header.Get("User-Agent")
-	if len(ua) < 6 {
-		return tpl
-	}
-	if mobileRegexp.MatchString(ua) {
-		return "mobile"
-	}
-	return tpl
+	return "flarum"
 }
 
 // GetLogger 获取当前的logger

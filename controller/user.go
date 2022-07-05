@@ -3,7 +3,6 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -228,111 +227,6 @@ func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
 		h.DelCookie(w, k)
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-// UserDetail 用户详情页
-func (h *BaseHandler) UserDetail(w http.ResponseWriter, r *http.Request) {
-	act, btn, key, score := r.FormValue("act"), r.FormValue("btn"), r.FormValue("key"), r.FormValue("score")
-	if len(key) > 0 {
-		_, err := strconv.ParseUint(key, 10, 64)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"key type err"}`))
-			return
-		}
-	}
-	if len(score) > 0 {
-		_, err := strconv.ParseUint(score, 10, 64)
-		if err != nil {
-			w.Write([]byte(`{"retcode":400,"retmsg":"score type err"}`))
-			return
-		}
-	}
-	fmt.Println(btn)
-
-	// db := h.App.Db
-	redisDB := h.App.RedisDB
-	// sqlDB := h.App.MySQLdb
-	scf := h.App.Cf.Site
-
-	uid := pat.Param(r, "uid")
-	uidi, err := strconv.ParseUint(uid, 10, 64)
-	if err != nil {
-		// u, _ := model.SQLUserGetByName(sqlDB, strings.ToLower(uid))
-		// uid := u.ID
-		// if uid == "" {
-		// 	w.Write([]byte(`{"retcode":400,"retmsg":"uid type err"}`))
-		// 	return
-		// }
-		// http.Redirect(w, r, "/member/"+uid, 301)
-		// return
-	}
-
-	// cmd := "rscan"
-	// if btn == "prev" {
-	// 	cmd = "scan"
-	// }
-
-	uobj, err := model.SQLUserGetByID(h.App.GormDB, uidi)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	currentUser, _ := h.CurrentUser(w, r)
-
-	if uobj.Hidden && !currentUser.IsAdmin() {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"retcode":404,"retmsg":"not found"}`))
-		return
-	}
-
-	var pageInfo model.ArticlePageInfo
-
-	if act == "reply" {
-		// tb := "user_article_reply:" + uid
-		// pageInfo = model.UserArticleList(db, cmd, tb, key, h.App.Cf.Site.PageShowNum)
-		// pageInfo = model.ArticleList(db, "z"+cmd, tb, key, score, scf.PageShowNum, scf.TimeZone)
-	} else {
-		act = "post"
-		// tb := "user_article_timeline:" + uid
-		// pageInfo = model.UserArticleList(db, "h"+cmd, tb, key, scf.PageShowNum, scf.TimeZone)
-	}
-
-	type userDetail struct {
-		model.User
-		RegTimeFmt string
-	}
-	type pageData struct {
-		BasePageData
-		Act      string
-		Uobj     userDetail
-		PageInfo model.ArticlePageInfo
-	}
-
-	tpl := h.CurrentTpl(r)
-
-	evn := &pageData{}
-	evn.SiteCf = scf
-	evn.Title = uobj.Name + " - " + scf.Name
-	evn.Keywords = uobj.Name
-	evn.Description = uobj.About
-	evn.IsMobile = tpl == "mobile"
-
-	evn.CurrentUser = currentUser
-	evn.ShowSideAd = true
-	evn.PageName = "category_detail"
-	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-
-	evn.Act = act
-	evn.Uobj = userDetail{
-		User:       uobj,
-		RegTimeFmt: util.TimeFmt(uobj.RegTime, "2006-01-02 15:04", scf.TimeZone),
-	}
-	evn.PageInfo = pageInfo
-	evn.SiteInfo = model.GetSiteInfo(redisDB)
-
-	h.Render(w, tpl, evn, "layout.html", "user.html")
 }
 
 // NewCaptcha 获取新的验证码
