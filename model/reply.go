@@ -60,7 +60,7 @@ type (
 
 // PreProcessUserMention 预处理用户的引用
 // #14
-func PreProcessUserMention(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, tz int, userComment string) string {
+func PreProcessUserMention(gormDB *gorm.DB, redisDB *redis.Client, tz int, userComment string) string {
 
 	mentionDict := make(map[string]string)
 	for _, mentionStr := range mentionRegexp.FindAllStringSubmatch(userComment, -1) {
@@ -69,7 +69,7 @@ func PreProcessUserMention(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client
 			util.GetLogger().Warning("Can't process mention", mentionStr[0])
 			continue
 		}
-		comment, err := SQLCommentByID(gormDB, sqlDB, redisDB, cid, tz)
+		comment, err := SQLCommentByID(gormDB, redisDB, cid, tz)
 		if err != nil {
 			util.GetLogger().Warningf("Can't comment %d with error %v", cid, err)
 			continue
@@ -92,10 +92,10 @@ func sqlGetRepliesBaseByList(gormDB *gorm.DB, redisDB *redis.Client, repliesList
 	return
 }
 
-func (cb *Reply) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tz int) Comment {
+func (cb *Reply) toComment(gormDB *gorm.DB, redisDB *redis.Client, tz int) Comment {
 	c := Comment{
 		Reply: *cb,
-		Likes: cb.getUserLikes(gormDB, db, redisDB),
+		Likes: cb.getUserLikes(gormDB, redisDB),
 	}
 	c.AddTimeFmt = cb.CreatedAt.String()
 
@@ -103,11 +103,11 @@ func (cb *Reply) toComment(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, t
 	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
 
 	c.UserName = GetUserNameByID(gormDB, redisDB, cb.UID)
-	c.Avatar = GetAvatarByID(gormDB, db, redisDB, cb.UID)
+	c.Avatar = GetAvatarByID(gormDB, redisDB, cb.UID)
 	return c
 }
 
-func (cb *Reply) getUserLikes(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) (likes []uint64) {
+func (cb *Reply) getUserLikes(gormDB *gorm.DB, redisDB *redis.Client) (likes []uint64) {
 	rows, _ := gormDB.Model(&ReplyLikes{}).Where("reply_id = ?", cb.ID).Rows()
 	defer rows.Close()
 	for rows.Next() {
@@ -143,7 +143,7 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 	var baseComments []Reply
 	gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
 	for _, bc := range baseComments {
-		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
+		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
 	return
 }
@@ -174,13 +174,13 @@ func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, 
 	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
 
 	for _, bc := range baseComments {
-		comments = append(comments, bc.toComment(gormDB, db, redisDB, tz))
+		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
 	return
 }
 
 // SQLCommentByID 获取一条评论
-func SQLCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
+func SQLCommentByID(gormDB *gorm.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
 	logger := util.GetLogger()
 	var c Reply
 	result := gormDB.First(&c, cid)
@@ -189,7 +189,7 @@ func SQLCommentByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, cid uint
 		logger.Error("Can't find commet with error", result.Error)
 		return Comment{}, result.Error
 	}
-	return c.toComment(gormDB, db, redisDB, tz), nil
+	return c.toComment(gormDB, redisDB, tz), nil
 }
 
 // SQLCommentListByCID 获取某条评论
@@ -200,7 +200,7 @@ func SQLCommentListByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, com
 	var err error
 	logger := util.GetLogger()
 
-	comment, err := SQLCommentByID(gormDB, db, redisDB, commentID, tz)
+	comment, err := SQLCommentByID(gormDB, redisDB, commentID, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for cid(%d)", commentID)
 	}
@@ -223,7 +223,7 @@ func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, co
 
 	baseComments := sqlGetRepliesBaseByList(gormDB, redisDB, commentList)
 	for _, bc := range baseComments {
-		c := bc.toComment(gormDB, db, redisDB, tz)
+		c := bc.toComment(gormDB, redisDB, tz)
 		items = append(items, c.toCommentListItem(db, redisDB, tz))
 	}
 
@@ -324,7 +324,7 @@ func SQLCommentList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID,
 	for rows.Next() {
 		item := CommentListItem{}
 		err = rows.Scan(&item.ID, &item.UID, &item.AID, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(gormDB, db, redisDB, item.UID)
+		item.Avatar = GetAvatarByID(gormDB, redisDB, item.UID)
 		item.UserName = GetUserNameByID(gormDB, redisDB, item.UID)
 
 		if err != nil {

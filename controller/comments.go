@@ -293,7 +293,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 			AddTime:  now,
 		},
 	}
-	comment.Content = model.PreProcessUserMention(h.App.GormDB, sqlDB, redisDB, scf.TimeZone, comment.Content)
+	comment.Content = model.PreProcessUserMention(h.App.GormDB, redisDB, scf.TimeZone, comment.Content)
 
 	if ok, err := comment.CreateFlarumComment(h.App.GormDB); !ok {
 		h.flarumErrorMsg(w, "创建评论出现错误:"+err.Error())
@@ -496,7 +496,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 
 	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	cobj, err := model.SQLCommentByID(h.App.GormDB, sqlDB, redisDB, cid, h.App.Cf.Site.TimeZone)
+	cobj, err := model.SQLCommentByID(h.App.GormDB, redisDB, cid, h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("无法获取评论"))
 		return
