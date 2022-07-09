@@ -74,13 +74,13 @@ func TestMention(t *testing.T) {
 			"@helloworld#86  测试输入 @helloworld#54",
 			mentionPost,
 			user,
-			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION> 测试输入 @helloworld#54`,
+			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION>  测试输入 @helloworld#54`,
 		},
 		{
-			`@"一枚小猿"#p86 测试引用`,
+			`@"helloworld"#p86 测试引用`,
 			mentionPost,
 			user,
-			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="一枚小猿">一枚小猿</POSTMENTION> 测试输入 @helloworld#54`,
+			`<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION> 测试引用`,
 		},
 	}
 
@@ -88,7 +88,6 @@ func TestMention(t *testing.T) {
 		mentionDict := make(map[string]string)
 		for _, mentionStr := range mentionRegexp.FindAllStringSubmatch(data.UserData, -1) {
 			replData := makeMention(mentionStr, data.MentionPost, data.MentionUser)
-			t.Error(mentionStr, replData)
 			mentionDict[mentionStr[0]] = replData
 		}
 

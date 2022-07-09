@@ -253,9 +253,8 @@ func (ab *Topic) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redi
 	}
 	item.EditTimeFmt = item.UpdatedAt.UTC().String()
 	item.AddTimeFmt = item.CreatedAt.UTC().String()
-	// item.Cname = GetCategoryNameByCID(sqlDB, redisDB, item.CID)
 	if item.LastPostID != 0 {
-		lastComment, err := SQLCommentByID(gormDB, sqlDB, redisDB, item.LastPostID, tz)
+		lastComment, err := SQLCommentByID(gormDB, redisDB, item.LastPostID, tz)
 		if err != nil {
 			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
 		} else {

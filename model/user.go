@@ -219,26 +219,6 @@ func SQLUserGetByName(gormDB *gorm.DB, name string) (User, error) {
 	user := User{}
 	result := gormDB.Where("name = ?", name).First(&user)
 	return user, result.Error
-
-	// var uid uint64
-	// rows, err := sqlDB.Query("SELECT id FROM user WHERE name =  ?", name)
-	// defer rowsClose(rows)
-	// if err != nil {
-	// 	logger.Errorf("Query failed,err:%v", err)
-	// 	return user, err
-	// }
-
-	// if rows.Next() {
-	// 	err = rows.Scan(&uid)
-	// 	if err != nil {
-	// 		logger.Errorf("Scan failed,err:%v", err)
-	// 		return user, errors.New("No result")
-	// 	}
-	// } else {
-	// 	return user, errors.New("No result")
-	// }
-
-	// return SQLUserGetByID(sqlDB, uid)
 }
 
 // SQLUserGetByEmail 获取数据库中用户
@@ -246,29 +226,6 @@ func SQLUserGetByEmail(gormDB *gorm.DB, email string) (User, error) {
 	user := User{}
 	result := gormDB.Where("email = ?", email).First(&user)
 	return user, result.Error
-
-	// var uid uint64
-	// obj := User{}
-	// logger := util.GetLogger()
-
-	// rows, err := sqlDB.Query("SELECT id FROM user WHERE email =  ?", email)
-	// defer rowsClose(rows)
-	// if err != nil {
-	// 	logger.Errorf("Query failed,err:%v", err)
-	// 	return obj, err
-	// }
-
-	// if rows.Next() {
-	// 	err = rows.Scan(&uid)
-	// 	if err != nil {
-	// 		logger.Errorf("Scan failed,err:%v", err)
-	// 		return obj, errors.New("No result")
-	// 	}
-	// } else {
-	// 	return obj, errors.New("No result")
-	// }
-
-	// return SQLUserGetByID(sqlDB, uid)
 }
 
 // SQLUserUpdate 更新用户信息
@@ -462,7 +419,7 @@ func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string
 }
 
 // GetAvatarByID 获取用户头像
-func GetAvatarByID(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, uid uint64) string {
+func GetAvatarByID(gormDB *gorm.DB, redisDB *redis.Client, uid uint64) string {
 	var avatar string
 	logger := util.GetLogger()
 
