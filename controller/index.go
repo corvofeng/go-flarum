@@ -55,7 +55,7 @@ func createFlarumPageAPIDoc(
 	currentUser := reqctx.currentUser
 	logger := reqctx.GetLogger()
 	allUsers := make(map[uint64]bool)
-	logger.Infof("query with %+v", df)
+	logger.Debugf("query with %+v", df)
 
 	// 添加当前用户的session信息
 	if currentUser != nil {

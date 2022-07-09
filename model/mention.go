@@ -48,6 +48,12 @@ type (
 	}
 )
 
+// @"corvofeng"#p15 针对15楼的回复
+// <r><p><POSTMENTION discussionid="1" displayname="corvofeng" id="15" number="13">@"corvofeng"#p15</POSTMENTION> 针对15楼的回复</p></r>
+
+// @"corvofeng"#1 针对corvofeng的回复
+// <r><p><USERMENTION displayname="corvofeng" id="1">@corvofeng</USERMENTION> 针对corvofeng的回复</p></r>
+
 func makeMention(mentionStr []string, comment Comment, user User) string {
 	result := mentionStr[0]
 	for {

@@ -160,7 +160,7 @@ func FlarumCreateUser(user User) flarum.Resource {
 	obj := flarum.NewResource(flarum.ECurrentUser, user.ID)
 	data := obj.Attributes.(*flarum.CurrentUser)
 	data.Username = user.Name
-	data.Displayname = user.Nickname
+	data.Displayname = user.Name
 	data.AvatarURL = user.Avatar
 	data.Email = user.Email
 	data.IsEmailConfirmed = true
