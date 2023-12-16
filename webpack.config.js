@@ -21,6 +21,13 @@ let FLARUM_DIR = path.resolve(process.cwd(), 'view', 'flarum');
 let STATIC_DIR = path.resolve(process.cwd(), 'view');
 let EXT_DIR = path.resolve(process.cwd(), "view", "extensions");
 
+config.module.rules.push(
+  {
+    test: /\.m?js/,
+    resolve: {
+      fullySpecified: false,
+    },
+});
 module.exports = [
   // flarum.core配置
   {
