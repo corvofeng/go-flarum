@@ -1,12 +1,17 @@
 
-@import '../flarum/less/common/variables.less';
-@import '../flarum/less/common/mixins.less';
-@import '../flarum/less/forum';
+@import '../framework/framework/core/less/common/variables.less';
+@import '../framework/framework/core/less/common/mixins.less';
+@import '../framework/framework/core/less/forum';
 
 @fa-font-path: "../webfonts";
 
-@import "./tags/less/forum";
-@import "./emoji/less/forum";
+@import "../framework/extensions/tags/less/forum";
+@import "../framework/extensions/emoji/less/forum";
+@import "../framework/extensions/markdown/less/forum";
+
+// @import "./markdown/less/forum";
+
+// @import "./tags/less/forum";
+// @import "./emoji/less/forum";
 @import "./mentions/less/forum";
-@import "./markdown/less/forum";
 // @import "./flarum-pipetables/resources/less/forum";
