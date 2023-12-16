@@ -81,7 +81,7 @@ func ContentRich(input string) string {
 	// 处理mention信息
 	// 首先获取应该被识别的mention信息
 	// 参考: https://stackoverflow.com/a/39102969
-	if strings.Index(input, "USERMENTION") >= 0 || strings.Index(input, "POSTMENTION") >= 0 { // flarum 的mention
+	if strings.Contains(input, "USERMENTION") || strings.Contains(input, "POSTMENTION") { // flarum 的mention
 		mentionDict := make(map[string]string)
 		for _, m := range flarumMentionRegexp.FindAllString(input, -1) {
 			uid := util.GetUUID()
@@ -92,7 +92,7 @@ func ContentRich(input string) string {
 			input = strings.ReplaceAll(input, k, v)
 		}
 	}
-	if strings.Index(input, "//player.bilibili.com") >= 0 {
+	if strings.Contains(input, "//player.bilibili.com") {
 		bilibiliDict := make(map[string]string)
 		bilibliRegexp := regexp.MustCompile(`<iframe src="(//player.bilibili.com[^"^\n]*)"[a-zA-Z0-9 ="]*>\s*</iframe>`)
 		bilibiliURLRegexp := regexp.MustCompile(`(//player.bilibili.com[^"^\n]*)\n`)
@@ -109,7 +109,7 @@ func ContentRich(input string) string {
 		}
 	}
 
-	if strings.Index(input, "://gist") >= 0 {
+	if strings.Contains(input, "://gist") {
 		gistDict := make(map[string]string)
 		embedRegexp := regexp.MustCompile(`<script src="(https://gist.github.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+).js"></script>`)
 		gistURLRegexp := regexp.MustCompile(`(https?://gist\.github\.com/([a-zA-Z0-9-_]+/)?[a-zA-Z\d]+)`)
@@ -124,7 +124,7 @@ func ContentRich(input string) string {
 			input = strings.ReplaceAll(input, k, v)
 		}
 	}
-	if strings.Index(input, "://www.youtube.com") >= 0 {
+	if strings.Contains(input, "://www.youtube.com") {
 		youtubeDict := make(map[string]string)
 		youtubeRegexp := regexp.MustCompile(`<iframe.*src="((https:)?//www.youtube.com[^"]*)".*>\s*</iframe>`)
 		input = youtubeRegexp.ReplaceAllString(input, "$1\n") // 将原有的iframe包裹的块剥离开来
