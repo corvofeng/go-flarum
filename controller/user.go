@@ -331,9 +331,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	// timeStamp := uint64(time.Now().UTC().Unix())
 
 	uobj, err := model.SQLUserGetByName(h.App.GormDB, rec.Identification)
 	if err != nil {
