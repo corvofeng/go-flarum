@@ -1,6 +1,3 @@
-[submodule "view/flarum"]
-	path = view/flarum
-	url = https://github.com/flarum/flarum-core.git
 [submodule "view/locale/en"]
 	path = view/locale/en
 	url = https://github.com/flarum/lang-english.git
@@ -28,9 +25,9 @@
 [submodule "view/extensions/analytics"]
 	path = view/extensions/analytics
 	url = https://github.com/FriendsOfFlarum/analytics.git
-[submodule "view/locale/zh"]
-	path = view/locale/zh
-	url = https://github.com/flarum-lang/chinese-simplified
+# [submodule "view/locale/zh"]
+# 	path = view/locale/zh
+# 	url = https://github.com/flarum-lang/chinese-simplified
 [submodule "view/extensions/flarum-pipetables"]
 	path = view/extensions/flarum-pipetables
 	url = https://github.com/KevID/flarum-pipetables.git
