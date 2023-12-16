@@ -254,6 +254,10 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+			if err != nil {
+				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
+				return
+			}
 			// } else if strings.HasPrefix(data, "author:") {
 			// 	user, err := model.SQLUserGetByName(h.App.GormDB, data[7:])
 			// 	if err != nil {
