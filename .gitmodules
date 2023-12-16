@@ -34,3 +34,6 @@
 [submodule "view/extensions/custom-footer"]
 	path = view/extensions/custom-footer
 	url = https://github.com/FriendsOfFlarum/custom-footer.git
+[submodule "view/framework"]
+	path = view/framework
+	url = https://github.com/flarum/framework.git
