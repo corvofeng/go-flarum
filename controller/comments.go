@@ -371,6 +371,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 
 	parm := r.URL.Query()
 	_userID := parm.Get("filter[user]")
+	_authorID := parm.Get("filter[author]")
 	_disscussionID := parm.Get("filter[discussion]")
 	// _type := parm.Get("filter[type]")
 	_limit := parm.Get("page[limit]")
@@ -408,6 +409,20 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 			UID:   user.ID,
 			Limit: limit,
 		}
+
+	} else if _authorID != "" {
+		user, err = model.SQLUserGetByName(h.App.GormDB, _authorID)
+		if user.ID == 0 || err != nil {
+			h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get the user for: "+_userID+err.Error()))
+			return
+		}
+
+		rf = replyFilter{
+			FT:    eUserPost,
+			UID:   user.ID,
+			Limit: limit,
+		}
+
 	} else if _disscussionID != "" {
 		aid, err := strconv.ParseUint(_disscussionID, 10, 64)
 		if err != nil {

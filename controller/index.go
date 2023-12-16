@@ -174,7 +174,6 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorMsg(w, "无法获取帖子信息")
 		return
 	}
-	// 设置语言信息
 
 	var pageInfo model.ArticlePageInfo
 	for _, item := range coreData.APIDocument.Included {

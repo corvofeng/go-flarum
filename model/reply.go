@@ -149,27 +149,6 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 }
 
 func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
-	var rows *sql.Rows
-	defer rowsClose(rows)
-	logger := util.GetLogger()
-
-	rows, err = db.Query("SELECT id FROM `reply` where user_id = ? order by created_at desc limit ?", userID, limit)
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return
-	}
-
-	var commentList []uint64
-	for rows.Next() {
-		var item uint64
-		err = rows.Scan(&item)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		commentList = append(commentList, item)
-	}
-	// baseComments := sqlGetCommentsBaseByList(db, redisDB, commentList)
 	var baseComments []Reply
 	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
 
