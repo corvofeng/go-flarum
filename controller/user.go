@@ -496,9 +496,7 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 // FlarumUserPage flarum用户查询
 func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
-	// currentUser := ctx.currentUser
 	h := ctx.h
-	// sqlDB := h.App.MySQLdb
 	inAPI := ctx.inAPI
 
 	username := pat.Param(r, "username")
@@ -509,10 +507,22 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	coreData := flarum.NewCoreData()
+	sqlDB := h.App.MySQLdb
+	redisDB := h.App.RedisDB
+	scf := h.App.Cf.Site
+	df := dissFilter{
+		FT:        eUserPost,
+		UID:       user.ID,
+		pageLimit: uint64(h.App.Cf.Site.HomeShowNum),
+	}
+
+	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorMsg(w, "无法获取帖子信息")
+		return
+	}
 
 	// 添加主站点信息
-	redisDB := h.App.RedisDB
 	si := model.GetSiteInfo(redisDB)
 
 	coreData.AppendResources(model.FlarumCreateForumInfo(
@@ -523,12 +533,10 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 
 	apiDoc := &coreData.APIDocument
 
-	// if user.ID == currentUser.ID {
 	u := model.FlarumCreateCurrentUser(user)
 	coreData.AppendResources(u)
 	apiDoc.SetData(u)
 	currentUser := ctx.currentUser
-	// coreData.AppendResourcs(model.FlarumCreateCurrentUser(*ctx.currentUser))
 	// 添加当前用户的session信息
 	if currentUser != nil {
 		user := model.FlarumCreateCurrentUser(*currentUser)
@@ -538,11 +546,6 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// } else {
-	// u := model.FlarumCreateCurrentUser(*currentUser)
-	// apiDoc.SetData(u)
-	// coreData.AppendResourcs(u)
-	// }
 	apiDoc.Links["first"] = ""
 	apiDoc.Links["next"] = ""
 
@@ -551,7 +554,6 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
-	return
 }
 
 // FlarumUserUpdate flarum用户更新配置信息
