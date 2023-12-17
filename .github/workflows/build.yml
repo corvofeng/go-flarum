@@ -1,4 +1,4 @@
-name: ci
+name: image-build
 
 # on: [push]
 on:
