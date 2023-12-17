@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -66,12 +66,12 @@ func readLocaleData(localeData map[string]interface{}, localeDataArr *map[string
 }
 
 // FlarumReadLocale 读取Flarum的语言包
-func FlarumReadLocale(flarumDir, extDir, localeDir, locale string) map[string]string {
+func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale string) map[string]string {
 	logger := GetLogger()
 	localeDataArr := make(map[string]string)
 
 	doParseFile := func(fn string) {
-		yamlFile, err := ioutil.ReadFile(fn)
+		yamlFile, err := os.ReadFile(fn)
 		if err != nil {
 			logger.Errorf("yamlFile.Get err %v ", err)
 		}
@@ -87,7 +87,7 @@ func FlarumReadLocale(flarumDir, extDir, localeDir, locale string) map[string]st
 
 	// flarum/locale
 	// 首先解析flarum中自带的语言包
-	flarumDatas, err := ioutil.ReadDir(path.Join(flarumDir, "locale"))
+	flarumDatas, err := os.ReadDir(path.Join(flarumDir, "locale"))
 	if err == nil {
 		for _, fi := range flarumDatas {
 			// 过滤指定格式
@@ -100,7 +100,7 @@ func FlarumReadLocale(flarumDir, extDir, localeDir, locale string) map[string]st
 	// 解析flarum-lang中携带的语言包
 	// locale/en/*.yml, locale/zh/*.yml
 	dirPath := path.Join(localeDir, locale, "locale")
-	dir, err := ioutil.ReadDir(dirPath)
+	dir, err := os.ReadDir(dirPath)
 	if err != nil {
 		logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
 		return localeDataArr
@@ -114,17 +114,19 @@ func FlarumReadLocale(flarumDir, extDir, localeDir, locale string) map[string]st
 
 	// 解析各个插件的语言包
 	// flarum-tags/locale/en.yml
-	extDirDatas, err := ioutil.ReadDir(extDir)
-	if err == nil {
-		for _, fi := range extDirDatas {
-			if fi.IsDir() {
-				extLocaleDir := path.Join(extDir, fi.Name(), locale)
-				dir, err := ioutil.ReadDir(extLocaleDir)
-				if err == nil {
-					for _, fi := range dir {
-						// 过滤指定格式
-						if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
-							doParseFile(path.Join(extDir, fi.Name()))
+	for _, extDir := range extDirs {
+		extDirDatas, err := os.ReadDir(extDir)
+		if err == nil {
+			for _, fi := range extDirDatas {
+				if fi.IsDir() {
+					extLocaleDir := path.Join(extDir, fi.Name(), locale)
+					dir, err := os.ReadDir(extLocaleDir)
+					if err == nil {
+						for _, fi := range dir {
+							// 过滤指定格式
+							if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+								doParseFile(path.Join(extDir, fi.Name()))
+							}
 						}
 					}
 				}
