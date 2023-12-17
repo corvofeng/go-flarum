@@ -45,7 +45,7 @@ COPY . .
 RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 	-a -installsuffix cgo \
 	-ldflags "-X main.GitCommit=$GIT_COMMIT" \
-	-o zoe ./cmd/main.go 
+	-o zoe ./cmd/server/main.go 
 
 # 构建最终镜像
 FROM alpine:3.7
