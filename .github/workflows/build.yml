@@ -1,14 +1,14 @@
 name: ci
 
-on: [push]
-# on:
-#   push:
-#     branches:
-#       - 'master'
+# on: [push]
+on:
+  push:
+    branches:
+      - 'master'
 
 jobs:
   docker:
-    runs-on: pve-dev1
+    runs-on: ubuntu
     env:
       GO_MOD_NAME: zoe
 
