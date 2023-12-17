@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - 'master'
+      - 'dev_add_admin'
 
 jobs:
   docker:
