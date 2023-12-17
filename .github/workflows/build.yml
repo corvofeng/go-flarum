@@ -8,8 +8,8 @@ on:
       - 'dev_add_admin'
 
 jobs:
-  docker:
-    runs-on: ubuntu
+  docker-build:
+    runs-on: ubuntu-latest
     env:
       GO_MOD_NAME: zoe
 
