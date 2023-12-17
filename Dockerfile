@@ -21,7 +21,7 @@ COPY view ./view
 RUN yarn build
 
 # Golang编译阶段
-FROM golang:1.14.4-alpine3.12 as build-backend
+FROM golang:1.20.5-alpine3.18 as build-backend
 # All these steps will be cached
 WORKDIR /home/zoe
 
