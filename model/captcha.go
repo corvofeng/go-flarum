@@ -61,4 +61,5 @@ func SaveImage(id string) {
 	}
 
 	captcha.WriteImage(f, id, captcha.StdWidth, captcha.StdHeight)
+	f.Sync()
 }
