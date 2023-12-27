@@ -19,9 +19,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	// "go.mongodb.org/mongo-driver/mongo"
-	// "go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/go-redis/redis/v7"
 )
 
@@ -121,18 +118,11 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	app.GormDB, err = gorm.Open(mysql.New(mysql.Config{
 		Conn: sqlDb,
 	}), &gorm.Config{})
-	// app.MongoDB = mongoClient
-
-	// set main node
-	// db.Hset("keyValue", []byte("main_category"), []byte(scf.MainNodeIDs))
-
+	util.CheckError(err, "gorm open error")
 	app.Sc = securecookie.New(
 		[]byte(app.Cf.Main.SCHashKey),
 		[]byte(app.Cf.Main.SCBlockKey),
-		// securecookie.GenerateRandomKey(64),
-		// securecookie.GenerateRandomKey(32),
 	)
-	//app.Sc.SetSerializer(securecookie.JSONEncoder{})
 }
 
 // IsFlarum 当前论坛是否为flarum风格
