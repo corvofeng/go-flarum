@@ -4,6 +4,7 @@ import (
 	"flag"
 	"os"
 	"zoe/model"
+	"zoe/model/flarum"
 	"zoe/system"
 	"zoe/util"
 )
@@ -11,6 +12,7 @@ import (
 func main() {
 	configFile := flag.String("config", "config/config.yaml", "full path of config.yaml file")
 	logLevel := flag.String("lvl", "INFO", "DEBUG LEVEL")
+	initDB := flag.Bool("initdb", false, "init db")
 
 	flag.Parse()
 	util.InitLogger(*logLevel)
@@ -23,10 +25,11 @@ func main() {
 	defer app.Close()
 	// app.GormDB.AutoMigrate(flarum.Preferences{})
 
-	app.GormDB.AutoMigrate(model.User{})
-	app.GormDB.AutoMigrate(model.Reply{})
-	app.GormDB.AutoMigrate(model.Topic{})
-	app.GormDB.AutoMigrate(model.ReplyLikes{})
+	util.CheckError(app.GormDB.AutoMigrate(model.User{}), "migrate user")
+	util.CheckError(app.GormDB.AutoMigrate(model.Tag{}), "migrate tag")
+	util.CheckError(app.GormDB.AutoMigrate(model.Topic{}), "migrate topic")
+	util.CheckError(app.GormDB.AutoMigrate(model.Reply{}), "migrate reply")
+	util.CheckError(app.GormDB.AutoMigrate(model.ReplyLikes{}), "migrate reply likes")
 
 	logger.Info(app.GormDB, app.MySQLdb, app.RedisDB)
 	model.RankMapInit(app.GormDB, app.MySQLdb, app.RedisDB)
@@ -34,10 +37,33 @@ func main() {
 		app.GormDB, app.MySQLdb, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
+	if *initDB {
+		tag := model.Tag{
+			Name:    "root",
+			URLName: "r_root",
+			Color:   "#000000",
+		}
+		tag.CreateFlarumTag(app.GormDB)
 
-	// var user model.User
-	// result := app.GormDB.First(&user, 9999)
-	// logger.Info(user, result.Error)
+		u, _ := model.SQLUserRegister(app.GormDB, "root", "", "NoPassword")
+
+		topic := model.Topic{
+			Title:  "test",
+			UserID: u.ID,
+		}
+
+		tags, _ := model.SQLGetTags(app.GormDB)
+		tagsArray := flarum.RelationArray{}
+		for _, tag := range tags {
+			tagID := tag.ID
+			tagsArray.Data = append(
+				tagsArray.Data,
+				flarum.InitBaseResources(uint64(tagID), "tags"),
+			)
+		}
+
+		topic.CreateFlarumTopic(app.GormDB, tagsArray)
+	}
 
 	logger.Info("Migrate the db")
 }

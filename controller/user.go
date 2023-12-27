@@ -286,7 +286,7 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := model.SQLRegister(h.App.GormDB, rec.Name, rec.Email, rec.Password); err != nil {
+	if _, err := model.SQLUserRegister(h.App.GormDB, rec.Name, rec.Email, rec.Password); err != nil {
 		rsp = normalRsp{
 			400,
 			"注册失败:" + err.Error(),
