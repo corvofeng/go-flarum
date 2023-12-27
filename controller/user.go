@@ -4,12 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"zoe/model"
 	"zoe/model/flarum"
-	"zoe/util"
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"
@@ -53,179 +51,6 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Render(w, tpl, evn, "layout.html", "userlogin.html")
-}
-
-// UserLoginPost 用于用户登录及注册接口
-// 保存密码时, 用户前端传来的密码为md5值, 因此我们也不需要保存明文密码, 也就不需要token了
-func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8") // .. deprecated: 2020-05-29
-
-	rsp := response{}
-	token := h.GetCookie(r, "token")
-	if len(token) == 0 {
-		rsp = response{400, "token cookie missed"}
-		h.jsonify(w, rsp)
-		return
-	}
-
-	act := strings.TrimLeft(r.RequestURI, "/")
-
-	type recForm struct {
-		Name            string `json:"name"`
-		Password        string `json:"password"`
-		CaptchaID       string `json:"captchaID"`
-		CaptchaSolution string `json:"captchaSolution"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	var rec recForm
-	err := decoder.Decode(&rec)
-	if err != nil {
-		rsp = normalRsp{
-			400,
-			"表单解析错误:" + err.Error(),
-		}
-		h.jsonify(w, rsp)
-		return
-	}
-	defer r.Body.Close()
-
-	if len(rec.Name) == 0 || len(rec.Password) == 0 {
-		rsp = normalRsp{400, "name or pw is empty"}
-		h.jsonify(w, rsp)
-		return
-	}
-	nameLow := strings.ToLower(rec.Name)
-	if !util.IsUserName(nameLow) {
-		rsp = response{400, "name fmt err"}
-		h.jsonify(w, rsp)
-		return
-	}
-	// 返回并且携带新的验证码
-	type captchaData struct {
-		response
-		NewCaptchaID string `json:"newCaptchaID"`
-	}
-
-	var respCaptcha captchaData
-	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
-		respCaptcha = captchaData{
-			response{405, "验证码错误"},
-			model.NewCaptcha(),
-		}
-		h.jsonify(w, respCaptcha)
-		return
-	}
-
-	redisDB := h.App.RedisDB
-
-	if act == "login" {
-		uobj, err := model.SQLUserGetByName(h.App.GormDB, nameLow)
-
-		if err != nil {
-			respCaptcha = captchaData{
-				response{405, "登录失败, 请检查用户名与密码"},
-				model.NewCaptcha(),
-			}
-			h.jsonify(w, respCaptcha)
-			return
-		}
-		if uobj.Password != rec.Password {
-			respCaptcha = captchaData{
-				response{405, "登录失败, 请检查用户名与密码"},
-				model.NewCaptcha(),
-			}
-			h.jsonify(w, respCaptcha)
-			return
-		}
-		sessionid := xid.New().String()
-		// uobj.LastLoginTime = timeStamp
-		uobj.Session = sessionid
-		uobj.CachedToRedis(redisDB)
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
-
-	} else {
-		// sqlDB := h.App.MySQLdb
-		// timeStamp := uint64(time.Now().UTC().Unix())
-		// register
-		// siteCf := h.App.Cf.Site
-		// if siteCf.QQClientID > 0 || siteCf.WeiboClientID > 0 {
-		// 	rsp = response{400, "请用QQ 或 微博一键登录"}
-		// 	h.jsonify(w, rsp)
-		// 	return
-		// }
-		// if siteCf.CloseReg {
-		// 	rsp = response{400, "已经停用用户注册"}
-		// 	h.jsonify(w, rsp)
-		// 	return
-		// }
-		// if _, err := model.SQLUserGetByName(h.App.GormDB, nameLow); err == nil {
-		// 	respCaptcha = captchaData{
-		// 		response{405, "用户名已经存在"},
-		// 		model.NewCaptcha(),
-		// 	}
-		// 	h.jsonify(w, respCaptcha)
-		// 	return
-		// }
-
-		// uobj := model.User{
-		// 	Name:     rec.Name,
-		// 	Password: rec.Password,
-		// 	RegTime:  timeStamp,
-		// 	// LastLoginTime: timeStamp,
-		// 	Session: xid.New().String(),
-		// }
-		// uobj.SQLRegister(sqlDB)
-
-		// h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
-	}
-
-	h.DelCookie(w, "token")
-
-	rsp.Retcode = 200
-	h.jsonify(w, rsp)
-}
-
-// UserNotification 用户消息
-func (h *BaseHandler) UserNotification(w http.ResponseWriter, r *http.Request) {
-	currentUser, _ := h.CurrentUser(w, r)
-	if currentUser.ID == 0 {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	type pageData struct {
-		BasePageData
-		PageInfo model.ArticlePageInfo
-	}
-
-	// db := h.App.Db
-	scf := h.App.Cf.Site
-
-	tpl := h.CurrentTpl(r)
-
-	evn := &pageData{}
-	evn.SiteCf = scf
-	evn.Title = "站内提醒 - " + scf.Name
-	evn.IsMobile = tpl == "mobile"
-
-	evn.CurrentUser = currentUser
-	evn.ShowSideAd = true
-	evn.PageName = "user_notification"
-	// evn.HotNodes = model.CategoryHot(db, scf.CategoryShowNum)
-	// evn.NewestNodes = model.CategoryNewest(db, scf.CategoryShowNum)
-	// evn.PageInfo = model.ArticleNotificationList(db, currentUser.Notice, scf.TimeZone)
-
-	h.Render(w, tpl, evn, "layout.html", "notification.html")
-}
-
-// UserLogout 用户退出登录
-func (h *BaseHandler) UserLogout(w http.ResponseWriter, r *http.Request) {
-	cks := []string{"SessionID", "QQURLState", "WeiboURLState", "token"}
-	for _, k := range cks {
-		h.DelCookie(w, k)
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // NewCaptcha 获取新的验证码
@@ -446,7 +271,6 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 	rsp.Retcode = 200
 	rsp.Retmsg = "登出成功"
 	h.jsonify(w, rsp)
-	return
 }
 
 // FlarumUser flarum用户查询
@@ -477,7 +301,6 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
-	return
 }
 
 // FlarumUserSettings flarum用户查询
@@ -498,7 +321,6 @@ func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	evn.FlarumInfo = coreData
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
-	return
 }
 
 // FlarumUserPage flarum用户查询
