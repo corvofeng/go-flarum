@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"zoe/model"
 	"zoe/model/flarum"
@@ -118,9 +117,7 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
-	timeStamp := uint64(time.Now().UTC().Unix())
 
 	if act == "login" {
 		uobj, err := model.SQLUserGetByName(h.App.GormDB, nameLow)
@@ -148,37 +145,39 @@ func (h *BaseHandler) UserLoginPost(w http.ResponseWriter, r *http.Request) {
 		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+sessionid, 365)
 
 	} else {
+		// sqlDB := h.App.MySQLdb
+		// timeStamp := uint64(time.Now().UTC().Unix())
 		// register
-		siteCf := h.App.Cf.Site
-		if siteCf.QQClientID > 0 || siteCf.WeiboClientID > 0 {
-			rsp = response{400, "请用QQ 或 微博一键登录"}
-			h.jsonify(w, rsp)
-			return
-		}
-		if siteCf.CloseReg {
-			rsp = response{400, "已经停用用户注册"}
-			h.jsonify(w, rsp)
-			return
-		}
-		if _, err := model.SQLUserGetByName(h.App.GormDB, nameLow); err == nil {
-			respCaptcha = captchaData{
-				response{405, "用户名已经存在"},
-				model.NewCaptcha(),
-			}
-			h.jsonify(w, respCaptcha)
-			return
-		}
+		// siteCf := h.App.Cf.Site
+		// if siteCf.QQClientID > 0 || siteCf.WeiboClientID > 0 {
+		// 	rsp = response{400, "请用QQ 或 微博一键登录"}
+		// 	h.jsonify(w, rsp)
+		// 	return
+		// }
+		// if siteCf.CloseReg {
+		// 	rsp = response{400, "已经停用用户注册"}
+		// 	h.jsonify(w, rsp)
+		// 	return
+		// }
+		// if _, err := model.SQLUserGetByName(h.App.GormDB, nameLow); err == nil {
+		// 	respCaptcha = captchaData{
+		// 		response{405, "用户名已经存在"},
+		// 		model.NewCaptcha(),
+		// 	}
+		// 	h.jsonify(w, respCaptcha)
+		// 	return
+		// }
 
-		uobj := model.User{
-			Name:     rec.Name,
-			Password: rec.Password,
-			RegTime:  timeStamp,
-			// LastLoginTime: timeStamp,
-			Session: xid.New().String(),
-		}
-		uobj.SQLRegister(sqlDB)
+		// uobj := model.User{
+		// 	Name:     rec.Name,
+		// 	Password: rec.Password,
+		// 	RegTime:  timeStamp,
+		// 	// LastLoginTime: timeStamp,
+		// 	Session: xid.New().String(),
+		// }
+		// uobj.SQLRegister(sqlDB)
 
-		h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
+		// h.SetCookie(w, "SessionID", strconv.FormatUint(uobj.ID, 10)+":"+uobj.Session, 365)
 	}
 
 	h.DelCookie(w, "token")
@@ -260,8 +259,7 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 	}
 	decoder := json.NewDecoder(r.Body)
 	var rec recForm
-	err := decoder.Decode(&rec)
-	if err != nil {
+	if err := decoder.Decode(&rec); err != nil {
 		rsp = normalRsp{
 			400,
 			"表单解析错误:" + err.Error(),
@@ -287,6 +285,16 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 		h.jsonify(w, respCaptcha)
 		return
 	}
+
+	if _, err := model.SQLRegister(h.App.GormDB, rec.Name, rec.Email, rec.Password); err != nil {
+		rsp = normalRsp{
+			400,
+			"注册失败:" + err.Error(),
+		}
+		h.jsonify(w, rsp)
+		return
+	}
+
 	rsp.Retcode = 200
 	rsp.Retmsg = "注册成功"
 

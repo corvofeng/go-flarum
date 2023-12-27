@@ -247,27 +247,19 @@ func (user *User) SQLUserUpdate(db *sql.DB) bool {
 	return true
 }
 
-// SQLRegister 用户注册
-func (user *User) SQLRegister(db *sql.DB) bool {
-	row, err := db.Exec(
-		("INSERT INTO `user` " +
-			" (`name`, `email`, `urlname`, `password`, `reputation`, `avatar`)" +
-			" VALUES " +
-			" (?, ?,?, ?, ?, ?)"),
-		user.Name,
-		user.Name,
-		user.Name,
-		user.Password,
-		20, // 初始声望值20
-		"/static/avatar/3.jpg",
-	)
-	if util.CheckError(err, "用户注册") {
-		return false
+func SQLRegister(gormDB *gorm.DB, name, email, password string) (User, error) {
+	user := User{
+		Name:       name,
+		Email:      email,
+		Password:   password,
+		Reputation: 20,
+		Avatar:     "/static/avatar/3.jpg",
 	}
-	uid, err := row.LastInsertId()
-	user.ID = uint64(uid)
-
-	return true
+	result := gormDB.Create(&user)
+	if result.Error != nil {
+		return User{}, result.Error
+	}
+	return user, nil
 }
 
 // SQLGithubSync github用户同步信息
@@ -320,39 +312,6 @@ func SQLGithubRegister(gormDB *gorm.DB, gu *github.User) (User, error) {
 
 	logger.Infof("Create user %d-%s success", user.ID, gu.GetLogin())
 	return user, nil
-
-	// user := User{}
-	// row, err := sqlDB.Exec(
-	// 	("INSERT INTO `user` " +
-	// 		" (`name`, `email`, `is_email_confirmed`, `urlname`,`nickname`, `password`, `reputation`, `avatar`, `description`, `website`, `created_at`)" +
-	// 		" VALUES " +
-	// 		" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-	// 	gu.GetLogin(),
-	// 	gu.GetEmail(),
-	// 	"1",
-	// 	gu.GetLogin(),
-	// 	gu.GetName(),
-	// 	"NoPassWordForGithub",
-	// 	20, // 初始声望值20
-	// 	gu.GetAvatarURL(),
-	// 	gu.GetBio(),
-	// 	gu.GetBlog(),
-	// 	uint64(time.Now().UTC().Unix()),
-	// )
-	// if util.CheckError(err, "用户注册") {
-	// 	return user, err
-	// }
-	// uid, err := row.LastInsertId()
-	// if err != nil {
-	// 	logger.Error("Get insert id err", err)
-	// }
-	// logger.Infof("Create user %d-%s success", uid, gu.GetLogin())
-	// user, err = SQLUserGetByID(sqlDB, uint64(uid))
-	// if err != nil {
-	// 	logger.Error("Get user id err", err)
-	// }
-	//
-	// return user, nil
 }
 
 // IsForbid 检查当前用户是否被禁用
@@ -490,7 +449,8 @@ func (user *User) GetPreferenceOld(sqlDB *sql.DB, redisDB *redis.Client) {
 
 // SetPreference 更新用户配置信息
 // 数据库中使用了blob的数据类型, 查看数据时, 需要进行转换:
-//  SELECT CONVERT(`preferences` USING utf8) FROM `user`;
+//
+//	SELECT CONVERT(`preferences` USING utf8) FROM `user`;
 func (user *User) SetPreference(gormDB *gorm.DB, redisDB *redis.Client, preference flarum.Preferences) {
 	logger := util.GetLogger()
 	if user.Preferences == nil {
