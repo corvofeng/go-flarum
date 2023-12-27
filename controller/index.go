@@ -120,7 +120,7 @@ func createFlarumPageAPIDoc(
 		getUser(topic.UserID)
 
 		if topic.LastPostUserID == 0 {
-			logger.Warning("Can't get last post uer id for", topic.ID)
+			logger.Warning("Can't get last post user id for", topic.ID)
 		} else {
 			getUser(topic.LastPostUserID)
 		}

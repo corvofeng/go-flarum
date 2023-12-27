@@ -43,6 +43,10 @@ type User struct {
 	Preferences []byte
 }
 
+var DefaultPreference = flarum.Preferences{
+	Locale: "en",
+}
+
 // UserListItem 用户信息
 type UserListItem struct {
 	User
@@ -100,9 +104,9 @@ func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 
 	for {
 		// 如果通过用户名可以获取到用户, 那么马上退出并返回
-		// if user, err = SQLUserGetByName(gormDB, _userID); err == nil {
-		// 	break
-		// }
+		if user, err = SQLUserGetByName(gormDB, _userID); err == nil {
+			break
+		}
 
 		if userID, err = strconv.ParseUint(_userID, 10, 64); err != nil {
 			logger.Error("Can't get user id for ", _userID)
@@ -116,65 +120,6 @@ func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 	}
 	return user, err
 }
-
-// func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (users []User) {
-// 	var err error
-// 	var rows *sql.Rows
-// 	var userListStr []string
-// 	logger := util.GetLogger()
-// 	defer rowsClose(rows)
-// 	if len(userIDList) == 0 {
-// 		logger.Warning("sqlGetUserByList: Can't process the empty user list")
-// 		return
-// 	}
-// 	for _, v := range userIDList {
-// 		userListStr = append(userListStr, strconv.FormatInt(int64(v), 10))
-// 	}
-// 	qFieldList := []string{
-// 		"id", "name", "nickname", "password", "reputation",
-// 		"email", "avatar", "website",
-// 		"description", "token", "created_at",
-// 	}
-// 	sql := fmt.Sprintf("select %s from user where id in (%s)",
-// 		strings.Join(qFieldList, ","),
-// 		strings.Join(userListStr, ","))
-// 	rows, err = db.Query(sql)
-// 	if err != nil {
-// 		logger.Errorf("Query failed,err: %v", err)
-// 		return
-// 	}
-// 	for rows.Next() {
-// 		obj := User{}
-// 		err = rows.Scan(
-// 			&obj.ID,
-// 			&obj.Name,
-// 			&obj.Nickname,
-// 			&obj.Password,
-// 			&obj.Reputation,
-// 			&obj.Email,
-// 			&obj.Avatar,
-// 			&obj.URL,
-// 			&obj.About,
-// 			&obj.Token,
-// 			&obj.RegTime,
-// 		)
-// 		if err != nil {
-// 			logger.Errorf("Scan failed,err:%v", err)
-// 			continue
-// 		}
-// 		users = append(users, obj)
-// 	}
-
-// 	return users
-// }
-
-// func (user *User) toUserListItem(db *sql.DB, redisDB *redis.Client, tz int) UserListItem {
-// 	item := UserListItem{
-// 		User: *user,
-// 	}
-// 	item.RegTimeFmt = util.TimeFmt(item.RegTime, util.TIME_FMT, tz)
-// 	return item
-// }
 
 // SQLUserGetByID 获取数据库用户
 func SQLUserGetByID(gormDB *gorm.DB, uid uint64) (User, error) {
@@ -197,37 +142,24 @@ func SQLUserGetByEmail(gormDB *gorm.DB, email string) (User, error) {
 	return user, result.Error
 }
 
-// SQLUserUpdate 更新用户信息
-// func (user *User) SQLUserUpdate(db *sql.DB) bool {
-// 	_, err := db.Exec(
-// 		"UPDATE `user` "+
-// 			"set email=?,"+
-// 			"description=?,"+
-// 			"website=?"+
-// 			" where id=?",
-// 		user.Email,
-// 		user.About,
-// 		user.URL,
-// 		user.ID,
-// 	)
-// 	if util.CheckError(err, "更新用户信息") {
-// 		return false
-// 	}
-// 	return true
-// }
-
 func SQLUserRegister(gormDB *gorm.DB, name, email, password string) (User, error) {
 	user := User{
-		Name:       name,
-		Email:      email,
-		Password:   password,
-		Reputation: 20,
-		Avatar:     "/static/avatar/3.jpg",
+		Name:        name,
+		Email:       email,
+		Password:    password,
+		Reputation:  20,
+		Avatar:      fmt.Sprintf("https://robohash.org/%s", name),
+		Preferences: []byte(`{}`),
 	}
+
 	result := gormDB.Create(&user)
 	if result.Error != nil {
+		if result.Error.Error() == fmt.Sprintf("Error 1062: Duplicate entry '%s' for key 'idx_name'", name) {
+			return User{}, fmt.Errorf("用户名已经存在")
+		}
 		return User{}, result.Error
 	}
+	user.SetPreference(gormDB, DefaultPreference)
 	return user, nil
 }
 
@@ -238,7 +170,6 @@ func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 		logger.Errorf("Wanna modify %s, but give %s", user.Email, gu.GetEmail())
 		return
 	}
-
 	if user.About == "" {
 		gormDB.Model(user).Update("description", gu.GetBio())
 	}
@@ -248,6 +179,10 @@ func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 	if user.Avatar == "" {
 		gormDB.Model(user).Update("avatar", gu.GetAvatarURL())
 	}
+	if user.Preferences == nil {
+		user.Preferences = []byte(`{}`)
+	}
+	user.SetPreference(gormDB, DefaultPreference)
 }
 
 // UpdateField 用户更新数据
@@ -391,7 +326,7 @@ func GetUserNameByID(gormDB *gorm.DB, redisDB *redis.Client, uid uint64) string 
 // 数据库中使用了blob的数据类型, 查看数据时, 需要进行转换:
 //
 //	SELECT CONVERT(`preferences` USING utf8) FROM `user`;
-func (user *User) SetPreference(gormDB *gorm.DB, redisDB *redis.Client, preference flarum.Preferences) {
+func (user *User) SetPreference(gormDB *gorm.DB, preference flarum.Preferences) {
 	logger := util.GetLogger()
 	if user.Preferences == nil {
 		logger.Warning("Can't process user with no preferences", user.ID, user.Name)
