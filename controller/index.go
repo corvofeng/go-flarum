@@ -188,7 +188,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	evn := InitPageData(r)
 	evn.FlarumInfo = coreData
 	evn.PageInfo = pageInfo
-	evn.PluginHTML["analytics"] = `<script async src="https://www.googletagmanager.com/gtag/js?id=%%TRACKING_CODE%%"></script>`
+	evn.PluginHTML["analytics"] = `<script async src="https://www.googletagmanager.com/gtag/js"></script>`
 
 	h.Render(w, tpl, evn, "layout.html", "index.html")
 }

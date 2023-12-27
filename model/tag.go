@@ -8,9 +8,9 @@ import (
 type Tag struct {
 	gorm.Model
 	ID   uint64 `gorm:"primaryKey"`
-	Name string `json:"name"`
+	Name string `json:"name" gorm:"index:idx_name,unique"`
 
-	URLName     string `json:"urlname"`
+	URLName     string `json:"urlname" gorm:"index:idx_urlname,unique"`
 	Articles    uint64 `json:"articles"`
 	About       string `json:"about"`
 	ParentID    uint64 `json:"parent_id"`
@@ -36,4 +36,8 @@ func SQLGetTagByUrlName(gormDB *gorm.DB, urlName string) (tag Tag, err error) {
 func SQLGetTagByID(gormDB *gorm.DB, id uint64) (tag Tag, err error) {
 	err = gormDB.First(&tag, id).Error
 	return
+}
+
+func (tag *Tag) CreateFlarumTag(gormDB *gorm.DB) {
+	gormDB.Create(tag)
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"zoe/model/flarum"
 	"zoe/util"
@@ -20,7 +19,7 @@ import (
 type User struct {
 	gorm.Model
 	ID       uint64 `gorm:"primaryKey"`
-	Name     string `json:"name"`
+	Name     string `json:"name" gorm:"index:idx_name,unique"`
 	Nickname string `json:"nickname"`
 	Gender   string `json:"gender"`
 	Flag     int    `json:"flag"`
@@ -91,28 +90,6 @@ func (user *User) IsValid() bool {
 	return user.ID != 0
 }
 
-// SQLUserListByFlag 从数据库中查找用户列表
-/*
- * cmd (TODO): TODO
- * tb (TODO): TODO
- * key (string): TODO
- * limit (int): TODO
- */
-func SQLUserListByFlag(sqlDB *sql.DB, cmd, tb, key string, limit int) UserPageInfo {
-	var items []User
-	// var keys [][]byte
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-
-	return UserPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
-}
-
 // SQLUserGet 获取用户
 // 当你不确定用户传来的是用户名还是用户id时, 可以调用该函数获取用户
 func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
@@ -140,77 +117,69 @@ func SQLUserGet(gormDB *gorm.DB, _userID string) (User, error) {
 	return user, err
 }
 
-func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (users []User) {
-	var err error
-	var rows *sql.Rows
-	var userListStr []string
-	logger := util.GetLogger()
-	defer rowsClose(rows)
+// func sqlGetUserByList(db *sql.DB, redisDB *redis.Client, userIDList []uint64) (users []User) {
+// 	var err error
+// 	var rows *sql.Rows
+// 	var userListStr []string
+// 	logger := util.GetLogger()
+// 	defer rowsClose(rows)
+// 	if len(userIDList) == 0 {
+// 		logger.Warning("sqlGetUserByList: Can't process the empty user list")
+// 		return
+// 	}
+// 	for _, v := range userIDList {
+// 		userListStr = append(userListStr, strconv.FormatInt(int64(v), 10))
+// 	}
+// 	qFieldList := []string{
+// 		"id", "name", "nickname", "password", "reputation",
+// 		"email", "avatar", "website",
+// 		"description", "token", "created_at",
+// 	}
+// 	sql := fmt.Sprintf("select %s from user where id in (%s)",
+// 		strings.Join(qFieldList, ","),
+// 		strings.Join(userListStr, ","))
+// 	rows, err = db.Query(sql)
+// 	if err != nil {
+// 		logger.Errorf("Query failed,err: %v", err)
+// 		return
+// 	}
+// 	for rows.Next() {
+// 		obj := User{}
+// 		err = rows.Scan(
+// 			&obj.ID,
+// 			&obj.Name,
+// 			&obj.Nickname,
+// 			&obj.Password,
+// 			&obj.Reputation,
+// 			&obj.Email,
+// 			&obj.Avatar,
+// 			&obj.URL,
+// 			&obj.About,
+// 			&obj.Token,
+// 			&obj.RegTime,
+// 		)
+// 		if err != nil {
+// 			logger.Errorf("Scan failed,err:%v", err)
+// 			continue
+// 		}
+// 		users = append(users, obj)
+// 	}
 
-	if len(userIDList) == 0 {
-		logger.Warning("sqlGetUserByList: Can't process the empty user list")
-		return
-	}
+// 	return users
+// }
 
-	for _, v := range userIDList {
-		userListStr = append(userListStr, strconv.FormatInt(int64(v), 10))
-	}
-	qFieldList := []string{
-		"id", "name", "nickname", "password", "reputation",
-		"email", "avatar", "website",
-		"description", "token", "created_at",
-	}
-	sql := fmt.Sprintf("select %s from user where id in (%s)",
-		strings.Join(qFieldList, ","),
-		strings.Join(userListStr, ","))
-
-	rows, err = db.Query(sql)
-	if err != nil {
-		logger.Errorf("Query failed,err: %v", err)
-		return
-	}
-	for rows.Next() {
-		obj := User{}
-		err = rows.Scan(
-			&obj.ID,
-			&obj.Name,
-			&obj.Nickname,
-			&obj.Password,
-			&obj.Reputation,
-			&obj.Email,
-			&obj.Avatar,
-			&obj.URL,
-			&obj.About,
-			&obj.Token,
-			&obj.RegTime,
-		)
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		users = append(users, obj)
-	}
-
-	return users
-}
-
-func (user *User) toUserListItem(db *sql.DB, redisDB *redis.Client, tz int) UserListItem {
-	item := UserListItem{
-		User: *user,
-	}
-	item.RegTimeFmt = util.TimeFmt(item.RegTime, util.TIME_FMT, tz)
-	return item
-}
+// func (user *User) toUserListItem(db *sql.DB, redisDB *redis.Client, tz int) UserListItem {
+// 	item := UserListItem{
+// 		User: *user,
+// 	}
+// 	item.RegTimeFmt = util.TimeFmt(item.RegTime, util.TIME_FMT, tz)
+// 	return item
+// }
 
 // SQLUserGetByID 获取数据库用户
 func SQLUserGetByID(gormDB *gorm.DB, uid uint64) (User, error) {
 	user := User{}
 	result := gormDB.First(&user, uid)
-	// users := sqlGetUserByList(sqlDB, nil, []uint64{uid})
-	// if len(users) == 0 {
-	// 	return obj, fmt.Errorf("Can't find user %d", uid)
-	// }
-	// return users[0], nil
 	return user, result.Error
 }
 
@@ -229,25 +198,25 @@ func SQLUserGetByEmail(gormDB *gorm.DB, email string) (User, error) {
 }
 
 // SQLUserUpdate 更新用户信息
-func (user *User) SQLUserUpdate(db *sql.DB) bool {
-	_, err := db.Exec(
-		"UPDATE `user` "+
-			"set email=?,"+
-			"description=?,"+
-			"website=?"+
-			" where id=?",
-		user.Email,
-		user.About,
-		user.URL,
-		user.ID,
-	)
-	if util.CheckError(err, "更新用户信息") {
-		return false
-	}
-	return true
-}
+// func (user *User) SQLUserUpdate(db *sql.DB) bool {
+// 	_, err := db.Exec(
+// 		"UPDATE `user` "+
+// 			"set email=?,"+
+// 			"description=?,"+
+// 			"website=?"+
+// 			" where id=?",
+// 		user.Email,
+// 		user.About,
+// 		user.URL,
+// 		user.ID,
+// 	)
+// 	if util.CheckError(err, "更新用户信息") {
+// 		return false
+// 	}
+// 	return true
+// }
 
-func SQLRegister(gormDB *gorm.DB, name, email, password string) (User, error) {
+func SQLUserRegister(gormDB *gorm.DB, name, email, password string) (User, error) {
 	user := User{
 		Name:       name,
 		Email:      email,
@@ -374,7 +343,6 @@ func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string
 
 	redisDB.HSet("avatar", user.toKey(), avatar)
 	logger.Notice("Refresh user avatar", user)
-	return
 }
 
 // GetAvatarByID 获取用户头像
@@ -419,34 +387,6 @@ func GetUserNameByID(gormDB *gorm.DB, redisDB *redis.Client, uid uint64) string 
 	return username
 }
 
-// GetPreference 获取用户定义配置
-func (user *User) GetPreferenceOld(sqlDB *sql.DB, redisDB *redis.Client) {
-	logger := util.GetLogger()
-	rows, err := sqlDB.Query(
-		"SELECT `preferences` FROM `user` WHERE id=?",
-		user.ID,
-	)
-	if err != nil {
-		logger.Error("Get preferences", err.Error())
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var data []byte
-		rows.Scan(&data)
-		// if len(data) <= 0 {
-		// 	user.Preferences = &flarum.Preferences{}
-		// 	continue
-		// }
-		err = json.Unmarshal(data, &user.Preferences)
-		// if err != nil {
-		// 	logger.Warning("Load preferences", err.Error(), data)
-		// 	user.Preferences = &flarum.Preferences{}
-		// }
-	}
-}
-
 // SetPreference 更新用户配置信息
 // 数据库中使用了blob的数据类型, 查看数据时, 需要进行转换:
 //
@@ -465,18 +405,9 @@ func (user *User) SetPreference(gormDB *gorm.DB, redisDB *redis.Client, preferen
 	}
 
 	result := gormDB.Model(user).Update("preferences", data)
-	// _, err = sqlDB.Exec(
-	// 	"UPDATE `user` "+
-	// 		"set preferences=?"+
-	// 		" where id=?",
-	// 	string(data),
-	// 	user.ID,
-	// )
-
 	if result.Error != nil {
 		logger.Error("Update user preferences error", result.Error, user.Preferences)
 	}
-	// user.GetPreference(sqlDB, redisDB)
 }
 
 // RefreshCSRF 刷新CSRF token
