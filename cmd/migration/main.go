@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"zoe/model"
 	"zoe/model/flarum"
@@ -37,6 +38,14 @@ func main() {
 		app.GormDB, app.MySQLdb, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
+
+	u, err := model.SQLUserRegister(
+		app.GormDB,
+		"corvofeng", "corvofeng@gmail.com",
+		"81dc9bdb52d04dc20036dbd8313ed055",
+	)
+	fmt.Println(u, err)
+
 	if *initDB {
 		tag := model.Tag{
 			Name:    "root",
