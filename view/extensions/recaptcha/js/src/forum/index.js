@@ -39,7 +39,7 @@ app.initializers.add('recaptcha', () => {
         app.request({
           url: app.forum.attribute('baseUrl') + '/register',
           method: 'POST',
-          data,
+          body: data,
         }).then(
           (data) => {
             if (data.retcode !== 200) {
