@@ -12,7 +12,6 @@ func TestGetExtensionMetadata(t *testing.T) {
 	if err != nil {
 		log.Println(err)
 	}
-	t.Error(path)
 	logger := util.GetLogger()
 	logger.Error(path)
 	_, _ = ReadExtensionMetadata("../../view/extensions")

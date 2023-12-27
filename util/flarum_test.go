@@ -1,11 +1,20 @@
 package util
 
 import (
+	"path"
 	"testing"
 )
 
 func TestReadLocale(t *testing.T) {
-	localeDataArr := FlarumReadLocale("../view/flarum", "../view/extensions", "../view/locale", "en")
+	flarumdir := path.Join("..", "view", "framework")
+	extdirs := []string{
+		"../view/extensions",
+		path.Join(flarumdir, "extensions"),
+	}
+	localeDataArr := FlarumReadLocale(
+		path.Join(flarumdir, "framework", "core"),
+		extdirs, "../view/locale", "en")
+
 	// fmt.Println(localeDataArr["core.forum.change_email.confirm_password_placeholder"])
 	// fmt.Println(localeDataArr["core.ref.confirm_password"])
 	// fmt.Println("page title", localeDataArr["core.lib.meta_titles.with_page_title"])
@@ -25,7 +34,15 @@ func TestReadLocale(t *testing.T) {
 }
 
 func TestReadLocaleZh(t *testing.T) {
-	localeDataArr := FlarumReadLocale("../view/flarum", "../view/extensions", "../view/locale", "zh")
+	// localeDataArr := FlarumReadLocale("../view/flarum", "../view/extensions", "../view/locale", "zh")
+	flarumdir := path.Join("..", "view", "framework")
+	extdirs := []string{
+		"../view/extensions",
+		path.Join(flarumdir, "extensions"),
+	}
+	localeDataArr := FlarumReadLocale(
+		path.Join(flarumdir, "framework", "core"),
+		extdirs, "../view/locale", "zh")
 
 	if localeDataArr["core.forum.change_email.confirm_password_placeholder"] != "确认密码" {
 		t.Errorf("Get wrong locale")
@@ -35,7 +52,7 @@ func TestReadLocaleZh(t *testing.T) {
 		t.Errorf("Get wrong locale")
 	}
 
-	if localeDataArr["core.lib.meta_titles.with_page_title"] != "{pageNumber, plural, =1 {{pageTitle} - {forumName}} other {{pageTitle}: Page # - {forumName}}}" {
-		t.Errorf("Get wrong locale")
+	if localeDataArr["core.lib.meta_titles.with_page_title"] != "{pageNumber, plural, =1 {{pageTitle}} other {{pageTitle}: 第 # 页}}" {
+		t.Errorf("Get wrong locale for: %s", localeDataArr["core.lib.meta_titles.with_page_title"])
 	}
 }
