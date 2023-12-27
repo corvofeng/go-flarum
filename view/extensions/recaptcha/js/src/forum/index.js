@@ -35,6 +35,7 @@ app.initializers.add('recaptcha', () => {
         e.preventDefault();
         this.loading = true;
         const data = this.submitData();
+        data.password = md5(data.password);
         const that = this;
         app.request({
           url: app.forum.attribute('baseUrl') + '/register',
