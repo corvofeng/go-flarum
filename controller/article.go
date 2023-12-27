@@ -23,10 +23,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
-	// _filter := r.FormValue("filter")
-	// fmt.Println(_filter)
-	// _near := r.FormValue("page[near]")
-	// fmt.Println(_near)
 	type QueryFilter struct {
 		Data struct {
 			Type       string `json:"type"`
