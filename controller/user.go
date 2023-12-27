@@ -569,7 +569,6 @@ func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
 	_uid := pat.Param(r, "uid")
 	ctx := GetRetContext(r)
 	h := ctx.h
-	redisDB := h.App.RedisDB
 	if ctx.currentUser.StrID() != _uid {
 		h.flarumErrorMsg(w, "当期仅允许修改自己的配置")
 		return
@@ -591,7 +590,7 @@ func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx.currentUser.SetPreference(
-		h.App.GormDB, redisDB,
+		h.App.GormDB,
 		userUpdateInfo.Data.Attributes.Preferences,
 	)
 	coreData := flarum.NewCoreData()
