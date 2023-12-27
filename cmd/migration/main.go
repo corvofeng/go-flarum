@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/corvofeng/go-flarum/model"
@@ -39,13 +38,6 @@ func main() {
 		app.GormDB, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
-
-	u, err := model.SQLUserRegister(
-		app.GormDB,
-		"corvofeng", "corvofeng@gmail.com",
-		"NoPassWord",
-	)
-	fmt.Println(u, err)
 
 	if *initDB {
 		tag := model.Tag{
