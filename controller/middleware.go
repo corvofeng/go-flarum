@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"zoe/model/flarum"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/model/flarum"
+	"github.com/corvofeng/go-flarum/util"
 )
 
 // 与中间件相关的函数

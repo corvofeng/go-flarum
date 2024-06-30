@@ -11,7 +11,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     env:
-      GO_MOD_NAME: zoe
+      GO_MOD_NAME: go-flarum
 
     steps:
       -
@@ -26,8 +26,8 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            corvofeng/zoe
-            ghcr.io/corvofeng/zoe
+            corvofeng/go-flarum
+            ghcr.io/corvofeng/go-flarum
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
@@ -72,5 +72,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           # tags: |
-          #   corvofeng/zoe:latest
-          #   ghcr.io/corvofeng/zoe:latest
+          #   corvofeng/go-flarum:latest
+          #   ghcr.io/corvofeng/go-flarum:latest

@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-redis/redis/v7"
 
-	"zoe/model"
-	"zoe/system"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/system"
 
 	logging "github.com/op/go-logging"
 )

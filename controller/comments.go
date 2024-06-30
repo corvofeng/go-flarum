@@ -8,9 +8,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"zoe/model"
-	"zoe/model/flarum"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/model/flarum"
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/go-redis/redis/v7"
 	"goji.io/pat"

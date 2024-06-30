@@ -4,18 +4,18 @@ services:
   app:
     ports:
       - "10004:8082"
-    image: zoe:dev
+    image: go-flarum:dev
     environment:
       type: "web"
     deploy:
       replicas: 3
     volumes:
-      - ./static:/home/zoe/static
-      - ./config/config.yaml-docker:/home/zoe/config.yml
+      - ./static:/home/go-flarum/static
+      - ./config/config.yaml-docker:/home/go-flarum/config.yml
   cron:
-    image: zoe:dev
+    image: go-flarum:dev
     environment:
       type: "cron"
     volumes:
-      - ./static:/home/zoe/static
-      - ./config/config.yaml-docker:/home/zoe/config.yml
+      - ./static:/home/go-flarum/static
+      - ./config/config.yaml-docker:/home/go-flarum/config.yml

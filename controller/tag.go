@@ -3,8 +3,9 @@ package controller
 import (
 	"database/sql"
 	"net/http"
-	"zoe/model"
-	"zoe/model/flarum"
+
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/model/flarum"
 
 	"github.com/go-redis/redis/v7"
 	"gorm.io/gorm"

@@ -2,8 +2,9 @@ package model
 
 import (
 	"encoding/json"
-	"zoe/model/flarum"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/model/flarum"
+	"github.com/corvofeng/go-flarum/util"
 )
 
 // FlarumCreateForumInfo 从SiteInfo创建ForumInfo

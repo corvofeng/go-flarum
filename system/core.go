@@ -10,8 +10,8 @@ import (
 
 	"database/sql"
 
-	"zoe/model"
-	"zoe/util"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/gorilla/securecookie"
 	logging "github.com/op/go-logging"

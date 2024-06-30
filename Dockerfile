@@ -2,7 +2,7 @@
 FROM node:14.16.0-alpine3.12 as build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
-WORKDIR /home/zoe
+WORKDIR /home/go-flarum
 COPY package.json *.lock ./
 
 # 只安装dependencies依赖
@@ -23,7 +23,7 @@ RUN yarn build
 # Golang编译阶段
 FROM golang:1.20.5-alpine3.18 as build-backend
 # All these steps will be cached
-WORKDIR /home/zoe
+WORKDIR /home/go-flarum
 
 # ## BOF CLEAN
 # # 国内用户可能需要设置 go proxy
@@ -45,11 +45,11 @@ COPY . .
 RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 	-a -installsuffix cgo \
 	-ldflags "-X main.GitCommit=$GIT_COMMIT" \
-	-o zoe ./cmd/server/main.go 
+	-o go-flarum ./cmd/server/main.go 
 
 # 构建最终镜像
 FROM alpine:3.7
-WORKDIR /home/zoe
+WORKDIR /home/go-flarum
 
 ## BOF CLEAN
 # 下面的内容仅在本地调试时使用，线上构建时会将其删除
@@ -59,10 +59,10 @@ WORKDIR /home/zoe
 
 COPY ./view view
 RUN rm -rf view/extensions view/flarum
-COPY --from=build-static /home/zoe/static webpack/static
+COPY --from=build-static /home/go-flarum/static webpack/static
 # COPY ./config/config.yaml $WORKDIR/config.yml
-COPY --from=build-backend /home/zoe/zoe zoe
-# COPY zoe zoe
+COPY --from=build-backend /home/go-flarum/go-flarum go-flarum
+# COPY go-flarum go-flarum
 
 EXPOSE 8082
-CMD ["/home/zoe/zoe", "-config", "/home/zoe/config.yml"]
+CMD ["/home/go-flarum/go-flarum", "-config", "/home/go-flarum/config.yml"]

@@ -4,10 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"zoe/model"
-	"zoe/model/flarum"
-	"zoe/system"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/model/flarum"
+	"github.com/corvofeng/go-flarum/system"
+	"github.com/corvofeng/go-flarum/util"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"strconv"
 
-	"zoe/util"
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/go-redis/redis/v7"
 	"gorm.io/gorm"

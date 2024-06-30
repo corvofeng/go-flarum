@@ -4,7 +4,8 @@ import (
 	"log"
 	"os"
 	"testing"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/util"
 )
 
 func TestGetExtensionMetadata(t *testing.T) {
