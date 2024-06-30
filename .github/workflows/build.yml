@@ -59,7 +59,7 @@ jobs:
 
       - name: Prepare the cache
         run: |
-          docker pull ghcr.io/corvofeng/go-flarum:sha-5d90042
+          docker pull ghcr.io/corvofeng/go-flarum:main
 
       - name: Delete logs
         run: |
