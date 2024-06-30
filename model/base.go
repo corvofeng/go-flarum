@@ -14,35 +14,6 @@ type ISQLLoader interface {
 	LoadDictData(map[string]interface{})
 }
 
-// executeQuery 执行SQL语句, 以dictCursor的形式返回数据
-/*
- * 使用时要注意:
- *   1. 一次取特别多数据会很影响性能, 并且会占用较多的空间
- *   2. 此函数只能用于查询语句
- */
-// func executeQuery(query string, args ...interface{}) []map[string]interface{} {
-// 	var err error
-// 	var rows *sql.Rows
-// 	var dictData []map[string]interface{}
-
-// 	rows, err = db.Query(query, args...)
-// 	defer func() {
-// 		if rows != nil {
-// 			rows.Close() // 未scan, 连接会一直占用, 需要关闭
-// 		}
-// 	}()
-
-// 	if util.CheckError(err, fmt.Sprintf("Query (%s) %+v failed", query, args)) {
-// 		return dictData
-// 	}
-
-// 	dictData, err = dataGetByRows(rows)
-// 	if err != nil {
-// 		return dictData
-// 	}
-// 	return dictData
-// }
-
 // rowsClose scan没有结束或是没有进行scan操作时, 需要手动释放连接
 func rowsClose(rows *sql.Rows) {
 	if rows != nil {
