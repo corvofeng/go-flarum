@@ -75,6 +75,7 @@ type SiteConf struct {
 	UploadSuffix      string
 	UploadImgOnly     bool
 	UploadImgResize   bool
+	AllowSignup       bool
 	UploadMaxSize     int
 	UploadMaxSizeByte int64
 

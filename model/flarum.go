@@ -31,7 +31,7 @@ func FlarumCreateForumInfo(
 	// data.BasePath = "http://192.168.101.35:8082"
 	data.BaseURL = mainConf.BaseURL
 	data.CanStartDiscussion = true
-	data.AllowSignUp = true
+	data.AllowSignUp = siteConf.AllowSignup
 	data.ShowLanguageSelector = true
 	data.WelcomeMessage = siteConf.WelcomeMessage
 	data.WelcomeTitle = siteConf.WelcomeTitle
