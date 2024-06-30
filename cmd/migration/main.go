@@ -43,7 +43,7 @@ func main() {
 	u, err := model.SQLUserRegister(
 		app.GormDB,
 		"corvofeng", "corvofeng@gmail.com",
-		"81dc9bdb52d04dc20036dbd8313ed055",
+		"NoPassWord",
 	)
 	fmt.Println(u, err)
 
