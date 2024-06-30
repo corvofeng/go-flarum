@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/corvofeng/go-flarum/model"
 	"github.com/corvofeng/go-flarum/model/flarum"
@@ -136,17 +135,12 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	now := uint64(time.Now().UTC().Unix())
 	aobj := model.Topic{
 		UserID:       ctx.currentUser.ID,
 		Title:        diss.Data.Attributes.Title,
 		Content:      diss.Data.Attributes.Content,
 		CommentCount: 1,
-		AddTime:      now,
-		EditTime:     now,
 		ClientIP:     ctx.realIP,
-		// Active:        1, // 帖子为激活状态
-		// FatherTopicID: 0, // 没有原始主题
 	}
 	tagsArray := flarum.RelationArray{}
 	for _, rela := range diss.Data.Relationships.Tags.Data {
