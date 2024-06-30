@@ -37,7 +37,7 @@ export default class SelfCaptcha extends Component {
 
   getUrl(cid) {
     if (cid === "") return "";
-    return `/captcha/${cid}.png`
+    return `/static/captcha/${cid}.png`
   }
   setCaptchaID(cid) {
     this.captchaId = cid;

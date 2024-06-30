@@ -19,8 +19,6 @@ import (
 	"github.com/corvofeng/go-flarum/system"
 	"github.com/corvofeng/go-flarum/util"
 
-	ct "github.com/corvofeng/go-flarum/controller"
-
 	_ "github.com/go-sql-driver/mysql"
 	goji "goji.io"
 	"goji.io/pat"
@@ -63,40 +61,15 @@ func main() {
 	root := goji.NewMux()
 
 	mcf := app.Cf.Main
-
-	// static file server
-	staticPath := mcf.PubDir
-	if len(staticPath) == 0 {
-		staticPath = "static"
-	}
-
-	h := ct.BaseHandler{App: app}
-	root.Handle(pat.New("/static/*"),
-		h.OriginMiddleware(
-			http.StripPrefix("/static/", http.FileServer(http.Dir(staticPath))),
-		),
-	)
-
-	root.Handle(pat.New("/webpack/*"),
-		h.OriginMiddleware(
-			http.StripPrefix("/webpack/", http.FileServer(http.Dir(mcf.WebpackDir))),
-		),
-	)
-
 	root.Handle(pat.New("/*"), router.NewRouter(app))
-
-	// normal http
-	// http.ListenAndServe(listenAddr, root)
 
 	// graceful
 	// subscribe to SIGINT signals
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
-	var srv *http.Server
-
 	// http
-	srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
+	srv := &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
 	// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
 	go func() {
 		log.Fatal(srv.ListenAndServe())

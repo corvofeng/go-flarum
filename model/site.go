@@ -25,7 +25,7 @@ type MainConf struct {
 	MongoURL string
 	RedisURL string
 
-	PubDir         string
+	StaticDir      string
 	WebpackDir     string
 	LocaleDir      string
 	ExtensionsDir  string

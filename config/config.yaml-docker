@@ -6,7 +6,7 @@ Main:
     MySQLURL: "root:password@tcp(mysql-db:3306)/flarum?charset=utf8mb4&parseTime=True"
     MongoURL: "mongodb://172.17.0.1"
     RedisURL: "redis://:@redis-db:6379"
-    PubDir: "static"
+    StaticDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
     Youdb: "mydata.db"

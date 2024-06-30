@@ -16,6 +16,19 @@ func NewRouter(app *system.Application) *goji.Mux {
 	sp := goji.SubMux()
 	sp.Use(ct.TrackerMiddleware)
 
+	mcf := app.Cf.Main
+	h := ct.BaseHandler{App: app}
+	sp.Handle(pat.New("/static/*"),
+		h.OriginMiddleware(
+			http.StripPrefix("/static/", http.FileServer(http.Dir(mcf.StaticDir))),
+		),
+	)
+	sp.Handle(pat.New("/webpack/*"),
+		h.OriginMiddleware(
+			http.StripPrefix("/webpack/", http.FileServer(http.Dir(mcf.WebpackDir))),
+		),
+	)
+
 	NewFlarumRouter(app, sp)
 	return sp
 }
@@ -23,7 +36,7 @@ func NewRouter(app *system.Application) *goji.Mux {
 func NewFlarumAdminRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	app.Logger.Notice("Init flarum admin router")
 
-	// https://flarum.yjzq.fun/admin#/basics
+	// https://flarum.corvo.fun/admin#/basics
 	// 管理员页面使用的是不同的路由导向的, 在goji中, 它们都会到/admin这个路径
 	sp.HandleFunc(pat.Get(model.FlarumAdminPath), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
@@ -37,7 +50,7 @@ func NewFlarumAdminRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	extAPISP := goji.SubMux()
 	sp.Handle(pat.New(model.FlarumExtensionAPI+"/*"), extAPISP)
 	// 修改扩展的配置调用类似如下的api
-	// https://flarum.yjzq.fun/api/extensions/flarum-mentions
+	// https://flarum.corvo.fun/api/extensions/flarum-mentions
 
 	// adminSP.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
 	// 	[]ct.HTTPMiddleWareFunc{
@@ -82,9 +95,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	// 语言包支持
 	sp.HandleFunc(pat.Get("/locale/:locale/flarum-lang.js"), h.GetLocaleData)
 	sp.HandleFunc(pat.Get("/locale/:locale/admin-lang.js"), h.GetLocaleData)
-
-	fs := http.FileServer(http.Dir("static/captcha"))
-	sp.Handle(pat.Get("/captcha/*"), http.StripPrefix("/captcha/", fs))
 
 	sp.HandleFunc(pat.Get("/auth/github"), ct.GithubOauthHandler)
 	sp.HandleFunc(pat.Get("/auth/github/callback"), ct.GithubOauthCallbackHandler)

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/corvofeng/go-flarum/util"
@@ -24,9 +25,9 @@ func SetCaptchaUseRedisStore(redisDB *redis.Client) {
 }
 
 // NewCaptcha 产生新的验证码图片
-func NewCaptcha() string {
+func NewCaptcha(path string) string {
 	captchaID := captcha.New()
-	SaveImage(captchaID)
+	SaveImage(path, captchaID)
 	return captchaID
 }
 
@@ -53,9 +54,14 @@ func (rs *redisStore) Get(id string, clear bool) (digits []byte) {
 }
 
 // SaveImage to static dir
-func SaveImage(id string) {
-	savePath := fmt.Sprintf("static/captcha/%s.png", id)
+func SaveImage(path, id string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModePerm)
+	}
+	savePath := filepath.Join(path, fmt.Sprintf("%s.png", id))
+
 	f, err := os.Create(savePath)
+
 	if util.CheckError(err, "保存验证码") {
 		return
 	}

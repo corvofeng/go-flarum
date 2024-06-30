@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/corvofeng/go-flarum/model"
@@ -41,7 +42,7 @@ func (h *BaseHandler) UserLogin(w http.ResponseWriter, r *http.Request) {
 	evn.PageName = "user_login_register"
 
 	evn.Act = act
-	evn.CaptchaID = model.NewCaptcha()
+	evn.CaptchaID = model.NewCaptcha(filepath.Join(h.App.Cf.Main.StaticDir, "captcha"))
 
 	token := h.GetCookie(r, "token")
 	if len(token) == 0 {
@@ -63,7 +64,7 @@ func NewCaptcha(w http.ResponseWriter, r *http.Request) {
 	}
 	respCaptcha := captchaData{
 		response{200, "success"},
-		model.NewCaptcha(),
+		model.NewCaptcha(filepath.Join(h.App.Cf.Main.StaticDir, "captcha")),
 	}
 	h.jsonify(w, respCaptcha)
 }
@@ -104,7 +105,7 @@ func FlarumUserRegister(w http.ResponseWriter, r *http.Request) {
 	if !captcha.VerifyString(rec.CaptchaID, rec.CaptchaSolution) {
 		respCaptcha = captchaData{
 			response{405, "验证码错误"},
-			model.NewCaptcha(),
+			model.NewCaptcha(filepath.Join(h.App.Cf.Main.StaticDir, "captcha")),
 		}
 		h.jsonify(w, respCaptcha)
 		return

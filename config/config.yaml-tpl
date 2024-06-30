@@ -6,7 +6,7 @@ Main:
     MySQLURL: "root:password@tcp(127.0.0.1:3306)/db?charset=utf8mb4&parseTime=True"
     MongoURL: "mongodb://localhost"
     RedisURL: "redis://:@localhost:6379"
-    PubDir: "static"
+    StaticDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
     LocaleDir: "view/locale"
