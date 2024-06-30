@@ -34,9 +34,6 @@ Site:
     TimeZone: 8
     AllowSignup: false
     HomeShowNum: 20
-    PageShowNum: 20
-    TagShowNum: 20
-    CategoryShowNum: 20
     TitleMaxLen: 180
     ContentMaxLen: 9000
     PostInterval: 60

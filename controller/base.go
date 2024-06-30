@@ -181,7 +181,7 @@ func (h *BaseHandler) safeGetParm(r *http.Request, parm string) (data string, er
 	defer func() {
 		if r := recover(); r != nil {
 			data = ""
-			err = errors.New("Can't get parm")
+			err = errors.New("can't get parm")
 		}
 	}()
 	data = pat.Param(r, parm)

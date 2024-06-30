@@ -178,7 +178,8 @@ func (article *Topic) GetWeight(redisDB *redis.Client) float64 {
 // 帖子中, category和tag是不同的数据
 // category是帖子比较大的分类, 每个帖子只能有一个
 // tag只是这个帖子具有的某种特征, 每个帖子可以有多个tag
-func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
+func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB) (bool, error) {
+	// func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
 	logger := util.GetLogger()
 	tx := gormDB.Begin()
 	defer clearGormTransaction(tx)
@@ -207,10 +208,6 @@ func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray
 	topic.LastPostID = comment.ID
 	topic.FirstPostID = comment.ID
 
-	for _, tid := range tags.Data {
-		fmt.Println(tid)
-	}
-
 	tx.Save(&topic)
 
 	result = tx.Commit()
@@ -219,24 +216,6 @@ func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray
 		return false, result.Error
 	}
 
-	return true, nil
-}
-
-// updateFlarumTag 更新评论信息
-func (article *Topic) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bool, error) {
-	for _, rela := range tags.Data {
-		_, err := tx.Exec(
-			("INSERT INTO `topic_tag` " +
-				" (`topic_id`, `tag_id`)" +
-				" VALUES " +
-				" (?, ?)"),
-			article.ID,
-			rela.ID,
-		)
-		if util.CheckError(err, "更新帖子") {
-			return false, err
-		}
-	}
 	return true, nil
 }
 

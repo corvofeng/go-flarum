@@ -53,15 +53,11 @@ type SiteConf struct {
 	AdminEmail string
 	MainDomain string // 上传图片后添加网址前缀, eg: http://domian.com 、http://234.21.35.89:8082
 
-	// PageLimit  uint64 // 每页显示的文章数量
 	CDNBaseURL string // 静态文件cdn地址
 
 	MainNodeIDs       string
 	TimeZone          int
 	HomeShowNum       int
-	PageLimit         int
-	TagShowNum        int
-	CategoryShowNum   int
 	TitleMaxLen       int
 	ContentMaxLen     int
 	PostInterval      int
@@ -81,6 +77,7 @@ type SiteConf struct {
 
 	WelcomeMessage string
 	WelcomeTitle   string
+
 	// Google tracking code id
 	TrackingCodeID string
 

@@ -87,12 +87,13 @@ func FlarumTagAll(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorMsg(w, "查询标签信息错误:"+err.Error())
 	}
 
+	logger.Info(h.safeGetParm(r, "tag"))
+
 	// 如果是API直接进行返回
 	if inAPI {
 		h.jsonify(w, coreData.APIDocument)
 		return
 	}
-	logger.Info(h.safeGetParm(r, "tag"))
 
 	tpl := h.CurrentTpl(r)
 	evn := InitPageData(r)

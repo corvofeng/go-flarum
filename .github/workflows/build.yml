@@ -57,6 +57,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare the cache
+        run: |
+          docker pull ghcr.io/corvofeng/go-flarum:sha-5d90042
+
       - name: Delete logs
         run: |
           sed -i '/## BOF CLEAN/,/## EOF CLEAN/d' Dockerfile  # 删除调试代码

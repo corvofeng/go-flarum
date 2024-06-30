@@ -76,6 +76,7 @@ func createFlarumPageAPIDoc(
 	}
 
 	categories, err := model.SQLGetTags(gormDB)
+	logger.Debugf("Get topics %+v", topics)
 
 	// 添加所有分类的信息
 	var flarumTags []flarum.Resource
@@ -150,7 +151,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	gormDB := h.App.GormDB
 	logger := ctx.GetLogger()
-	page := uint64(1)
+	page := uint64(0)
 
 	tpl := h.CurrentTpl(r)
 
@@ -219,9 +220,15 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	// 当前的过滤方式 filter[tag]:  tag:r_funny
 	_tag_filter := r.FormValue("filter[tag]")
 	_author_filter := r.FormValue("filter[author]")
+	if _tag_filter == "" {
+		_tag_filter, _ = h.safeGetParm(r, "tag")
+	}
 
 	// 当前的偏移数目, 可得到页码数目, 页码从1开始
 	_offset := r.FormValue("page[offset]")
+	if _offset == "" {
+		_offset = "0"
+	}
 	pageOffset, err := strconv.ParseUint(_offset, 10, 64)
 	if err != nil {
 		logger.Error("Parse offset err:", err)
@@ -229,17 +236,17 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Debugf("Get _filter: `%s`, page: `%d`", _tag_filter, pageOffset)
+	pageLimit := uint64(h.App.Cf.Site.HomeShowNum)
 
 	if _tag_filter == "" {
 		df := dissFilter{
 			FT:         eCategory,
 			PageOffset: pageOffset,
-			pageLimit:  uint64(h.App.Cf.Site.PageLimit),
+			pageLimit:  pageLimit,
 			CID:        0,
 		}
 		coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	} else {
-		// data := strings.Trim(_filter, " ")
 		if _tag_filter != "" {
 			cate, err := model.SQLGetTagByUrlName(gormDB, _tag_filter)
 			if err != nil {
@@ -250,27 +257,13 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				FT:         eCategory,
 				PageOffset: pageOffset,
 				CID:        cate.ID,
-				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
+				pageLimit:  pageLimit,
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
 			}
-			// } else if strings.HasPrefix(data, "author:") {
-			// 	user, err := model.SQLUserGetByName(h.App.GormDB, data[7:])
-			// 	if err != nil {
-			// 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create user"+err.Error()))
-			// 		return
-			// 	}
-			// 	df := dissFilter{
-			// 		FT:    eUserPost,
-			// 		Page:  page,
-			// 		UID:   user.ID,
-			// 		Limit: pageLimit,
-			// 	}
-			// 	coreData, err = createFlarumPageAPIDoc(ctx,    redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
-
 		} else if _author_filter != "" {
 			user, err := model.SQLUserGetByName(h.App.GormDB, _author_filter)
 			if err != nil {
@@ -281,7 +274,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				FT:         eUserPost,
 				PageOffset: pageOffset,
 				UID:        user.ID,
-				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
+				pageLimit:  pageLimit,
 			}
 			coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 			if err != nil {

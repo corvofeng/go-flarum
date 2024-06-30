@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/corvofeng/go-flarum/model"
-	"github.com/corvofeng/go-flarum/model/flarum"
 	"github.com/corvofeng/go-flarum/system"
 	"github.com/corvofeng/go-flarum/util"
 )
@@ -52,22 +51,14 @@ func main() {
 			return
 		}
 
-		topic := model.Topic{
-			Title:  "test",
-			UserID: u.ID,
-		}
-
 		tags, _ := model.SQLGetTags(app.GormDB)
-		tagsArray := flarum.RelationArray{}
-		for _, tag := range tags {
-			tagID := tag.ID
-			tagsArray.Data = append(
-				tagsArray.Data,
-				flarum.InitBaseResources(uint64(tagID), "tags"),
-			)
+		topic := model.Topic{
+			Title:   "test",
+			UserID:  u.ID,
+			Content: "This is a test topic",
+			Tags:    tags,
 		}
-
-		topic.CreateFlarumTopic(app.GormDB, tagsArray)
+		topic.CreateFlarumTopic(app.GormDB)
 	}
 
 	logger.Info("Migrate the db")

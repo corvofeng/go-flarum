@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/corvofeng/go-flarum/model"
-	"github.com/corvofeng/go-flarum/model/flarum"
 
 	"goji.io/pat"
 )
@@ -142,15 +141,6 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		CommentCount: 1,
 		ClientIP:     ctx.realIP,
 	}
-	tagsArray := flarum.RelationArray{}
-	for _, rela := range diss.Data.Relationships.Tags.Data {
-		tagID, err := strconv.Atoi(rela.ID)
-		if err != nil {
-			logger.Warning("Get wrong tag id", rela.ID)
-			continue
-		}
-		tagsArray.Data = append(tagsArray.Data, flarum.InitBaseResources(uint64(tagID), rela.Type))
-	}
 
 	for _, rela := range diss.Data.Relationships.Tags.Data {
 		var tag model.Tag
@@ -162,7 +152,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		aobj.Tags = append(aobj.Tags, tag)
 	}
 
-	_, err = aobj.CreateFlarumTopic(gormDB, tagsArray)
+	_, err = aobj.CreateFlarumTopic(gormDB)
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
