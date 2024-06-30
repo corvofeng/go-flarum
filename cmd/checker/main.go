@@ -22,7 +22,7 @@ func main() {
 
 	app.Init(c, os.Args[0])
 	defer app.Close()
-	model.RankMapInit(app.GormDB, app.MySQLdb, app.RedisDB)
+	model.RankMapInit(app.GormDB,    , app.RedisDB)
 	// app.GormDB.AutoMigrate(flarum.Preferences{})
 
 	// app.GormDB.AutoMigrate(model.User{})
@@ -30,7 +30,7 @@ func main() {
 	// app.GormDB.AutoMigrate(model.ArticleBase{})
 
 	pageInfo := model.SQLTopicGetByTag(
-		app.GormDB, app.MySQLdb, app.RedisDB, 0, 1, 10,
+		app.GormDB,    , app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
 	logger.Info(pageInfo)

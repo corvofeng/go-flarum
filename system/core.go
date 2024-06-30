@@ -113,7 +113,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		return
 	}
 
-	app.MySQLdb = sqlDb
 	app.RedisDB = rdsClient
 	app.GormDB, err = gorm.Open(mysql.New(mysql.Config{
 		Conn: sqlDb,
@@ -136,10 +135,6 @@ func (app *Application) CanServeAdmin() bool {
 
 // Close 清理程序连接
 func (app *Application) Close() {
-	if app.MySQLdb != nil {
-		app.MySQLdb.Close()
-		app.MySQLdb = nil
-	}
 	if app.RedisDB != nil {
 		app.RedisDB.Close()
 		app.RedisDB = nil

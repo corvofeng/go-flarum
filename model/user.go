@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -185,16 +184,6 @@ func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 	user.SetPreference(gormDB, DefaultPreference)
 }
 
-// UpdateField 用户更新数据
-func (user *User) UpdateField(sqlDB *sql.DB, field string, value string) {
-	_, err := sqlDB.Exec(
-		fmt.Sprintf("UPDATE `user` set %s=? where id=?", field),
-		value,
-		user.ID,
-	)
-	util.CheckError(err, fmt.Sprintf("更新用户信息%d (%s:%s)", user.ID, field, value))
-}
-
 // SQLGithubRegister github用户注册
 func SQLGithubRegister(gormDB *gorm.DB, gu *github.User) (User, error) {
 	user := User{
@@ -263,22 +252,20 @@ func (user *User) CanEdit(aobjBase *Topic) bool {
 }
 
 // SaveAvatar 更新用户头像
-func (user *User) SaveAvatar(sqlDB *sql.DB, redisDB *redis.Client, avatar string) {
-	logger := util.GetLogger()
+// func (user *User) SaveAvatar(redisDB *redis.Client, avatar string) {
+// 	logger := util.GetLogger()
 
-	if user == nil {
-		return
-	}
-
-	_, err := sqlDB.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.ID)
-	if err != nil {
-		logger.Error("Set ", user, " avatar ", avatar, " failed!!")
-		return
-	}
-
-	redisDB.HSet("avatar", user.toKey(), avatar)
-	logger.Notice("Refresh user avatar", user)
-}
+// 	if user == nil {
+// 		return
+// 	}
+// 	_, err := sqlDB.Exec("UPDATE user SET avatar = ? WHERE id = ?", avatar, user.ID)
+// 	if err != nil {
+// 		logger.Error("Set ", user, " avatar ", avatar, " failed!!")
+// 		return
+// 	}
+// 	redisDB.HSet("avatar", user.toKey(), avatar)
+// 	logger.Notice("Refresh user avatar", user)
+// }
 
 // GetAvatarByID 获取用户头像
 func GetAvatarByID(gormDB *gorm.DB, redisDB *redis.Client, uid uint64) string {

@@ -19,7 +19,6 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	inAPI := ctx.inAPI
 	scf := h.App.Cf.Site
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
@@ -55,7 +54,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	// 	}
 	// }
 
-	article, err := model.SQLArticleGetByID(h.App.GormDB, sqlDB, redisDB, aid)
+	article, err := model.SQLArticleGetByID(h.App.GormDB, redisDB, aid)
 	if err != nil {
 		logger.Error("Can't get discussion id for ", aid)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_aid+err.Error()))
@@ -80,7 +79,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	coreData, err := createFlarumReplyAPIDoc(
-		ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+		ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
@@ -104,7 +103,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	sqlDB := h.App.MySQLdb
+
 	gormDB := h.App.GormDB
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
@@ -180,7 +179,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		FT:  eArticle,
 		AID: aobj.ID,
 	}
-	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))

@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
 	"html/template"
 	"strconv"
 
@@ -118,7 +117,7 @@ func (cb *Reply) getUserLikes(gormDB *gorm.DB, redisDB *redis.Client) (likes []u
 	return
 }
 
-func (cb *Reply) getUserComments(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client) (comments []uint64) {
+func (cb *Reply) getUserComments(gormDB *gorm.DB, redisDB *redis.Client) (comments []uint64) {
 	rows, _ := gormDB.Model(&Reply{}).Where("user_id = ?", cb.UID).Rows()
 	defer rows.Close()
 	for rows.Next() {
@@ -129,14 +128,14 @@ func (cb *Reply) getUserComments(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Cli
 	return
 }
 
-func (comment *Comment) toCommentListItem(db *sql.DB, redisDB *redis.Client, tz int) CommentListItem {
+func (comment *Comment) toCommentListItem(redisDB *redis.Client, tz int) CommentListItem {
 	item := CommentListItem{
 		Comment: *comment,
 	}
 	return item
 }
 
-func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
+func sqlCommentListByTopicID(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var rows *sql.Rows
 	defer rowsClose(rows)
 
@@ -148,7 +147,7 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client,
 	return
 }
 
-func sqlCommentListByUserID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
+func sqlCommentListByUserID(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var baseComments []Reply
 	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
 
@@ -172,7 +171,7 @@ func SQLCommentByID(gormDB *gorm.DB, redisDB *redis.Client, cid uint64, tz int) 
 }
 
 // SQLCommentListByCID 获取某条评论
-func SQLCommentListByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByCID(gormDB *gorm.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -183,7 +182,7 @@ func SQLCommentListByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, com
 	if err != nil {
 		logger.Errorf("Query comments failed for cid(%d)", commentID)
 	}
-	items = append(items, comment.toCommentListItem(db, redisDB, tz))
+	items = append(items, comment.toCommentListItem(redisDB, tz))
 
 	return CommentPageInfo{
 		Items:    items,
@@ -195,7 +194,7 @@ func SQLCommentListByCID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, com
 }
 
 // SQLCommentListByList 获取某条评论
-func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
+func SQLCommentListByList(gormDB *gorm.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
@@ -203,7 +202,7 @@ func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, co
 	baseComments := sqlGetRepliesBaseByList(gormDB, redisDB, commentList)
 	for _, bc := range baseComments {
 		c := bc.toComment(gormDB, redisDB, tz)
-		items = append(items, c.toCommentListItem(db, redisDB, tz))
+		items = append(items, c.toCommentListItem(redisDB, tz))
 	}
 
 	return CommentPageInfo{
@@ -216,19 +215,19 @@ func SQLCommentListByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, co
 }
 
 // SQLCommentListByTopic 获取帖子的所有评论
-func SQLCommentListByTopic(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByTopic(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comments, err := sqlCommentListByTopicID(gormDB, db, redisDB, topicID, limit, tz)
+	comments, err := sqlCommentListByTopicID(gormDB, redisDB, topicID, limit, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for %d", topicID)
 	}
 	for _, c := range comments {
-		items = append(items, c.toCommentListItem(db, redisDB, tz))
+		items = append(items, c.toCommentListItem(redisDB, tz))
 	}
 
 	return CommentPageInfo{
@@ -241,97 +240,19 @@ func SQLCommentListByTopic(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, t
 }
 
 // SQLCommentListByUser 获取某个用户的帖子信息
-func SQLCommentListByUser(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
+func SQLCommentListByUser(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
 	var items []CommentListItem
 	var hasPrev, hasNext bool
 	var firstKey, lastKey uint64
 	var err error
 	logger := util.GetLogger()
 
-	comments, err := sqlCommentListByUserID(gormDB, db, redisDB, userID, limit, tz)
+	comments, err := sqlCommentListByUserID(gormDB, redisDB, userID, limit, tz)
 	if err != nil {
 		logger.Errorf("Query comments failed for user %d", userID)
 	}
 	for _, c := range comments {
-		items = append(items, c.toCommentListItem(db, redisDB, tz))
-	}
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
-}
-
-// SQLCommentList 获取在数据库中存储的评论
-// TODO: deprecated
-func SQLCommentList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, topicID, start uint64, btnAct string, limit, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-	var rows *sql.Rows
-	var err error
-	logger := util.GetLogger()
-	if btnAct == "" || btnAct == "next" {
-		rows, err = db.Query(
-			("SELECT id, user_id, topic_id, content, created_at " +
-				" FROM  reply WHERE topic_id = ? And id > ?" +
-				" ORDER BY id limit ?"),
-			topicID,
-			start,
-			limit,
-		)
-	} else if btnAct == "prev" {
-		rows, err = db.Query(
-			("SELECT id, user_id, topic_id, content, created_at " +
-				" FROM  reply WHERE topic_id = ? And id <= ?" +
-				" ORDER BY id limit ?"),
-			topicID,
-			start,
-			limit,
-		)
-	} else {
-		logger.Error("Get wrond btn", btnAct)
-	}
-	defer func() {
-		if rows != nil {
-			rows.Close() //可以关闭掉未scan连接一直占用
-		}
-	}()
-	for rows.Next() {
-		item := CommentListItem{}
-		err = rows.Scan(&item.ID, &item.UID, &item.AID, &item.Content, &item.AddTime)
-		item.Avatar = GetAvatarByID(gormDB, redisDB, item.UID)
-		item.UserName = GetUserNameByID(gormDB, redisDB, item.UID)
-
-		if err != nil {
-			fmt.Printf("Scan failed,err:%v", err)
-			continue
-		}
-
-		item.AddTimeFmt = util.TimeFmt(item.AddTime, "2006-01-02 15:04", tz)
-
-		// 预防XSS漏洞
-		item.ContentFmt = template.HTML(
-			ContentFmt(item.Content))
-
-		items = append(items, item)
-	}
-
-	if len(items) > 0 {
-		firstKey = items[0].ID
-		lastKey = items[len(items)-1].ID
-		hasNext = true
-		hasPrev = true
-	}
-
-	if start < uint64(limit) {
-		hasPrev = false
-	}
-	if len(items) < limit {
-		hasNext = false
+		items = append(items, c.toCommentListItem(redisDB, tz))
 	}
 
 	return CommentPageInfo{
@@ -381,32 +302,6 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	if result.Error != nil {
 		logger.Error("Create reply with error", result.Error)
 		return false, result.Error
-	}
-
-	return true, nil
-}
-
-// UpdateFlarumComment 创建用户编辑评论
-func (comment *Comment) UpdateFlarumComment(db *sql.DB, newContent string, uID uint64) (bool, error) {
-	tx, err := db.Begin()
-	logger := util.GetLogger()
-	defer clearTransaction(tx)
-	if err != nil {
-		return false, err
-	}
-	db.Query("SELECT * FROM reply WHERE id=? FOR UPDATE", comment.ID)
-	if ok, err := comment.sqlCreateHistory(tx, newContent, uID); !ok {
-		return false, err
-	}
-
-	if ok, err := comment.sqlUpdateComment(tx, newContent); !ok {
-		return false, err
-	}
-
-	logger.Debugf("Update comment content %d success", comment.ID)
-	if err := tx.Commit(); err != nil {
-		logger.Error("Create reply with error", err)
-		return false, err
 	}
 
 	return true, nil

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -201,7 +200,7 @@ func userLogout(user model.User, h *BaseHandler, w http.ResponseWriter, r *http.
 func createFlarumUserAPIDoc(
 	reqctx *ReqContext,
 	gormDB *gorm.DB,
-	sqlDB *sql.DB, redisDB *redis.Client,
+	redisDB *redis.Client,
 	appConf model.AppConf,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -277,7 +276,7 @@ func FlarumUserLogout(w http.ResponseWriter, r *http.Request) {
 func FlarumUser(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	// sqlDB := h.App.MySQLdb
+	//
 	inAPI := ctx.inAPI
 
 	_userID := pat.Param(r, "uid")
@@ -307,13 +306,13 @@ func FlarumUser(w http.ResponseWriter, r *http.Request) {
 func FlarumUserSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	sqlDB := h.App.MySQLdb
+
 	redisDB := h.App.RedisDB
 	gormDB := h.App.GormDB
 	scf := h.App.Cf.Site
 	tpl := h.CurrentTpl(r)
 
-	coreData, err := createFlarumUserAPIDoc(ctx, gormDB, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
+	coreData, err := createFlarumUserAPIDoc(ctx, gormDB, redisDB, *h.App.Cf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询用户信息错误:"+err.Error())
 	}
@@ -337,7 +336,6 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	scf := h.App.Cf.Site
 	df := dissFilter{
@@ -346,7 +344,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 		pageLimit: uint64(h.App.Cf.Site.HomeShowNum),
 	}
 
-	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+	coreData, err := createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "无法获取帖子信息")
 		return

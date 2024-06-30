@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/corvofeng/go-flarum/model"
@@ -13,7 +12,7 @@ import (
 
 func createFlarumTagAPIDoc(
 	reqctx *ReqContext,
-	gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client,
+	gormDB *gorm.DB, redisDB *redis.Client,
 	appConf model.AppConf,
 	tz int,
 ) (flarum.CoreData, error) {
@@ -57,7 +56,7 @@ func createFlarumTagAPIDoc(
 		tag := model.FlarumCreateTag(category)
 		res = append(res, tag)
 	}
-	// article, err := model.SQLArticleGetByID(gormDB, sqlDB, redisDB, 1)
+	// article, err := model.SQLArticleGetByID(gormDB,    redisDB, 1)
 	// if err != nil {
 	// 	logger.Info("Can't get article", err.Error())
 	// }
@@ -77,12 +76,12 @@ func FlarumTagAll(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	inAPI := ctx.inAPI
 	scf := h.App.Cf.Site
-	sqlDB := h.App.MySQLdb
+
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
 	coreData, err := createFlarumTagAPIDoc(
-		ctx, h.App.GormDB, sqlDB, redisDB, *h.App.Cf, scf.TimeZone)
+		ctx, h.App.GormDB, redisDB, *h.App.Cf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorMsg(w, "查询标签信息错误:"+err.Error())
