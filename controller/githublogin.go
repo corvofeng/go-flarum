@@ -48,7 +48,7 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	gOauth := githubOauth(h.App.Cf.Site.GithubClientID, h.App.Cf.Site.GithubClientSecret)
 	data, err := getUserInfo(gOauth, r.FormValue("state"), r.FormValue("code"))
 	if data == nil || err != nil {
-		fmt.Println(err.Error())
+		logger.Error("Get user info error", err.Error())
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
