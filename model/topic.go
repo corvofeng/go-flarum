@@ -378,9 +378,9 @@ func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint
 // only for rank
 func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {
 	var articles []ArticleMini
-	var rows *sql.Rows
-	var err error
-	logger := util.GetLogger()
+	// var rows *sql.Rows
+	// var err error
+	// logger := util.GetLogger()
 
 	// activeData := 0
 
@@ -406,16 +406,16 @@ func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {
 	// 	logger.Error("Can't get topic_tag info", err)
 	// 	return articles, err
 	// }
-	for rows.Next() {
-		obj := ArticleMini{}
-		err = rows.Scan(&obj.ID)
-		if err != nil {
-			logger.Error("Scan failed", err)
-			return articles, err
-		}
+	// for rows.Next() {
+	// 	obj := ArticleMini{}
+	// 	err = rows.Scan(&obj.ID)
+	// 	if err != nil {
+	// 		logger.Error("Scan failed", err)
+	// 		return articles, err
+	// 	}
 
-		articles = append(articles, obj)
-	}
+	// 	articles = append(articles, obj)
+	// }
 
 	return articles, nil
 }
