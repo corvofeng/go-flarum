@@ -32,7 +32,6 @@ services:
     build: .
     ports:
       - "8082:8082"
-    # image: go-flarum:dev
     environment:
       type: "web"
     deploy:
