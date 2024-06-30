@@ -46,11 +46,6 @@ Site:
     CloseReg: false
     AutoDataBackup: false
     AutoGetTag: true
-    GetTagApi: "http://youbbs.sinaapp.com/fencigoapi.php"
-    QQClientID: 0
-    QQClientSecret: ""
-    WeiboClientID: 0
-    WeiboClientSecret: ""
     TrackingCodeID: ""
     GithubClientID: ""
     GithubClientSecret: ""
@@ -58,11 +53,4 @@ Site:
     UploadImgOnly: false
     UploadImgResize: false
     UploadMaxSize: 50
-    QiniuAccessKey: ""
-    QiniuSecretKey: ""
-    QiniuDomain: ""
-    QiniuBucket: ""
-    UpyunDomain: ""
-    UpyunBucket: ""
-    UpyunUser: ""
-    UpyunPw: ""
+

@@ -169,6 +169,7 @@ func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 		logger.Errorf("Wanna modify %s, but give %s", user.Email, gu.GetEmail())
 		return
 	}
+	logger.Debugf("Sync user %s(%d) with github %+v", user.Name, user.ID, gu)
 	if user.About == "" {
 		gormDB.Model(user).Update("description", gu.GetBio())
 	}
