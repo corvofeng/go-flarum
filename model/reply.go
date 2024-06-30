@@ -293,7 +293,6 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 	topic.CommentCount += 1
 	topic.LastPostID = comment.ID
 	topic.LastPostUserID = comment.UID
-	topic.LastPostAt = comment.CreatedAt
 
 	tx.Save(&topic)
 	logger.Debugf("Update comment number %d success", comment.ID)
@@ -304,120 +303,6 @@ func (comment *Comment) CreateFlarumComment(gormDB *gorm.DB) (bool, error) {
 		return false, result.Error
 	}
 
-	return true, nil
-}
-
-func (comment *Comment) sqlCreateComment(tx *sql.Tx) (bool, error) {
-	row, err := tx.Exec(
-		("INSERT INTO `reply` " +
-			" (`user_id`, `topic_id`, `content`, created_at, updated_at, client_ip)" +
-			" VALUES " +
-			" (?, ?, ?, ?, ?, ?)"),
-		comment.UID,
-		comment.AID,
-		comment.Content,
-		comment.AddTime,
-		comment.AddTime,
-		comment.ClientIP,
-	)
-	if err != nil {
-		return false, err
-	}
-	cid, err := row.LastInsertId()
-	comment.ID = uint64(cid)
-
-	return true, nil
-}
-
-func (comment *Comment) sqlUpdateComment(tx *sql.Tx, newContent string) (bool, error) {
-	comment.Content = newContent
-	_, err := tx.Exec("UPDATE `reply`"+
-		" set content = ?, updated_at = ?"+
-		" where id = ?",
-		comment.Content,
-		util.TimeNow(),
-		comment.ID,
-	)
-	if util.CheckError(err, "更新评论内容") {
-		return false, err
-	}
-	return true, nil
-}
-
-func (comment *Comment) sqlCreateHistory(tx *sql.Tx, newContent string, uID uint64) (bool, error) {
-	_, err := tx.Exec(
-		("INSERT INTO `history` " +
-			" (`user_id`, `reply_id`, `topic_id`, `content`, created_at)" +
-			" VALUES " +
-			" (?, ?, ?, ?, ?)"),
-		uID,
-		comment.ID,
-		comment.AID,
-		comment.Content,
-		util.TimeNow(),
-	)
-	if err != nil {
-		util.GetLogger().Errorf("Can't create history because of %s", err)
-		return false, err
-	}
-	return true, nil
-}
-
-func (comment *Comment) sqlUpdateNumber(tx *sql.Tx) (bool, error) {
-	// 锁表
-	logger := util.GetLogger()
-	var lastReplyID uint64
-	var lastReplyNumber uint64
-	var replyCount uint64
-
-	row, err := tx.Query(
-		("SELECT reply.id, reply.number, t.reply_count" +
-			" FROM " +
-			" (SELECT last_post_id, reply_count FROM `topic` WHERE id = ? FOR UPDATE ) AS t" +
-			" LEFT JOIN reply ON t.last_post_id = reply.id"),
-		comment.AID,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	if row.Next() {
-		row.Scan(&lastReplyID, &lastReplyNumber, &replyCount)
-	} else {
-		logger.Warningf("Can't get last post for topic %d", comment.AID)
-		lastReplyID = 0
-		lastReplyNumber = 0
-		replyCount = 0
-	}
-	rowsClose(row) // 查询之后, 立刻关闭, 否则后面的语句无法执行
-
-	logger.Debugf("Get last reply (%d,%d) for article: %d cnt: %d", lastReplyID, lastReplyNumber, comment.AID, replyCount)
-
-	comment.Number = lastReplyNumber + 1
-	replyCount = replyCount + 1
-	_, err = tx.Exec(
-		("UPDATE `topic` SET" +
-			" last_post_id=?," +
-			" reply_count=?" +
-			" where id=?"),
-		comment.ID,
-		replyCount,
-		comment.AID,
-	)
-	if err != nil {
-		return false, err
-	}
-
-	_, err = tx.Exec(
-		("UPDATE `reply` SET" +
-			" number=?" +
-			" where id=?"),
-		comment.Number,
-		comment.ID,
-	)
-	if err != nil {
-		return false, err
-	}
 	return true, nil
 }
 

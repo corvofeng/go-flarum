@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"html/template"
 
@@ -29,13 +28,9 @@ type Topic struct {
 
 	LastPostID     uint64
 	LastPostUserID uint64
-	LastPostAt     time.Time
 
 	ClickCnt     uint64 `json:"clickcnt"` // 不保证精确性
 	CommentCount uint64
-
-	AddTime  uint64 `json:"addtime"`
-	EditTime uint64 `json:"edittime"`
 
 	ClientIP string `json:"clientip"`
 
@@ -160,21 +155,20 @@ func SQLArticleGetByID(gormDB *gorm.DB, redisDB *redis.Client, aid uint64) (Topi
  * redisDB (redis.Client): TODO
  */
 func (article *Topic) GetWeight(redisDB *redis.Client) float64 {
-	var editTime time.Time
-	var now = time.Now()
-	if article.EditTime == 0 {
-		editTime = time.Unix(now.Unix()-2*24*3600, 0)
-	} else {
-		editTime = time.Unix(int64(article.EditTime), 0)
-		sTime := time.Unix(1577836800, 0) // 2020-01-01 08:00:00
-
-		if editTime.Before(sTime) {
-			editTime = time.Unix(now.Unix()-2*24*3600, 0)
-		}
-	}
-	if article.ClickCnt == 0 { // 避免出现0的情况
-		article.ClickCnt = 1
-	}
+	// var editTime time.Time
+	// var now = time.Now()
+	// if article.EditTime == 0 {
+	// 	editTime = time.Unix(now.Unix()-2*24*3600, 0)
+	// } else {
+	// 	editTime = time.Unix(int64(article.EditTime), 0)
+	// 	sTime := time.Unix(1577836800, 0) // 2020-01-01 08:00:00
+	// 	if editTime.Before(sTime) {
+	// 		editTime = time.Unix(now.Unix()-2*24*3600, 0)
+	// 	}
+	// }
+	// if article.ClickCnt == 0 { // 避免出现0的情况
+	// 	article.ClickCnt = 1
+	// }
 	// qAge := now.Sub(editTime).Hours()
 	// weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
 	return 0
@@ -245,26 +239,6 @@ func (article *Topic) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bo
 	}
 	return true, nil
 }
-
-// ToArticleListItem 转换为可以做列表的内容
-// func (ab *Topic) ToArticleListItem(gormDB *gorm.DB, redisDB *redis.Client, tz int) ArticleListItem {
-// 	item := ArticleListItem{
-// 		Topic: *ab,
-// 	}
-// 	item.EditTimeFmt = item.UpdatedAt.UTC().String()
-// 	item.AddTimeFmt = item.CreatedAt.UTC().String()
-// 	if item.LastPostID != 0 {
-// 		lastComment, err := SQLCommentByID(gormDB, redisDB, item.LastPostID, tz)
-// 		if err != nil {
-// 			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
-// 		} else {
-// 			lc := lastComment.toCommentListItem(   redisDB, tz)
-// 			item.LastComment = &lc
-// 		}
-// 	}
-
-// 	return item
-// }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
 func SQLArticleGetByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
