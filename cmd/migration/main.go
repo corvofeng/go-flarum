@@ -47,7 +47,8 @@ func main() {
 		}
 		tag.CreateFlarumTag(app.GormDB)
 
-		u, _ := model.SQLUserRegister(app.GormDB, "root", "", "NoPassword")
+		u, err := model.SQLUserRegister(app.GormDB, "root", "", "NoPassword")
+		util.CheckError(err, "register user")
 
 		topic := model.Topic{
 			Title:  "test",
