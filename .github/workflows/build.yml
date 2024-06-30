@@ -4,8 +4,7 @@ name: image-build
 on:
   push:
     branches:
-      - 'master'
-      - 'dev_add_admin'
+      - 'main'
 
 jobs:
   docker-build:
