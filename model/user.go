@@ -171,13 +171,13 @@ func (user *User) SQLGithubSync(gormDB *gorm.DB, gu *github.User) {
 	}
 	logger.Debugf("Sync user %s(%d) with github %+v", user.Name, user.ID, gu)
 	if user.About == "" {
-		gormDB.Model(user).Update("description", gu.GetBio())
+		gormDB.Model(user).Updates(User{Description: gu.GetBlog()})
 	}
 	if user.URL == "" {
-		gormDB.Model(user).Update("website", gu.GetBlog())
+		gormDB.Model(user).Updates(User{WebSite: gu.GetBlog()})
 	}
 	if user.Avatar == "" {
-		gormDB.Model(user).Update("avatar", gu.GetAvatarURL())
+		gormDB.Model(user).Updates(User{Avatar: gu.GetAvatarURL()})
 	}
 	if user.Preferences == nil {
 		user.Preferences = []byte(`{}`)
