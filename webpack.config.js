@@ -9,7 +9,7 @@ let devServer = {
   // contentBase: path.join(__dirname, 'dist'),
   // compress: true,
   host: '0.0.0.0',
-  port: 9000,
+  port: 9999,
   headers: {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",

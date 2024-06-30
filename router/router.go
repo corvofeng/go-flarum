@@ -88,7 +88,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Get("/auth/github"), ct.GithubOauthHandler)
 	sp.HandleFunc(pat.Get("/auth/github/callback"), ct.GithubOauthCallbackHandler)
 
-	//	discussion
+	// discussion
 	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
 	sp.HandleFunc(pat.Get("/d/:aid/:sn"), ct.FlarumArticleDetail) // startNumber
 	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumArticleDetail)
