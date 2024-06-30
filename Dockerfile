@@ -57,7 +57,6 @@ FROM alpine:3.7
 WORKDIR /home/go-flarum
 
 COPY ./view view
-RUN rm -rf view/extensions view/flarum
 COPY ./config/config.yaml-docker config.yml
 COPY --from=build-static /home/go-flarum/static webpack/static
 COPY --from=build-backend /home/go-flarum/go-flarum /usr/local/bin/go-flarum
