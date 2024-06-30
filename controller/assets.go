@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/util"
 
 	"goji.io/pat"
 )

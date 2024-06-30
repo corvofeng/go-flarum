@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"zoe/util"
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"

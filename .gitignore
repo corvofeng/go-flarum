@@ -2,8 +2,8 @@ var/
 db.json
 index/
 venv/
-zoe
-zoe
+go-flarum
+go-flarum
 
 static/flarum
 static/avatar

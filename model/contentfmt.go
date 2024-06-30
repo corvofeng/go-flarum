@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"

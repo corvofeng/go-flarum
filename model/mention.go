@@ -4,7 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/util"
 )
 
 type (

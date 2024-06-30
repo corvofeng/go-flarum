@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"zoe/model"
-	"zoe/model/flarum"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/model/flarum"
 
 	"github.com/dchest/captcha"
 	"github.com/go-redis/redis/v7"

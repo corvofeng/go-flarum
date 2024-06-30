@@ -10,7 +10,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/util"
 )
 
 type FlarumAdminSettings struct {

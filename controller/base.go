@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"zoe/model"
-	"zoe/system"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/system"
 
 	"github.com/op/go-logging"
 	"goji.io/pat"

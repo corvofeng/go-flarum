@@ -1,3 +1,3 @@
 package controller
 
-// "zoe/util"
+// "github.com/corvofeng/go-flarum/util"

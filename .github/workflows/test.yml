@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GO_MOD_NAME: zoe
+      GO_MOD_NAME: go-flarum
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

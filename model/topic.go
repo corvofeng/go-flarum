@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"html/template"
-	"zoe/model/flarum"
-	"zoe/util"
+
+	"github.com/corvofeng/go-flarum/model/flarum"
+	"github.com/corvofeng/go-flarum/util"
 
 	"github.com/go-redis/redis/v7"
 	"gorm.io/gorm"

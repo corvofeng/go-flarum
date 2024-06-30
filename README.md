@@ -1,4 +1,4 @@
-# zoe
+# go-flarum
 
 
 https://github.com/yannisme/flarum-oxo-theme
@@ -42,8 +42,8 @@ git submodule foreach 'if [[ "$path" =~ view/extensions/(flarum-pipetables) ]]; 
 
 ```bash
 yarn build
-CGO_ENABLED=0 GOOS=linux go build -o zoe
-docker build . -t zoe:dev
+CGO_ENABLED=0 GOOS=linux go build -o go-flarum
+docker build . -t go-flarum:dev
 
-docker stack deploy --compose-file docker-compose.yaml zoe
+docker stack deploy --compose-file docker-compose.yaml go-flarum
 ```

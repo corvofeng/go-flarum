@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"zoe/model"
-	"zoe/model/flarum"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/model/flarum"
 
 	"goji.io/pat"
 )

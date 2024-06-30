@@ -5,7 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"zoe/model"
+
+	"github.com/corvofeng/go-flarum/model"
 
 	"github.com/google/go-github/github"
 	"github.com/rs/xid"

@@ -1,4 +1,5 @@
-module zoe
+// module go-flarum
+module github.com/corvofeng/go-flarum
 
 go 1.13
 

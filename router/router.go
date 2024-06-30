@@ -3,9 +3,9 @@ package router
 import (
 	"net/http"
 
-	ct "zoe/controller"
-	"zoe/model"
-	"zoe/system"
+	ct "github.com/corvofeng/go-flarum/controller"
+	"github.com/corvofeng/go-flarum/model"
+	"github.com/corvofeng/go-flarum/system"
 
 	"goji.io"
 	"goji.io/pat"

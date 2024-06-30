@@ -12,14 +12,14 @@ import (
 	"syscall"
 	"time"
 
-	"zoe/cronjob"
-	"zoe/model"
+	"github.com/corvofeng/go-flarum/cronjob"
+	"github.com/corvofeng/go-flarum/model"
 
-	"zoe/router"
-	"zoe/system"
-	"zoe/util"
+	"github.com/corvofeng/go-flarum/router"
+	"github.com/corvofeng/go-flarum/system"
+	"github.com/corvofeng/go-flarum/util"
 
-	ct "zoe/controller"
+	ct "github.com/corvofeng/go-flarum/controller"
 
 	_ "github.com/go-sql-driver/mysql"
 	goji "goji.io"
