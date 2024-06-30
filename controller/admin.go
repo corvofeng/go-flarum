@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -15,7 +14,7 @@ import (
 func createFlarumAdminAPIDoc(
 	reqctx *ReqContext,
 	gormDB *gorm.DB,
-	sqlDB *sql.DB, redisDB *redis.Client,
+	redisDB *redis.Client,
 	appConf model.AppConf,
 	siteInfo model.SiteInfo,
 	tz int,
@@ -90,14 +89,13 @@ func AdminHome(w http.ResponseWriter, r *http.Request) {
 	evn := InitPageData(r)
 	scf := h.App.Cf.Site
 
-	sqlDB := h.App.MySQLdb
 	redisDB := h.App.RedisDB
 	gormDB := h.App.GormDB
 	// logger := ctx.GetLogger()
 	fmt.Println(h.App.Cf.Main.ExtensionsDir)
 
 	coreData, err := createFlarumAdminAPIDoc(
-		ctx, gormDB, sqlDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), scf.TimeZone)
+		ctx, gormDB, redisDB, *h.App.Cf, model.GetSiteInfo(redisDB), scf.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return

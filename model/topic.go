@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"time"
 
@@ -133,8 +132,8 @@ type ArticleTag struct {
 }
 
 // SQLArticleGetByID 通过 article id获取内容
-func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid uint64) (Topic, error) {
-	articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, []uint64{aid})
+func SQLArticleGetByID(gormDB *gorm.DB, redisDB *redis.Client, aid uint64) (Topic, error) {
+	articleBaseList := sqlGetTopicByList(gormDB, redisDB, []uint64{aid})
 	var obj Topic
 	if len(articleBaseList) == 0 {
 		return obj, errors.New("No result")
@@ -149,9 +148,9 @@ func SQLArticleGetByID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, aid u
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (topic *Topic) GetCommentsSize(db *sql.DB) uint64 {
-	return topic.CommentCount
-}
+// func (topic *Topic) GetCommentsSize(db *sql.DB) uint64 {
+// 	return topic.CommentCount
+// }
 
 // GetWeight 获取当前帖子的权重
 /**
@@ -160,7 +159,7 @@ func (topic *Topic) GetCommentsSize(db *sql.DB) uint64 {
  * db (*sql.DB): TODO
  * redisDB (redis.Client): TODO
  */
-func (article *Topic) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
+func (article *Topic) GetWeight(redisDB *redis.Client) float64 {
 	var editTime time.Time
 	var now = time.Now()
 	if article.EditTime == 0 {
@@ -176,9 +175,9 @@ func (article *Topic) GetWeight(db *sql.DB, redisDB *redis.Client) float64 {
 	if article.ClickCnt == 0 { // 避免出现0的情况
 		article.ClickCnt = 1
 	}
-	qAge := now.Sub(editTime).Hours()
-	weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
-	return weight
+	// qAge := now.Sub(editTime).Hours()
+	// weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
+	return 0
 }
 
 // CreateFlarumTopic 创建flarum的帖子
@@ -248,36 +247,36 @@ func (article *Topic) updateFlarumTag(tx *sql.Tx, tags flarum.RelationArray) (bo
 }
 
 // ToArticleListItem 转换为可以做列表的内容
-func (ab *Topic) ToArticleListItem(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client, tz int) ArticleListItem {
-	item := ArticleListItem{
-		Topic: *ab,
-	}
-	item.EditTimeFmt = item.UpdatedAt.UTC().String()
-	item.AddTimeFmt = item.CreatedAt.UTC().String()
-	if item.LastPostID != 0 {
-		lastComment, err := SQLCommentByID(gormDB, redisDB, item.LastPostID, tz)
-		if err != nil {
-			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
-		} else {
-			lc := lastComment.toCommentListItem(sqlDB, redisDB, tz)
-			item.LastComment = &lc
-		}
-	}
+// func (ab *Topic) ToArticleListItem(gormDB *gorm.DB, redisDB *redis.Client, tz int) ArticleListItem {
+// 	item := ArticleListItem{
+// 		Topic: *ab,
+// 	}
+// 	item.EditTimeFmt = item.UpdatedAt.UTC().String()
+// 	item.AddTimeFmt = item.CreatedAt.UTC().String()
+// 	if item.LastPostID != 0 {
+// 		lastComment, err := SQLCommentByID(gormDB, redisDB, item.LastPostID, tz)
+// 		if err != nil {
+// 			util.GetLogger().Errorf("Can't get last comment(%d)for article(%d)", item.LastPostID, item.ID)
+// 		} else {
+// 			lc := lastComment.toCommentListItem(   redisDB, tz)
+// 			item.LastComment = &lc
+// 		}
+// 	}
 
-	return item
-}
+// 	return item
+// }
 
 // SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
+func SQLArticleGetByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
 	var items []ArticleListItem
 	var hasPrev, hasNext bool
 	var firstKey, firstScore, lastKey, lastScore uint64
-	articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, articleList)
 	m := make(map[uint64]ArticleListItem)
 
-	for _, articleBase := range articleBaseList {
-		m[articleBase.ID] = articleBase.ToArticleListItem(gormDB, db, redisDB, tz)
-	}
+	// articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, articleList)
+	// for _, articleBase := range articleBaseList {
+	// 	m[articleBase.ID] = articleBase.ToArticleListItem(gormDB, db, redisDB, tz)
+	// }
 
 	for _, id := range articleList {
 		if item, ok := m[id]; ok {
@@ -296,26 +295,25 @@ func SQLArticleGetByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, art
 }
 
 // sqlGetTopicByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
-func sqlGetTopicByList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
+func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
 	logger := util.GetLogger()
 	result := gormDB.Find(&items, articleList)
 	if result.Error != nil {
 		logger.Errorf("Can't get article list by ", articleList)
 	}
 	for _, article := range items {
-		article.ClickCnt = GetArticleCntFromRedisDB(db, redisDB, article.ID)
+		article.ClickCnt = GetArticleCntFromRedisDB(redisDB, article.ID)
 	}
 	return
 }
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
-func SQLTopicGetByTag(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
-	return SQLCIDArticleList(gormDB, db, redisDB, tagID, start, limit, tz)
+func SQLTopicGetByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
+	return SQLCIDArticleList(gormDB, redisDB, tagID, start, limit, tz)
 }
 
 // SQLTopicGetByUID 根据创建用户获取帖子列表
-func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
-
+func SQLTopicGetByUID(gormDB *gorm.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
 	var rows *sql.Rows
 	var err error
 	var pageInfo ArticlePageInfo
@@ -323,10 +321,10 @@ func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, p
 	logger := util.GetLogger()
 	defer rowsClose(rows)
 
-	rows, err = db.Query(
-		"SELECT id FROM topic WHERE user_id = ? and active = 1 ORDER BY created_at DESC limit ? offset ?",
-		uid, limit, (page-1)*limit,
-	)
+	// rows, err = db.Query(
+	// 	"SELECT id FROM topic WHERE user_id = ? and active = 1 ORDER BY created_at DESC limit ? offset ?",
+	// 	uid, limit, (page-1)*limit,
+	// )
 	if err != nil {
 		logger.Errorf("Query failed,err:%v", err)
 		return pageInfo
@@ -342,7 +340,7 @@ func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, p
 	}
 
 	logger.Debug("Get article list", page, limit, articleList)
-	pageInfo = SQLArticleGetByList(gormDB, db, redisDB, articleList, tz)
+	pageInfo = SQLArticleGetByList(gormDB, redisDB, articleList, tz)
 
 	pageInfo.PageNum = page
 	pageInfo.PageNext = page + 1
@@ -355,7 +353,7 @@ func SQLTopicGetByUID(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, uid, p
 
 // SQLCIDArticleList 返回某个节点的主题
 // tagID 为0 表示全部主题
-func SQLCIDArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
+func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
 	logger := util.GetLogger()
 	var topics []Topic
 	// var err error
@@ -378,36 +376,36 @@ func SQLCIDArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, tagID
 }
 
 // only for rank
-func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini, error) {
+func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {
 	var articles []ArticleMini
 	var rows *sql.Rows
 	var err error
 	logger := util.GetLogger()
 
-	activeData := 0
+	// activeData := 0
 
-	if active {
-		activeData = 1
-	} else {
-		activeData = 0
-	}
+	// if active {
+	// 	activeData = 1
+	// } else {
+	// 	activeData = 0
+	// }
 
-	if cid == 0 {
-		// cid为0, 查询所有节点
-		rows, err = db.Query(
-			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag`) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
-			activeData)
-	} else {
-		rows, err = db.Query(
-			"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
-			cid, activeData)
-	}
-	defer rowsClose(rows)
+	// if cid == 0 {
+	// 	// cid为0, 查询所有节点
+	// 	rows, err = db.Query(
+	// 		"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag`) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
+	// 		activeData)
+	// } else {
+	// 	rows, err = db.Query(
+	// 		"SELECT t_list.topic_id FROM (SELECT topic_id FROM `topic_tag` where tag_id = ?) as t_list LEFT JOIN topic ON t_list.topic_id = topic.id WHERE active = ?",
+	// 		cid, activeData)
+	// }
+	// defer rowsClose(rows)
 
-	if err != nil {
-		logger.Error("Can't get topic_tag info", err)
-		return articles, err
-	}
+	// if err != nil {
+	// 	logger.Error("Can't get topic_tag info", err)
+	// 	return articles, err
+	// }
 	for rows.Next() {
 		obj := ArticleMini{}
 		err = rows.Scan(&obj.ID)
@@ -423,7 +421,8 @@ func sqlGetAllArticleWithCID(db *sql.DB, cid uint64, active bool) ([]ArticleMini
 }
 
 // IncrArticleCntFromRedisDB 增加点击次数
-func (article *Topic) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
+/*
+func (article *Topic) IncrArticleCntFromRedisDB(redisDB *redis.Client) uint64 {
 	var clickCnt uint64 = 0
 	aid := article.ID
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
@@ -466,19 +465,20 @@ func (article *Topic) IncrArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Cl
 
 	return clickCnt
 }
+*/
 
 // GetArticleCntFromRedisDB 获取当前帖子的点击次数
 /*
  * sqlDB (*sql.DB): TODO
  * redisDB (*redis.Client): TODO
  */
-func (article *Topic) GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client) uint64 {
-	article.ClickCnt = GetArticleCntFromRedisDB(sqlDB, redisDB, article.ID)
+func (article *Topic) GetArticleCntFromRedisDB(redisDB *redis.Client) uint64 {
+	article.ClickCnt = GetArticleCntFromRedisDB(redisDB, article.ID)
 	return article.ClickCnt
 }
 
 // GetArticleCntFromRedisDB 从不同的数据库中获取点击数
-func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) uint64 {
+func GetArticleCntFromRedisDB(redisDB *redis.Client, aid uint64) uint64 {
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
 	data, err := rep.Uint64()
 
@@ -491,9 +491,9 @@ func GetArticleCntFromRedisDB(sqlDB *sql.DB, redisDB *redis.Client, aid uint64) 
 }
 
 // SQLArticleList 返回所有节点的主题
-func SQLArticleList(gormDB *gorm.DB, db *sql.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) []Topic {
+func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) []Topic {
 	return SQLCIDArticleList(
-		gormDB, db, redisDB, 0, start, limit, tz,
+		gormDB, redisDB, 0, start, limit, tz,
 	)
 }
 

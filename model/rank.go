@@ -45,14 +45,16 @@ type RankMap struct {
 }
 
 func getWeight(rankMap *RankMap, aid uint64) float64 {
-	topic, err := SQLArticleGetByID(rankMap.GormDB, rankMap.SQLDB, rankMap.RedisDB, aid)
-	if util.CheckError(err, "查询帖子") {
-		return 0
-	}
-	return topic.GetWeight(
-		rankMap.SQLDB,
-		rankMap.RedisDB,
-	)
+	// topic, err := SQLArticleGetByID(rankMap.GormDB, rankMap.SQLDB, rankMap.RedisDB, aid)
+	// if util.CheckError(err, "查询帖子") {
+	// 	return 0
+	// }
+	// return topic.GetWeight(
+	// 	rankMap.SQLDB,
+	// 	rankMap.RedisDB,
+	// )
+	// return nil
+	return 0
 }
 
 var rankMap *RankMap
@@ -76,7 +78,7 @@ func TimelyResort() {
 		logger.Debugf("Start refresh category %d(%s)", v.ID, v.Name)
 
 		// 删除redis中所有无效的帖子
-		sqlDataDel, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, false)
+		sqlDataDel, err := sqlGetAllArticleWithCID(v.ID, false)
 		if util.CheckError(err, fmt.Sprintf("获取%d节点下的无效的帖子列表", v.ID)) {
 			return
 		}
@@ -87,7 +89,7 @@ func TimelyResort() {
 		}
 
 		// 将所有有效帖子更新至redis数据库中
-		sqlDataAdd, err := sqlGetAllArticleWithCID(rankMap.SQLDB, v.ID, true)
+		sqlDataAdd, err := sqlGetAllArticleWithCID(v.ID, true)
 		if util.CheckError(err, fmt.Sprintf("获取%d节点下的有效的帖子列表", v.ID)) {
 			return
 		}
@@ -119,10 +121,9 @@ func newRankMap() (m *RankMap) {
 }
 
 // RankMapInit init a ttl map
-func RankMapInit(gormDB *gorm.DB, sqlDB *sql.DB, redisDB *redis.Client) {
+func RankMapInit(gormDB *gorm.DB, redisDB *redis.Client) {
 	rankMap = newRankMap()
 	rankMap.GormDB = gormDB
-	rankMap.SQLDB = sqlDB
 	rankMap.RedisDB = redisDB
 
 	rankRedisDB = redisDB

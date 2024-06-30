@@ -1,7 +1,6 @@
 package cronjob
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -19,7 +18,7 @@ type BaseHandler struct {
 
 // MainCronJob my job
 func (h *BaseHandler) MainCronJob() {
-	sqlDB := h.App.MySQLdb
+
 	// cntDB := h.App.Db
 	// scf := h.App.Cf.Site
 	logger := h.App.Logger
@@ -42,13 +41,13 @@ func (h *BaseHandler) MainCronJob() {
 	// tickRefreshOrder := time.Tick(10 * time.Minute)
 
 	logger.Info("Start cron job")
-	syncWithMySQL(logger, sqlDB, redisDB)
+	syncWithMySQL(logger, redisDB)
 	refreshRankMap(logger)
 
 	for {
 		select {
 		case <-tickStoreHitToMySQL:
-			syncWithMySQL(logger, sqlDB, redisDB)
+			syncWithMySQL(logger, redisDB)
 		case <-tickResortRankMap:
 			refreshRankMap(logger)
 		}
@@ -63,14 +62,14 @@ func refreshRankMap(logger *logging.Logger) {
 }
 
 // syncWithMySQL 将Redis中的统计数据同步给mysql
-func syncWithMySQL(logger *logging.Logger, sqlDB *sql.DB, redisDB *redis.Client) {
+func syncWithMySQL(logger *logging.Logger, redisDB *redis.Client) {
 	logger.Info("===== start sync hits with the mysql =====")
 	// data, _ := redisDB.HGetAll("article_views").Result()
 	// for aid, clickCnt := range data {
 	// _aid, _ := strconv.ParseUint(aid, 10, 64)
 	// _clickCnt, _ := strconv.ParseUint(clickCnt, 10, 64)
 	// logger.Debugf("Set %4d with %d", _aid, _clickCnt)
-	// model.SQLArticleSetClickCnt(sqlDB, _aid, _clickCnt)
+	// model.SQLArticleSetClickCnt(   _aid, _clickCnt)
 	// }
 	logger.Info("=====  end  sync hits with the mysql =====")
 }

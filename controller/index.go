@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -39,7 +38,7 @@ type dissFilter struct {
 
 func createFlarumPageAPIDoc(
 	reqctx *ReqContext,
-	sqlDB *sql.DB, redisDB *redis.Client, gormDB *gorm.DB,
+	redisDB *redis.Client, gormDB *gorm.DB,
 	appConf model.AppConf,
 	df dissFilter,
 	tz int,
@@ -69,9 +68,9 @@ func createFlarumPageAPIDoc(
 	}
 
 	if df.FT == eCategory {
-		topics = model.SQLTopicGetByTag(gormDB, sqlDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1, tz)
+		topics = model.SQLTopicGetByTag(gormDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1, tz)
 	} else if df.FT == eUserPost {
-		// articlePageInfo := model.SQLTopicGetByUID(gormDB, sqlDB, redisDB, df.UID, page, df.Limit, tz)
+		// articlePageInfo := model.SQLTopicGetByUID(gormDB,    redisDB, df.UID, page, df.Limit, tz)
 		// articlePageInfo.Items
 		// topics = articlePageInfo.Items
 	}
@@ -147,7 +146,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	scf := h.App.Cf.Site
-	sqlDB := h.App.MySQLdb
+
 	redisDB := h.App.RedisDB
 	gormDB := h.App.GormDB
 	logger := ctx.GetLogger()
@@ -170,7 +169,7 @@ func FlarumIndex(w http.ResponseWriter, r *http.Request) {
 		Page:      page,
 		pageLimit: uint64(h.App.Cf.Site.HomeShowNum),
 	}
-	coreData, err := createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+	coreData, err := createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "无法获取帖子信息")
 		return
@@ -200,7 +199,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	scf := h.App.Cf.Site
 	gormDB := h.App.GormDB
-	sqlDB := h.App.MySQLdb
+
 	redisDB := h.App.RedisDB
 	var err error
 
@@ -238,7 +237,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			CID:        0,
 		}
-		coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+		coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	} else {
 		// data := strings.Trim(_filter, " ")
 		if _tag_filter != "" {
@@ -253,7 +252,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				CID:        cate.ID,
 				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			}
-			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create category"+err.Error()))
 				return
@@ -270,7 +269,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 			// 		UID:   user.ID,
 			// 		Limit: pageLimit,
 			// 	}
-			// 	coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+			// 	coreData, err = createFlarumPageAPIDoc(ctx,    redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 
 		} else if _author_filter != "" {
 			user, err := model.SQLUserGetByName(h.App.GormDB, _author_filter)
@@ -284,7 +283,7 @@ func FlarumAPIDiscussions(w http.ResponseWriter, r *http.Request) {
 				UID:        user.ID,
 				pageLimit:  uint64(h.App.Cf.Site.PageLimit),
 			}
-			coreData, err = createFlarumPageAPIDoc(ctx, sqlDB, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
+			coreData, err = createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 			if err != nil {
 				h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create flarum page"+err.Error()))
 				return
