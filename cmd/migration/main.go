@@ -33,10 +33,10 @@ func main() {
 	util.CheckError(app.GormDB.AutoMigrate(model.Reply{}), "migrate reply")
 	util.CheckError(app.GormDB.AutoMigrate(model.ReplyLikes{}), "migrate reply likes")
 
-	logger.Info(app.GormDB,    , app.RedisDB)
-	model.RankMapInit(app.GormDB,    , app.RedisDB)
+	logger.Info(app.GormDB, app.RedisDB)
+	model.RankMapInit(app.GormDB, app.RedisDB)
 	model.SQLTopicGetByTag(
-		app.GormDB,    , app.RedisDB, 0, 1, 10,
+		app.GormDB, app.RedisDB, 0, 1, 10,
 		app.Cf.Site.TimeZone,
 	)
 

@@ -72,24 +72,11 @@ type SiteConf struct {
 	CloseReg          bool
 	AutoDataBackup    bool
 	AutoGetTag        bool
-	GetTagApi         string
-	QQClientID        int
-	QQClientSecret    string
-	WeiboClientID     int
-	WeiboClientSecret string // eg: "jpg,jpeg,gif,zip,pdf"
 	UploadSuffix      string
 	UploadImgOnly     bool
 	UploadImgResize   bool
 	UploadMaxSize     int
 	UploadMaxSizeByte int64
-	QiniuAccessKey    string
-	QiniuSecretKey    string
-	QiniuDomain       string
-	QiniuBucket       string
-	UpyunDomain       string
-	UpyunBucket       string
-	UpyunUser         string
-	UpyunPw           string
 
 	WelcomeMessage string
 	WelcomeTitle   string
