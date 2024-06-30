@@ -1,21 +1,61 @@
-version: '3'
+version: '3.3'
+# name: flarum
 
 services:
-  app:
+  mysql-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      - MYSQL_DATABASE=flarum
+      - MYSQL_ROOT_PASSWORD=password
     ports:
-      - "10004:8082"
-    image: go-flarum:dev
+      - '3306:3306'
+    volumes:
+      - mysql:/var/lib/mysql
+
+  redis-db:
+    image: redis:6.0
+    volumes:
+      - redis:/data
+
+  go-flarum-init:
+    build: .
+    command:
+      - /usr/local/bin/go-flarum-migration
+      - -config
+      - /home/go-flarum/config.yml
+      - -initdb
+    depends_on:
+      - mysql-db
+      - redis-db
+  go-flarum:
+    build: .
+    ports:
+      - "8082:8082"
+    # image: go-flarum:dev
     environment:
       type: "web"
     deploy:
-      replicas: 3
+      replicas: 1
+    command:
+      - /usr/local/bin/go-flarum
+      - -config
+      - /home/go-flarum/config.yml
+      - -lvl
+      - DEBUG
     volumes:
-      - ./static:/home/go-flarum/static
-      - ./config/config.yaml-docker:/home/go-flarum/config.yml
-  cron:
-    image: go-flarum:dev
-    environment:
-      type: "cron"
-    volumes:
-      - ./static:/home/go-flarum/static
-      - ./config/config.yaml-docker:/home/go-flarum/config.yml
+      - flarum-captcha:/home/go-flarum/static/captcha/
+      - flarum-avatar:/home/go-flarum/static/avatar/
+    depends_on:
+      go-flarum-init:
+        condition: service_completed_successfully
+
+volumes:
+  mysql:
+    driver: local
+  redis:
+    driver: local
+  flarum-avatar:
+    driver: local
+  flarum-captcha:
+    driver: local

@@ -3,9 +3,9 @@ Main:
     HttpsPort: 443
     HttpsOn: false
     Domain: ""
-    MySQLURL: "user:pass@tcp(172.17.0.1:3308)/collipa"
+    MySQLURL: "root:password@tcp(mysql-db:3306)/flarum?charset=utf8mb4&parseTime=True"
     MongoURL: "mongodb://172.17.0.1"
-    RedisURL: "redis://:@172.17.0.1:6379"
+    RedisURL: "redis://:@redis-db:6379"
     PubDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
