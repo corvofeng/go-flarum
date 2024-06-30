@@ -47,6 +47,11 @@ RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go 
 	-ldflags "-X main.GitCommit=$GIT_COMMIT" \
 	-o go-flarum ./cmd/server/main.go 
 
+RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+	-a -installsuffix cgo \
+	-ldflags "-X main.GitCommit=$GIT_COMMIT" \
+	-o go-flarum-migration ./cmd/migration/main.go
+
 # 构建最终镜像
 FROM alpine:3.7
 WORKDIR /home/go-flarum
@@ -59,10 +64,10 @@ WORKDIR /home/go-flarum
 
 COPY ./view view
 RUN rm -rf view/extensions view/flarum
-COPY --from=build-static /home/go-flarum/static webpack/static
-# COPY ./config/config.yaml $WORKDIR/config.yml
-COPY --from=build-backend /home/go-flarum/go-flarum go-flarum
-# COPY go-flarum go-flarum
+COPY ./config/config.yaml-docker config.yml
+COPY --from=build-static /home/go-flarum/static static
+COPY --from=build-backend /home/go-flarum/go-flarum /usr/local/bin/go-flarum
+COPY --from=build-backend /home/go-flarum/go-flarum-migration /usr/local/bin/go-flarum-migration
 
 EXPOSE 8082
-CMD ["/home/go-flarum/go-flarum", "-config", "/home/go-flarum/config.yml"]
+CMD ["/usr/local/bin/go-flarum", "-config", "/home/go-flarum/config.yml"]
