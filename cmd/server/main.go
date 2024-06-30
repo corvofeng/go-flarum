@@ -63,18 +63,13 @@ func main() {
 	mcf := app.Cf.Main
 	root.Handle(pat.New("/*"), router.NewRouter(app))
 
-	// normal http
-	// http.ListenAndServe(listenAddr, root)
-
 	// graceful
 	// subscribe to SIGINT signals
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
-	var srv *http.Server
-
 	// http
-	srv = &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
+	srv := &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
 	// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
 	go func() {
 		log.Fatal(srv.ListenAndServe())
