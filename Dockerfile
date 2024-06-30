@@ -56,12 +56,6 @@ RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go 
 FROM alpine:3.7
 WORKDIR /home/go-flarum
 
-## BOF CLEAN
-# 下面的内容仅在本地调试时使用，线上构建时会将其删除
-# COPY ./config/config.yaml-docker config.yml
-# COPY ./static static
-## EOF CLEAN
-
 COPY ./view view
 RUN rm -rf view/extensions view/flarum
 COPY ./config/config.yaml-docker config.yml
