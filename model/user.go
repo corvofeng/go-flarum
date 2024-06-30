@@ -28,7 +28,6 @@ type User struct {
 	URL      string `json:"url"`
 	Articles uint64 `json:"articles"`
 	Replies  uint64 `json:"replies"`
-	RegTime  uint64 `json:"regtime"`
 	About    string `json:"about"`
 	Hidden   bool   `json:"hidden"`
 	Session  string `json:"session"`

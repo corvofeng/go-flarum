@@ -44,8 +44,7 @@ services:
       - -lvl
       - DEBUG
     volumes:
-      - flarum-captcha:/home/go-flarum/static/captcha/
-      - flarum-avatar:/home/go-flarum/static/avatar/
+      - flarum-static:/home/go-flarum/static
     depends_on:
       go-flarum-init:
         condition: service_completed_successfully
@@ -55,7 +54,5 @@ volumes:
     driver: local
   redis:
     driver: local
-  flarum-avatar:
-    driver: local
-  flarum-captcha:
+  flarum-static:
     driver: local

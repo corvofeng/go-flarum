@@ -165,7 +165,7 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.AvatarURL = user.Avatar
 	data.Email = user.Email
 	data.IsEmailConfirmed = true
-	data.JoinTime = util.TimeFmt(user.RegTime, util.TIME_FMT, 0)
+	data.JoinTime = user.CreatedAt.String()
 	data.Slug = user.Name
 	if len(user.Preferences) > 0 {
 		err := json.Unmarshal(user.Preferences, &data.Preferences)
