@@ -1,6 +1,7 @@
 package flarum
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -50,4 +51,50 @@ func TestBindRelation(t *testing.T) {
 
 	assertEqual(t, newPosts.Data[0].GetID(), testID)
 	assertEqual(t, newPosts.Data[0].Type, testType)
+}
+
+func TestSetData(t *testing.T) {
+	testID := uint64(993)
+	diss := NewResource(EDiscussion, testID)
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected interface{}
+	}{
+		{
+			name:     "empty Resource slice",
+			input:    []Resource{},
+			expected: []Resource{},
+		},
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "string input",
+			input:    "test string",
+			expected: "test string",
+		},
+		{
+			name:     "integer input",
+			input:    123,
+			expected: 123,
+		},
+		{
+			name:     "non-empty Resource slice",
+			input:    []Resource{diss},
+			expected: []Resource{diss},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			apiDoc := &APIDoc{}
+			apiDoc.SetData(tt.input)
+			if !reflect.DeepEqual(apiDoc.Data, tt.expected) {
+				t.Errorf("expected %v, got %v", tt.expected, apiDoc.Data)
+			}
+		})
+	}
 }

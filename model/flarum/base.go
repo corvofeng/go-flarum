@@ -222,15 +222,16 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 func newAPIDoc() APIDoc {
 	apiDoc := APIDoc{}
 	apiDoc.Links = make(map[string]string)
-	apiDoc.Data = []Resource{}
-	apiDoc.Included = []Resource{}
+	apiDoc.Data = make([]Resource, 0)
+	apiDoc.Included = make([]Resource, 0)
 	return apiDoc
 }
 
 // NewCoreData 新建一个CoreData对象
 // 使用方法:
-// 	coreData := flarum.NewCoreData()
-// 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+//
+//	coreData := flarum.NewCoreData()
+//	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 func NewCoreData() CoreData {
 	coreData := CoreData{}
 	coreData.APIDocument = newAPIDoc()
@@ -239,8 +240,9 @@ func NewCoreData() CoreData {
 
 // NewAdminCoreData 新建一个CoreData对象
 // 使用方法:
-// 	coreData := flarum.NewAdminCoreData()
-// 	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
+//
+//	coreData := flarum.NewAdminCoreData()
+//	apiDoc := &coreData.APIDocument // 注意, 获取到的是指针
 func NewAdminCoreData() AdminCoreData {
 	adminCoreData := AdminCoreData{}
 	adminCoreData.APIDocument = newAPIDoc()
@@ -248,7 +250,22 @@ func NewAdminCoreData() AdminCoreData {
 }
 
 // SetData 设置为字典类型的数据
+/*
+ * Follow this issue:
+ * 	https://stackoverflow.com/a/56201087
+ * We want to get the correct like,
+ *   data: []
+ */
 func (apiDoc *APIDoc) SetData(data interface{}) {
+	if resArr, ok := data.([]Resource); ok {
+		//  we can't trust the input data, here we do another check
+		// and make sure it's empty but with size 0
+		if len(resArr) == 0 {
+			apiDoc.Data = make([]Resource, 0)
+			return
+		}
+	}
+
 	apiDoc.Data = data
 }
 
