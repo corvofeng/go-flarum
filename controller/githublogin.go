@@ -37,6 +37,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	h := ctx.h
 	gOauth := githubOauth(h.App.Cf.Site.GithubClientID, h.App.Cf.Site.GithubClientSecret)
 	gOauth.RedirectURL = h.App.Cf.Site.MainDomain + "/auth/github/callback"
+	gOauth.Scopes = []string{"user:email"}
 	url := gOauth.AuthCodeURL(oauthStateString)
 	http.Redirect(w, r, url, http.StatusFound)
 	return
