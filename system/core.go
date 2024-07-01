@@ -124,11 +124,6 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	)
 }
 
-// IsFlarum 当前论坛是否为flarum风格
-func (app *Application) IsFlarum() bool {
-	return app.Cf.Main.ServerStyle == "flarum"
-}
-
 func (app *Application) CanServeAdmin() bool {
 	return true
 }
