@@ -143,14 +143,14 @@ func initFlarumError(err string) flarumError {
  */
 func (h *BaseHandler) Render(w http.ResponseWriter, tpl string, data interface{}, tplPath ...string) error {
 	if len(tplPath) == 0 {
-		return errors.New("File path can not be empty ")
+		return errors.New("file path can not be empty ")
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Server", h.App.Cf.Main.ServerName)
 
 	tplDir := path.Join(h.App.Cf.Main.ViewDir, tpl)
-	tmpl := template.New(h.App.Cf.Main.ServerStyle).Funcs(template.FuncMap{
+	tmpl := template.New("flarum").Funcs(template.FuncMap{
 		"marshal": func(v interface{}) template.JS {
 			a, _ := json.Marshal(v)
 			return template.JS(a)
@@ -273,11 +273,6 @@ func (h *BaseHandler) DelCookie(w http.ResponseWriter, name string) {
 
 // CurrentTpl 当前使用的模板类型
 func (h *BaseHandler) CurrentTpl(r *http.Request) string {
-	// 如果使用其他主题, 那么直接返回该主题
-	serverStyle := h.App.Cf.Main.ServerStyle
-	if serverStyle != "flarum" {
-		h.App.Logger.Errorf("Currently we don't support %s", serverStyle)
-	}
 
 	return "flarum"
 }

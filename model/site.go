@@ -25,13 +25,13 @@ type MainConf struct {
 	MongoURL string
 	RedisURL string
 
-	StaticDir      string
-	WebpackDir     string
-	LocaleDir      string
-	ExtensionsDir  string
-	ViewDir        string
-	Debug          bool
-	ServerStyle    string // 选择使用的样式
+	StaticDir     string
+	WebpackDir    string
+	LocaleDir     string
+	ExtensionsDir string
+	ViewDir       string
+	Debug         bool
+
 	ServerName     string
 	CookieSecure   bool
 	CookieHttpOnly bool
