@@ -33,10 +33,6 @@ func main() {
 
 	logger.Info(app.GormDB, app.RedisDB)
 	model.RankMapInit(app.GormDB, app.RedisDB)
-	model.SQLTopicGetByTag(
-		app.GormDB, app.RedisDB, 0, 1, 10,
-		app.Cf.Site.TimeZone,
-	)
 
 	if *initDB {
 		tag := model.Tag{
