@@ -44,7 +44,7 @@
 
   try {
     let data = {{ marshal .FlarumInfo }};
-    console.log(data);
+    console.log("Get flarum data", data);
     flarum.core.app.load(data);
     flarum.core.app.bootExtensions(flarum.extensions);
     flarum.core.app.boot();

@@ -210,6 +210,8 @@ func createFlarumReplyAPIDoc(
 		logger.Error("Get all categories error", err)
 	}
 	for _, category := range tags {
+		tag := model.FlarumCreateTag(category)
+		coreData.AppendResources(tag)
 		flarumTags = append(flarumTags, model.FlarumCreateTag(category))
 	}
 	coreData.AppendResources(model.FlarumCreateForumInfo(
