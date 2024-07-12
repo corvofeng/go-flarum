@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"strconv"
@@ -219,34 +218,6 @@ func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB) (bool, error) {
 	return true, nil
 }
 
-// SQLArticleGetByList 通过id列表获取对应的帖子
-func SQLArticleGetByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64, tz int) ArticlePageInfo {
-	var items []ArticleListItem
-	var hasPrev, hasNext bool
-	var firstKey, firstScore, lastKey, lastScore uint64
-	m := make(map[uint64]ArticleListItem)
-
-	// articleBaseList := sqlGetTopicByList(gormDB, db, redisDB, articleList)
-	// for _, articleBase := range articleBaseList {
-	// 	m[articleBase.ID] = articleBase.ToArticleListItem(gormDB, db, redisDB, tz)
-	// }
-
-	for _, id := range articleList {
-		if item, ok := m[id]; ok {
-			items = append(items, item)
-		}
-	}
-	return ArticlePageInfo{
-		Items:      items,
-		HasPrev:    hasPrev,
-		HasNext:    hasNext,
-		FirstKey:   firstKey,
-		FirstScore: firstScore,
-		LastKey:    lastKey,
-		LastScore:  lastScore,
-	}
-}
-
 // sqlGetTopicByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
 func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
 	logger := util.GetLogger()
@@ -263,45 +234,6 @@ func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uin
 // SQLArticleGetByCID 根据页码获取某个分类的列表
 func SQLTopicGetByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
 	return SQLCIDArticleList(gormDB, redisDB, tagID, start, limit, tz)
-}
-
-// SQLTopicGetByUID 根据创建用户获取帖子列表
-func SQLTopicGetByUID(gormDB *gorm.DB, redisDB *redis.Client, uid, page, limit uint64, tz int) ArticlePageInfo {
-	var rows *sql.Rows
-	var err error
-	var pageInfo ArticlePageInfo
-	var articleList []uint64
-	logger := util.GetLogger()
-	defer rowsClose(rows)
-
-	// rows, err = db.Query(
-	// 	"SELECT id FROM topic WHERE user_id = ? and active = 1 ORDER BY created_at DESC limit ? offset ?",
-	// 	uid, limit, (page-1)*limit,
-	// )
-	if err != nil {
-		logger.Errorf("Query failed,err:%v", err)
-		return pageInfo
-	}
-	for rows.Next() {
-		var aid uint64
-		err = rows.Scan(&aid) //不scan会导致连接不释放
-		if err != nil {
-			logger.Errorf("Scan failed,err:%v", err)
-			continue
-		}
-		articleList = append(articleList, aid)
-	}
-
-	logger.Debug("Get article list", page, limit, articleList)
-	pageInfo = SQLArticleGetByList(gormDB, redisDB, articleList, tz)
-
-	pageInfo.PageNum = page
-	pageInfo.PageNext = page + 1
-	pageInfo.PagePrev = page - 1
-	if len(articleList) == int(limit) {
-		pageInfo.HasNext = true
-	}
-	return pageInfo
 }
 
 // SQLCIDArticleList 返回某个节点的主题

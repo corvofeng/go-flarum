@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/corvofeng/go-flarum/model/flarum"
 	"github.com/corvofeng/go-flarum/util"
@@ -104,7 +105,8 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	data := obj.Attributes.(*flarum.Discussion)
 	data.Title = topic.Title
 	data.CommentCount = topic.CommentCount
-	data.CreatedAt = topic.CreatedAt.String()
+	// data.CreatedAt =  topic.CreatedAt.String()
+	data.CreatedAt = topic.CreatedAt.Format(time.RFC3339)
 	data.FirstPostID = topic.FirstPostID
 	data.CanReply = true
 
@@ -208,7 +210,7 @@ func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resourc
 	data.ContentType = "comment"
 	data.Content = comment.Content
 	data.ContentHTML = comment.ContentFmt
-	data.CreatedAt = comment.AddTimeFmt
+	data.CreatedAt = comment.CreatedAt.Format(time.RFC3339)
 
 	if currentUser != nil {
 		data.CanLike = true

@@ -36,8 +36,8 @@ type (
 		UserName   string `json:"username"`
 		Avatar     string `json:"avatar"`
 		ContentFmt template.HTML
-		AddTimeFmt string   `json:"addtimefmt"`
-		Likes      []uint64 // 点赞的用户
+		// AddTimeFmt string   `json:"addtimefmt"`
+		Likes []uint64 // 点赞的用户
 	}
 
 	// CommentListItem 页面中的评论
@@ -96,7 +96,6 @@ func (cb *Reply) toComment(gormDB *gorm.DB, redisDB *redis.Client, tz int) Comme
 		Reply: *cb,
 		Likes: cb.getUserLikes(gormDB, redisDB),
 	}
-	c.AddTimeFmt = cb.CreatedAt.String()
 
 	// 预防XSS漏洞
 	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
