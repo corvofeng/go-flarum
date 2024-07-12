@@ -328,6 +328,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	inAPI := ctx.inAPI
+	logger := h.App.Logger
 
 	username := pat.Param(r, "username")
 	user, err := model.SQLUserGetByName(h.App.GormDB, username)
@@ -344,6 +345,7 @@ func FlarumUserPage(w http.ResponseWriter, r *http.Request) {
 		UID:       user.ID,
 		pageLimit: uint64(h.App.Cf.Site.HomeShowNum),
 	}
+	logger.Info("Get user for ", user.ID, df)
 
 	coreData, err := createFlarumPageAPIDoc(ctx, redisDB, h.App.GormDB, *h.App.Cf, df, scf.TimeZone)
 	if err != nil {

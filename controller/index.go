@@ -68,11 +68,14 @@ func createFlarumPageAPIDoc(
 	}
 
 	if df.FT == eCategory {
-		topics = model.SQLTopicGetByTag(gormDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1, tz)
+		topics, err = model.SQLGetTopicByTag(gormDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1)
 	} else if df.FT == eUserPost {
-		// articlePageInfo := model.SQLTopicGetByUID(gormDB,    redisDB, df.UID, page, df.Limit, tz)
-		// articlePageInfo.Items
-		// topics = articlePageInfo.Items
+		topics, err = model.SQLGetTopicByUser(gormDB, df.UID, df.PageOffset, df.pageLimit+1)
+	}
+
+	if err != nil {
+		logger.Error("get topics with error:", err)
+		return coreData, err
 	}
 
 	categories, err := model.SQLGetTags(gormDB)
@@ -122,7 +125,7 @@ func createFlarumPageAPIDoc(
 		getUser(topic.UserID)
 
 		if topic.LastPostUserID == 0 {
-			logger.Warning("Can't get last post user id for", topic.ID)
+			// logger.Warning("Can't get last post user id for", topic.ID)
 		} else {
 			getUser(topic.LastPostUserID)
 		}

@@ -124,8 +124,7 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 		flarumTags = append(flarumTags, tag)
 	}
 
-	obj.BindRelations(
-		"Tags",
+	obj.BindRelations("Tags",
 		FlarumCreateTagRelations(flarumTags),
 	)
 
