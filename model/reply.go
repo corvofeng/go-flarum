@@ -33,11 +33,9 @@ type (
 	// Comment 评论信息
 	Comment struct {
 		Reply
-		UserName   string `json:"username"`
 		Avatar     string `json:"avatar"`
 		ContentFmt template.HTML
-		// AddTimeFmt string   `json:"addtimefmt"`
-		Likes []uint64 // 点赞的用户
+		Likes      []uint64 // 点赞的用户
 	}
 
 	// CommentListItem 页面中的评论
@@ -60,20 +58,26 @@ type (
 // PreProcessUserMention 预处理用户的引用
 // #14
 func PreProcessUserMention(gormDB *gorm.DB, redisDB *redis.Client, tz int, userComment string) string {
+	logger := util.GetLogger()
 
 	mentionDict := make(map[string]string)
 	for _, mentionStr := range mentionRegexp.FindAllStringSubmatch(userComment, -1) {
 		cid, err := strconv.ParseUint(mentionStr[2], 10, 64)
 		if err != nil {
-			util.GetLogger().Warning("Can't process mention", mentionStr[0])
+			logger.Warning("Can't process mention", mentionStr[0])
 			continue
 		}
 		comment, err := SQLCommentByID(gormDB, redisDB, cid, tz)
 		if err != nil {
-			util.GetLogger().Warningf("Can't comment %d with error %v", cid, err)
+			logger.Warningf("Can't comment %d with error %v", cid, err)
 			continue
 		}
 		user, err := SQLUserGetByName(gormDB, mentionStr[1])
+		if err != nil {
+			logger.Warningf("can't get user `%d` with error %v", mentionStr[1], err)
+			continue
+		}
+		logger.Debugf("Mention %s, comment %d, user %d", mentionStr[0], comment.ID, user.ID)
 		replData := makeMention(mentionStr, comment, user)
 		mentionDict[mentionStr[0]] = replData
 	}
@@ -99,8 +103,6 @@ func (cb *Reply) toComment(gormDB *gorm.DB, redisDB *redis.Client, tz int) Comme
 
 	// 预防XSS漏洞
 	c.ContentFmt = template.HTML(ContentFmt(cb.Content))
-
-	c.UserName = GetUserNameByID(gormDB, redisDB, cb.UID)
 	c.Avatar = GetAvatarByID(gormDB, redisDB, cb.UID)
 	return c
 }
