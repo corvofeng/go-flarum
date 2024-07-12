@@ -31,3 +31,6 @@
 [submodule "view/framework"]
 	path = view/framework
 	url = https://github.com/flarum/framework.git
+[submodule "view/extensions/flarum-pwa"]
+	path = view/extensions/flarum-pwa
+	url = https://github.com/askvortsov1/flarum-pwa

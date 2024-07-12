@@ -4,6 +4,7 @@ import * as flarum_tags from '../framework/extensions/tags/js/admin';
 export * from '../framework/extensions/markdown/js/admin';
 export * from '../framework/extensions/likes/js/admin';
 import * as flarum_mentions from './mentions/js/admin';
+export * from './flarum-pwa/js/admin'
 
 // export * from './custom-footer/js/admin';
 // export * from './auth-github/js/admin';
