@@ -223,7 +223,7 @@ func sqlGetTopicByList(gormDB *gorm.DB, articleList []uint64) (topics []Topic, e
 }
 
 // tagID 为0 表示全部主题
-func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64) (topics []Topic, err error) {
+func SQLGetTopicByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64) (topics []Topic, err error) {
 	logger := util.GetLogger()
 	var tag Tag
 
@@ -244,6 +244,24 @@ func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64,
 
 	return topics, err
 }
+
+func SQLGetTopicByUser(gormDB *gorm.DB, userID, start uint64, limit uint64) (topics []Topic, err error) {
+	var user User
+	ormFilter := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start))
+	if userID != 0 {
+		user, err = SQLUserGetByID(gormDB, userID)
+		if err != nil {
+			return
+		}
+		err = ormFilter.Where("user_id = ?", user.ID).Find(&topics).Error
+	} else {
+		err = ormFilter.Find(&topics).Error
+	}
+
+	return
+}
+
+// func  SQLGetTopicByUser(gormDB, df.UID, int(df.PageOffset), int(df.pageLimit+1))
 
 // only for rank
 func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {

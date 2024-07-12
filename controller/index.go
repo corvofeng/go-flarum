@@ -68,15 +68,13 @@ func createFlarumPageAPIDoc(
 	}
 
 	if df.FT == eCategory {
-		topics, err = model.SQLArticleList(gormDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1)
+		topics, err = model.SQLGetTopicByTag(gormDB, redisDB, df.CID, df.PageOffset, df.pageLimit+1)
 	} else if df.FT == eUserPost {
-		// articlePageInfo := model.SQLTopicGetByUID(gormDB,    redisDB, df.UID, page, df.Limit, tz)
-		// articlePageInfo.Items
-		// topics = articlePageInfo.Items
+		topics, err = model.SQLGetTopicByUser(gormDB, df.UID, df.PageOffset, df.pageLimit+1)
 	}
 
 	if err != nil {
-		logger.Error("Can't get topics", err)
+		logger.Error("get topics with error:", err)
 		return coreData, err
 	}
 
