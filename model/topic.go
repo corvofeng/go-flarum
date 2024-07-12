@@ -232,31 +232,33 @@ func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uin
 }
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
+// tagID 为0 表示全部主题
 func SQLTopicGetByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
 	return SQLCIDArticleList(gormDB, redisDB, tagID, start, limit, tz)
 }
 
-// SQLCIDArticleList 返回某个节点的主题
-// tagID 为0 表示全部主题
 func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
 	logger := util.GetLogger()
 	var topics []Topic
-	// var err error
+	var err error
+	var tag Tag
+
+	ormFilter := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start))
+
 	if tagID != 0 {
-		tag, err := SQLGetTagByID(gormDB, tagID)
+		tag, err = SQLGetTagByID(gormDB, tagID)
 		if err != nil {
 			logger.Error("Can't get tag by id", tagID)
 		}
-		err = gormDB.Limit(int(limit)).Offset(int(start)).Model(&tag).Association("Topics").Find(&topics)
-		if err != nil {
-			logger.Error("Can't get topics by tag id", tagID)
-		}
+		err = ormFilter.Model(&tag).Association("Topics").Find(&topics)
 	} else {
-		err := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start)).Find(&topics)
-		if err != nil {
-			logger.Errorf("Can't get all topics `%s`", err)
-		}
+		err = ormFilter.Find(&topics).Error
 	}
+
+	if err != nil {
+		logger.Errorf("Can't get all topics for %d `%s`", tagID, err)
+	}
+
 	return topics
 }
 
