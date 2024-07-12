@@ -41,7 +41,7 @@ func InitLogger(lvl string) {
 	}
 }
 
-//CheckError error check, 检查到error, 返回true
+// CheckError error check, 检查到error, 返回true
 func CheckError(err error, info string) (res bool) {
 	if err != nil {
 		// Get the real file and line number

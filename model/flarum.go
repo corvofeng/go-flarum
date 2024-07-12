@@ -105,13 +105,12 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	data := obj.Attributes.(*flarum.Discussion)
 	data.Title = topic.Title
 	data.CommentCount = topic.CommentCount
-	// data.CreatedAt =  topic.CreatedAt.String()
 	data.CreatedAt = topic.CreatedAt.Format(time.RFC3339)
 	data.FirstPostID = topic.FirstPostID
 	data.CanReply = true
 
 	data.LastPostNumber = topic.LastPostID
-	data.LastPostedAt = topic.UpdatedAt.String()
+	data.LastPostedAt = topic.UpdatedAt.Format(time.RFC3339)
 	// data.LastPostID = article.LastPostID
 	data.LastUserID = topic.LastPostUserID
 
@@ -119,11 +118,15 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 		"User",
 		flarum.RelationDict{Data: flarum.InitBaseResources(topic.UserID, "users")},
 	)
+	var flarumTags []flarum.Resource
+	for _, t := range topic.Tags {
+		tag := FlarumCreateTag(t)
+		flarumTags = append(flarumTags, tag)
+	}
+
 	obj.BindRelations(
 		"Tags",
-		flarum.RelationArray{
-			Data: []flarum.BaseRelation{},
-		},
+		FlarumCreateTagRelations(flarumTags),
 	)
 
 	obj.BindRelations(
@@ -132,6 +135,7 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 			Data: flarum.InitBaseResources(data.FirstPostID, "posts"),
 		},
 	)
+
 	obj.BindRelations(
 		"Posts",
 		flarum.RelationArray{

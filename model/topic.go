@@ -252,9 +252,9 @@ func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint
 			logger.Error("Can't get topics by tag id", tagID)
 		}
 	} else {
-		rlt := gormDB.Limit(int(limit)).Offset(int(start)).Find(&topics)
-		if rlt.Error != nil {
-			logger.Info("Can't get all topics", rlt.Error)
+		err := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start)).Find(&topics)
+		if err != nil {
+			logger.Errorf("Can't get all topics `%s`", err)
 		}
 	}
 	return topics

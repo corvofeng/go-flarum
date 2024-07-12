@@ -76,7 +76,7 @@ func createFlarumPageAPIDoc(
 	}
 
 	categories, err := model.SQLGetTags(gormDB)
-	logger.Debugf("Get topics %+v", topics)
+	// logger.Debugf("Get topics %+v", topics)
 
 	// 添加所有分类的信息
 	var flarumTags []flarum.Resource
@@ -95,6 +95,7 @@ func createFlarumPageAPIDoc(
 	var res []flarum.Resource
 	// 添加当前页面的的帖子与用户信息, 已经去重
 	for idx, topic := range topics {
+		logger.Debugf("Get topic %d %+v", topic.ID, topic.Tags)
 		if idx == int(df.pageLimit) {
 			hasNext = true
 			continue
