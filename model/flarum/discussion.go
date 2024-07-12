@@ -39,11 +39,13 @@ type Discussion struct {
 	LastPostedAt string `json:"lastPostedAt"`
 	LastUserID   uint64
 
-	CanReply bool `json:"canReply"`
-	// CanRename bool `json:"canRename"`
-	// CanDelete bool `json:"canDelete"`
-	// CanHide   bool `json:"canHide"`
-	// CanLock   bool `json:"canLock"`
+	CanDelete bool `json:"canDelete"`
+	CanHide   bool `json:"canHide"`
+	CanLock   bool `json:"canLock"`
+	CanRename bool `json:"canRename"`
+	CanReply  bool `json:"canReply"`
+	CanSticky bool `json:"canSticky"`
+	CanTag    bool `json:"canTag"`
 
 	// IsHidden   bool `json:"isHidden"`
 	// IsApproved bool `json:"isApproved"`
@@ -52,7 +54,7 @@ type Discussion struct {
 
 	// HiddenAt   string `json:"hiddenAt"`
 	// LastReadAt string `json:"lastReadAt"`
-	// Subscription bool `json:"subscription"`
+	Subscription string `json:"subscription"`
 
 	// #12 TODO: 当前用户上一次阅读到的位置
 	LastReadPostNumber int `json:"lastReadPostNumber"`
