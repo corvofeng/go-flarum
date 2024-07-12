@@ -13,7 +13,6 @@ func TestMentionGet(t *testing.T) {
 	mentionPost := Comment{}
 	mentionPost.ID = 86
 	mentionPost.AID = 13
-	mentionPost.UserName = "helloworld"
 	mentionPost.Number = 3
 	user := User{}
 	user.ID = 123
@@ -28,6 +27,8 @@ func TestMentionGet(t *testing.T) {
 	}{
 		{"@helloworld", mentionPost, user, `<USERMENTION displayname="nick" id="123" username="helloworld">@helloworld</USERMENTION>`},
 		{"@helloworld#86", mentionPost, user, `<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION>`},
+		{"@helloworld#p86", mentionPost, user, `<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION>`},
+		{"@\"helloworld\"#p86 这是一条at的评论", mentionPost, user, `<POSTMENTION discussionid="13" displayname="nick" id="86" number="3" username="helloworld">@helloworld</POSTMENTION>`},
 		// {"@helloworld#54", mentionPost, user, `@helloworld#54`},
 	}
 	for _, data := range TESTCASES {
@@ -45,7 +46,6 @@ func TestMention(t *testing.T) {
 	mentionPost := Comment{}
 	mentionPost.ID = 86
 	mentionPost.AID = 13
-	mentionPost.UserName = "helloworld"
 	mentionPost.Number = 3
 	user := User{}
 	user.ID = 123

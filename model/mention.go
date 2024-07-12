@@ -56,17 +56,18 @@ type (
 // <r><p><USERMENTION displayname="corvofeng" id="1">@corvofeng</USERMENTION> 针对corvofeng的回复</p></r>
 
 func makeMention(mentionStr []string, comment Comment, user User) string {
+	logger := util.GetLogger()
 	result := mentionStr[0]
 	for {
 		userName := mentionStr[1]
 		commentID := mentionStr[2]
 		if userName != user.Name { // 确保用户信息正确
-			util.GetLogger().Warning("Can't process mention", mentionStr[0])
+			logger.Warning("Can't process mention with correct name", mentionStr[0])
 			break
 		}
 
 		if commentID == "" {
-			// 这是引用用户
+			// for the user mention
 			um := USERMENTION{
 				ID:          user.StrID(),
 				Text:        "@" + user.Name,
@@ -75,15 +76,15 @@ func makeMention(mentionStr []string, comment Comment, user User) string {
 			}
 			data, err := xml.Marshal(um)
 			if err != nil {
-				util.GetLogger().Warning("Can't create xml data", um)
+				logger.Warning("Can't create xml data", um)
 				break
 			}
 			result = string(data)
 			break
 		}
 
-		if commentID == fmt.Sprintf("%d", comment.ID) && userName == comment.UserName {
-			// 引用其他用户的评论信息
+		if commentID == fmt.Sprintf("%d", comment.ID) {
+			// for the post mention
 			um := POSTMENTION{
 				ID:           fmt.Sprintf("%d", comment.ID),
 				Text:         "@" + user.Name,
@@ -94,14 +95,13 @@ func makeMention(mentionStr []string, comment Comment, user User) string {
 			}
 			data, err := xml.Marshal(um)
 			if err != nil {
-				util.GetLogger().Warning("Can't create xml data", um)
+				logger.Warning("Can't create xml data", um)
 				break
 			}
 			result = string(data)
 			break
 		}
-
-		util.GetLogger().Warning("Can't get right mention data", mentionStr)
+		logger.Warning("Can't get right mention data", mentionStr)
 		break
 	}
 	return result
