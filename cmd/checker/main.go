@@ -29,11 +29,11 @@ func main() {
 	// app.GormDB.AutoMigrate(model.CommentBase{})
 	// app.GormDB.AutoMigrate(model.ArticleBase{})
 
-	pageInfo := model.SQLTopicGetByTag(
-		app.GormDB, app.RedisDB, 0, 1, 10,
-		app.Cf.Site.TimeZone,
-	)
-	logger.Info(pageInfo)
+	// pageInfo := model.SQLTopicGetByTag(
+	// 	app.GormDB, app.RedisDB, 0, 1, 10,
+	// 	app.Cf.Site.TimeZone,
+	// )
+	// logger.Info(pageInfo)
 
 	// var user model.User
 	// result := app.GormDB.First(&user, 9999)
