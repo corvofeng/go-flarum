@@ -61,7 +61,7 @@ func GithubOauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	var uobj model.User
 
 	result := gormDB.Where("email = ?", data.GetEmail()).First(&uobj)
-	if err != nil {
+	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// 无法找到用户
 			uobj, err = model.SQLGithubRegister(gormDB, data)
