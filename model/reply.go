@@ -69,11 +69,11 @@ func PreProcessUserMention(gormDB *gorm.DB, redisDB *redis.Client, tz int, userC
 	return newPost
 }
 
-func sqlGetRepliesBaseByList(gormDB *gorm.DB, redisDB *redis.Client, repliesList []uint64) (items []Reply) {
-	logger := util.GetLogger()
-	result := gormDB.Find(&items, repliesList)
-	if result.Error != nil {
-		logger.Errorf("Can't get replies list by ", repliesList)
+func sqlGetRepliesBaseByList(gormDB *gorm.DB, redisDB *redis.Client, repliesList []uint64, tz int) (comments []Comment, err error) {
+	var baseComments []Reply
+	err = gormDB.Find(&baseComments, repliesList).Error
+	for _, bc := range baseComments {
+		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
 	return
 }
@@ -91,13 +91,7 @@ func (cb *Reply) toComment(gormDB *gorm.DB, redisDB *redis.Client, tz int) Comme
 }
 
 func (cb *Reply) getUserLikes(gormDB *gorm.DB, redisDB *redis.Client) (likes []uint64) {
-	rows, _ := gormDB.Model(&ReplyLikes{}).Where("reply_id = ?", cb.ID).Rows()
-	defer rows.Close()
-	for rows.Next() {
-		var r ReplyLikes
-		gormDB.ScanRows(rows, &r)
-		likes = append(likes, r.UserID)
-	}
+	gormDB.Model(&ReplyLikes{}).Where("reply_id = ?", cb.ID).Pluck("user_id", &likes)
 	return
 }
 
@@ -132,15 +126,9 @@ func sqlCommentListByUserID(gormDB *gorm.DB, redisDB *redis.Client, userID uint6
 
 // SQLCommentByID 获取一条评论
 func SQLCommentByID(gormDB *gorm.DB, redisDB *redis.Client, cid uint64, tz int) (Comment, error) {
-	logger := util.GetLogger()
 	var c Reply
-	result := gormDB.First(&c, cid)
-
-	if result.Error != nil {
-		logger.Error("Can't find commet with error", result.Error)
-		return Comment{}, result.Error
-	}
-	return c.toComment(gormDB, redisDB, tz), nil
+	err := gormDB.First(&c, cid).Error
+	return c.toComment(gormDB, redisDB, tz), err
 }
 
 // SQLCommentListByCID 获取某条评论
@@ -151,24 +139,17 @@ func SQLCommentListByCID(gormDB *gorm.DB, redisDB *redis.Client, commentID uint6
 
 // SQLCommentListByList 获取某条评论
 func SQLCommentListByList(gormDB *gorm.DB, redisDB *redis.Client, commentList []uint64, tz int) ([]Comment, error) {
-	var comments []Comment
-	baseComments := sqlGetRepliesBaseByList(gormDB, redisDB, commentList)
-	for _, bc := range baseComments {
-		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
-	}
-	return comments, nil
+	return sqlGetRepliesBaseByList(gormDB, redisDB, commentList, tz)
 }
 
 // SQLCommentListByTopic 获取帖子的所有评论
 func SQLCommentListByTopic(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) ([]Comment, error) {
-	comments, err := sqlCommentListByTopicID(gormDB, redisDB, topicID, limit, tz)
-	return comments, err
+	return sqlCommentListByTopicID(gormDB, redisDB, topicID, limit, tz)
 }
 
 // SQLCommentListByUser 获取某个用户的帖子信息
 func SQLCommentListByUser(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) ([]Comment, error) {
-	comments, err := sqlCommentListByUserID(gormDB, redisDB, userID, limit, tz)
-	return comments, err
+	return sqlCommentListByUserID(gormDB, redisDB, userID, limit, tz)
 }
 
 // CreateFlarumComment 创建flarum的评论
