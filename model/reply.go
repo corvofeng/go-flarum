@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"html/template"
 	"strconv"
 
@@ -36,22 +35,6 @@ type (
 		Avatar     string `json:"avatar"`
 		ContentFmt template.HTML
 		Likes      []uint64 // 点赞的用户
-	}
-
-	// CommentListItem 页面中的评论
-	CommentListItem struct {
-		Comment
-
-		Name string `json:"name"`
-	}
-
-	// CommentPageInfo 页面中显示的内容
-	CommentPageInfo struct {
-		Items    []CommentListItem `json:"items"`
-		HasPrev  bool              `json:"hasprev"`
-		HasNext  bool              `json:"hasnext"`
-		FirstKey uint64            `json:"firstkey"`
-		LastKey  uint64            `json:"lastkey"`
 	}
 )
 
@@ -129,19 +112,9 @@ func (cb *Reply) getUserComments(gormDB *gorm.DB, redisDB *redis.Client) (commen
 	return
 }
 
-func (comment *Comment) toCommentListItem(redisDB *redis.Client, tz int) CommentListItem {
-	item := CommentListItem{
-		Comment: *comment,
-	}
-	return item
-}
-
 func sqlCommentListByTopicID(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
-	var rows *sql.Rows
-	defer rowsClose(rows)
-
 	var baseComments []Reply
-	gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments)
+	err = gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments).Error
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
@@ -150,8 +123,7 @@ func sqlCommentListByTopicID(gormDB *gorm.DB, redisDB *redis.Client, topicID uin
 
 func sqlCommentListByUserID(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) (comments []Comment, err error) {
 	var baseComments []Reply
-	gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments)
-
+	err = gormDB.Where("user_id = ?", userID).Limit(int(limit)).Find(&baseComments).Error
 	for _, bc := range baseComments {
 		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
@@ -172,97 +144,31 @@ func SQLCommentByID(gormDB *gorm.DB, redisDB *redis.Client, cid uint64, tz int) 
 }
 
 // SQLCommentListByCID 获取某条评论
-func SQLCommentListByCID(gormDB *gorm.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-	var err error
-	logger := util.GetLogger()
-
+func SQLCommentListByCID(gormDB *gorm.DB, redisDB *redis.Client, commentID uint64, limit uint64, tz int) ([]Comment, error) {
 	comment, err := SQLCommentByID(gormDB, redisDB, commentID, tz)
-	if err != nil {
-		logger.Errorf("Query comments failed for cid(%d)", commentID)
-	}
-	items = append(items, comment.toCommentListItem(redisDB, tz))
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
+	return []Comment{comment}, err
 }
 
 // SQLCommentListByList 获取某条评论
-func SQLCommentListByList(gormDB *gorm.DB, redisDB *redis.Client, commentList []uint64, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-
+func SQLCommentListByList(gormDB *gorm.DB, redisDB *redis.Client, commentList []uint64, tz int) ([]Comment, error) {
+	var comments []Comment
 	baseComments := sqlGetRepliesBaseByList(gormDB, redisDB, commentList)
 	for _, bc := range baseComments {
-		c := bc.toComment(gormDB, redisDB, tz)
-		items = append(items, c.toCommentListItem(redisDB, tz))
+		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
+	return comments, nil
 }
 
 // SQLCommentListByTopic 获取帖子的所有评论
-func SQLCommentListByTopic(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-	var err error
-	logger := util.GetLogger()
-
+func SQLCommentListByTopic(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) ([]Comment, error) {
 	comments, err := sqlCommentListByTopicID(gormDB, redisDB, topicID, limit, tz)
-	if err != nil {
-		logger.Errorf("Query comments failed for %d", topicID)
-	}
-	for _, c := range comments {
-		items = append(items, c.toCommentListItem(redisDB, tz))
-	}
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
+	return comments, err
 }
 
 // SQLCommentListByUser 获取某个用户的帖子信息
-func SQLCommentListByUser(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) CommentPageInfo {
-	var items []CommentListItem
-	var hasPrev, hasNext bool
-	var firstKey, lastKey uint64
-	var err error
-	logger := util.GetLogger()
-
+func SQLCommentListByUser(gormDB *gorm.DB, redisDB *redis.Client, userID uint64, limit uint64, tz int) ([]Comment, error) {
 	comments, err := sqlCommentListByUserID(gormDB, redisDB, userID, limit, tz)
-	if err != nil {
-		logger.Errorf("Query comments failed for user %d", userID)
-	}
-	for _, c := range comments {
-		items = append(items, c.toCommentListItem(redisDB, tz))
-	}
-
-	return CommentPageInfo{
-		Items:    items,
-		HasPrev:  hasPrev,
-		HasNext:  hasNext,
-		FirstKey: firstKey,
-		LastKey:  lastKey,
-	}
+	return comments, err
 }
 
 // CreateFlarumComment 创建flarum的评论

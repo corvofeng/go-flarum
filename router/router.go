@@ -144,7 +144,7 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 		ct.FlarumArticleDetail,
 	))
 
-	// 创建一篇帖子
+	// Create discussion
 	apiSP.HandleFunc(pat.Post("/discussions"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
@@ -167,7 +167,7 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	apiSP.HandleFunc(pat.Get("/posts/:cid"), ct.FlarumComments)
 
-	// 创建一篇评论
+	// Create reply posts
 	apiSP.HandleFunc(pat.Post("/posts"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,

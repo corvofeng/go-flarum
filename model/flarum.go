@@ -205,7 +205,7 @@ func FlarumCreateGroup() flarum.Resource {
 }
 
 // FlarumCreatePost 创建评论
-func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resource {
+func FlarumCreatePost(comment Comment, currentUser *User) flarum.Resource {
 	obj := flarum.NewResource(flarum.EPost, comment.ID)
 	data := obj.Attributes.(*flarum.Post)
 

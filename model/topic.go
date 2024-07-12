@@ -66,8 +66,6 @@ type ArticleListItem struct {
 	 * we need tell users that we do not return a random list.
 	 */
 	HighlightContent template.HTML `json:"highlight_content"`
-
-	LastComment *CommentListItem
 }
 
 // ArticlePageInfo data in every list page
@@ -374,7 +372,7 @@ func (topic *Topic) toKeyForComments() string {
 
 // CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
 // 注意这里是有顺序的, 顺序为发帖时间
-func (topic *Topic) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+func (topic *Topic) CacheCommentList(redisDB *redis.Client, comments []Comment, done chan bool) error {
 	logger := util.GetLogger()
 	logger.Debugf("Cache comment list for: %d, and %d comments", topic.ID, len(comments))
 	for _, c := range comments {

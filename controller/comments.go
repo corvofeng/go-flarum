@@ -54,7 +54,8 @@ func createFlarumReplyAPIDoc(
 
 	rf.RenderLimit = 20
 	// 当前全部的评论资源: 数据库中得到
-	var comments []model.CommentListItem
+	// var comments []model.CommentListItem
+	var comments []model.Comment
 	// 当前全部的评论资源: API返回
 	var flarumPosts []flarum.Resource
 
@@ -72,21 +73,20 @@ func createFlarumReplyAPIDoc(
 	}
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
-		pageInfo := model.SQLCommentListByTopic(gormDB, redisDB, rf.AID, rf.Limit, tz)
-		comments = pageInfo.Items
+		comments, err = model.SQLCommentListByTopic(gormDB, redisDB, rf.AID, rf.Limit, tz)
 	} else if rf.FT == ePost {
-		pageInfo := model.SQLCommentListByCID(gormDB, redisDB, rf.CID, rf.Limit, tz)
-		comments = pageInfo.Items
+		comments, err = model.SQLCommentListByCID(gormDB, redisDB, rf.CID, rf.Limit, tz)
 	} else if rf.FT == eUserPost {
-		pageInfo := model.SQLCommentListByUser(gormDB, redisDB, rf.UID, rf.Limit, tz)
-		comments = pageInfo.Items
+		comments, err = model.SQLCommentListByUser(gormDB, redisDB, rf.UID, rf.Limit, tz)
 	} else if rf.FT == ePosts { // 根据post列表获取评论
-		pageInfo := model.SQLCommentListByList(gormDB, redisDB, rf.IDS, tz)
+		comments, err = model.SQLCommentListByList(gormDB, redisDB, rf.IDS, tz)
 		rf.RenderLimit = uint64(len(rf.IDS))
-		comments = pageInfo.Items
 	} else {
 		logger.Warningf("Can't process filter: `%s`", rf.FT)
 		return coreData, fmt.Errorf("can't process filter: `%s`", rf.FT)
+	}
+	if err != nil {
+		logger.Error("Get comments error with filter %+v, %s", rf, err)
 	}
 
 	commentsLen := uint64(len(comments))
