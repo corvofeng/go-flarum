@@ -31,6 +31,9 @@ func TestReadLocale(t *testing.T) {
 	if localeDataArr["core.lib.meta_titles.with_page_title"] != "{pageNumber, plural, =1 {{pageTitle} - {forumName}} other {{pageTitle}: Page # - {forumName}}}" {
 		t.Errorf("Get wrong locale")
 	}
+	if localeDataArr["flarum-likes.forum.user.likes_link"] != "Likes" {
+		t.Errorf("Get wrong likes link")
+	}
 }
 
 func TestReadLocaleZh(t *testing.T) {

@@ -113,26 +113,58 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 	}
 
 	// 解析各个插件的语言包
-	// flarum-tags/locale/en.yml
+	// flarum-tags/en/xxx.yml
 	for _, extDir := range extDirs {
 		extDirDatas, err := os.ReadDir(extDir)
-		if err == nil {
-			for _, fi := range extDirDatas {
-				if fi.IsDir() {
-					extLocaleDir := path.Join(extDir, fi.Name(), locale)
-					dir, err := os.ReadDir(extLocaleDir)
-					if err == nil {
-						for _, fi := range dir {
-							// 过滤指定格式
-							if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
-								doParseFile(path.Join(extDir, fi.Name()))
-							}
-						}
-					}
+		if err != nil {
+			continue
+		}
+		for _, fi := range extDirDatas {
+			if !fi.IsDir() {
+				continue
+			}
+
+			extLocaleDir := path.Join(extDir, fi.Name(), locale)
+			dir, err := os.ReadDir(extLocaleDir)
+
+			if err != nil {
+				continue
+			}
+			for _, fi := range dir {
+				// 过滤指定格式
+				if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+					doParseFile(path.Join(extDir, fi.Name()))
 				}
 			}
+
 		}
 	}
 
+	// flarum-tags/locale/en.yml
+	for _, extDir := range extDirs {
+		extDirDatas, err := os.ReadDir(extDir)
+		if err != nil {
+			continue
+		}
+		for _, fi := range extDirDatas {
+			if !fi.IsDir() {
+				continue
+			}
+
+			extLocaleDir := path.Join(extDir, fi.Name(), "locale")
+			dir, err := os.ReadDir(extLocaleDir)
+			if err != nil {
+				continue
+			}
+
+			for _, fi := range dir {
+				// 过滤指定格式
+				if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+					doParseFile(path.Join(extLocaleDir, fi.Name()))
+				}
+			}
+
+		}
+	}
 	return localeDataArr
 }
