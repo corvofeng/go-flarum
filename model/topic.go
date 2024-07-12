@@ -130,7 +130,7 @@ func SQLArticleGetByID(gormDB *gorm.DB, redisDB *redis.Client, aid uint64) (Topi
 	articleBaseList := sqlGetTopicByList(gormDB, redisDB, []uint64{aid})
 	var obj Topic
 	if len(articleBaseList) == 0 {
-		return obj, errors.New("No result")
+		return obj, errors.New("no result")
 	}
 	obj = articleBaseList[0]
 
@@ -221,7 +221,7 @@ func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB) (bool, error) {
 // sqlGetTopicByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
 func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uint64) (items []Topic) {
 	logger := util.GetLogger()
-	result := gormDB.Find(&items, articleList)
+	result := gormDB.Preload("Tags").Find(&items, articleList)
 	if result.Error != nil {
 		logger.Errorf("Can't get article list by ", articleList)
 	}
@@ -233,18 +233,22 @@ func sqlGetTopicByList(gormDB *gorm.DB, redisDB *redis.Client, articleList []uin
 
 // SQLArticleGetByCID 根据页码获取某个分类的列表
 // tagID 为0 表示全部主题
-func SQLTopicGetByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
-	return SQLCIDArticleList(gormDB, redisDB, tagID, start, limit, tz)
-}
+// func SQLTopicGetByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start, limit uint64, tz int) []Topic {
+// 	return SQLCIDArticleList(gormDB, redisDB, tagID, start, limit, tz)
+// }
 
-func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64, tz int) []Topic {
+// SQLArticleList 返回所有节点的主题
+// func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) []Topic {
+// 	return SQLCIDArticleList(
+// 		gormDB, redisDB, 0, start, limit, tz,
+// 	)
+// }
+
+func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64) (topics []Topic, err error) {
 	logger := util.GetLogger()
-	var topics []Topic
-	var err error
 	var tag Tag
 
 	ormFilter := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start))
-
 	if tagID != 0 {
 		tag, err = SQLGetTagByID(gormDB, tagID)
 		if err != nil {
@@ -259,7 +263,7 @@ func SQLCIDArticleList(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint
 		logger.Errorf("Can't get all topics for %d `%s`", tagID, err)
 	}
 
-	return topics
+	return topics, err
 }
 
 // only for rank
@@ -375,13 +379,6 @@ func GetArticleCntFromRedisDB(redisDB *redis.Client, aid uint64) uint64 {
 		data = 0
 	}
 	return data
-}
-
-// SQLArticleList 返回所有节点的主题
-func SQLArticleList(gormDB *gorm.DB, redisDB *redis.Client, start uint64, btnAct string, limit uint64, tz int) []Topic {
-	return SQLCIDArticleList(
-		gormDB, redisDB, 0, start, limit, tz,
-	)
 }
 
 func (topic *Topic) toKeyForComments() string {
