@@ -111,6 +111,7 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	// data.CanHide = true
 	// data.CanSticky = true
 	// data.Subscription = "follow"
+	data.IsSticky = topic.IsSticky
 
 	data.LastPostNumber = topic.LastPostID
 	data.LastPostedAt = topic.UpdatedAt.Format(time.RFC3339)

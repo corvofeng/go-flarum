@@ -50,7 +50,7 @@ type Discussion struct {
 	// IsHidden   bool `json:"isHidden"`
 	// IsApproved bool `json:"isApproved"`
 	// IsLocked   bool `json:"isLocked"`
-	// IsSticky   bool `json:"isSticky"`
+	IsSticky bool `json:"isSticky"`
 
 	// HiddenAt   string `json:"hiddenAt"`
 	// LastReadAt string `json:"lastReadAt"`
