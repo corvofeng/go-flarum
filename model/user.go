@@ -45,38 +45,6 @@ var DefaultPreference = flarum.Preferences{
 	Locale: "en",
 }
 
-// UserListItem 用户信息
-type UserListItem struct {
-	User
-	RegTimeFmt string `json:"regtime"`
-
-	Notice    string `json:"notice"`
-	NoticeNum uint64 `json:"noticenum"`
-
-	LastPostTime     uint64
-	LastReplyTime    uint64
-	LastLoginTime    uint64
-	LastPostTimeFmt  string `json:"lastposttime"`
-	LastReplyTimeFmt string `json:"lastreplytime"`
-	LastLoginTimeFmt string `json:"lastlogintime"`
-}
-
-// UserMini 简单用户
-type UserMini struct {
-	ID     uint64 `json:"id"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
-}
-
-// UserPageInfo 用户页面
-type UserPageInfo struct {
-	Items    []User `json:"items"`
-	HasPrev  bool   `json:"hasprev"`
-	HasNext  bool   `json:"hasnext"`
-	FirstKey uint64 `json:"firstkey"`
-	LastKey  uint64 `json:"lastkey"`
-}
-
 // toKey 作为Redis中的key值存储
 func (user *User) toKey() string {
 	return fmt.Sprintf("%d", user.ID)

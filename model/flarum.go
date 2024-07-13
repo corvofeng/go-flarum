@@ -109,7 +109,7 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	data.FirstPostID = topic.FirstPostID
 	data.CanReply = true
 	data.CanHide = true
-	data.Subscription = "follow"
+	// data.Subscription = "follow"
 
 	data.LastPostNumber = topic.LastPostID
 	data.LastPostedAt = topic.UpdatedAt.Format(time.RFC3339)
