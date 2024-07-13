@@ -100,9 +100,9 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Get("/auth/github/callback"), ct.GithubOauthCallbackHandler)
 
 	// discussion
-	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumArticleDetail)
-	sp.HandleFunc(pat.Get("/d/:aid/:sn"), ct.FlarumArticleDetail) // startNumber
-	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumArticleDetail)
+	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumDiscussionDetail)
+	sp.HandleFunc(pat.Get("/d/:aid/:sn"), ct.FlarumDiscussionDetail) // startNumber
+	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumDiscussionDetail)
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), ct.FlarumUserPage)
@@ -133,7 +133,7 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Get("/discussions"), ct.FlarumAPIDiscussions)
 
 	// 获取某个帖子的详细信息 GET请求
-	apiSP.HandleFunc(pat.Get("/discussions/:aid"), ct.FlarumArticleDetail)
+	apiSP.HandleFunc(pat.Get("/discussions/:aid"), ct.FlarumDiscussionDetail)
 
 	// 获取帖子的详细信息, POST请求
 	// 与上面不同的是, 这里的请求中可能携带有当前登录用户阅读到的位置, 将其进行记录
@@ -159,14 +159,14 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 			ct.MustAuthMiddleware,
 			ct.MustCSRFMiddleware,
 		},
-		ct.FlarumCommentsUtils,
+		ct.FlarumPostsUtils,
 	))
 
 	apiSP.HandleFunc(pat.Get("/new_captcha"), ct.NewCaptcha)
 
-	apiSP.HandleFunc(pat.Get("/posts"), ct.FlarumComments)
+	apiSP.HandleFunc(pat.Get("/posts"), ct.FlarumPosts)
 
-	apiSP.HandleFunc(pat.Get("/posts/:cid"), ct.FlarumComments)
+	apiSP.HandleFunc(pat.Get("/posts/:cid"), ct.FlarumPosts)
 
 	// Create reply posts
 	apiSP.HandleFunc(pat.Post("/posts"), ct.MiddlewareArrayToChains(

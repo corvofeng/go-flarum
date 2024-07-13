@@ -37,7 +37,7 @@ type replyFilter struct {
 // eArticle: 获取一条帖子下方的评论信息
 // eUserPost: 获取用户的最新评论
 // ePost: 获取一条评论信息
-func createFlarumReplyAPIDoc(
+func createFlarumPostAPIDoc(
 	reqctx *ReqContext,
 	gormDB *gorm.DB, redisDB *redis.Client,
 	appConf model.AppConf,
@@ -309,7 +309,7 @@ func FlarumAPICreatePost(w http.ResponseWriter, r *http.Request) {
 		Limit: comment.Number,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 	if err != nil {
 		h.flarumErrorMsg(w, "查询评论出现错误:"+err.Error())
 		return
@@ -365,8 +365,8 @@ func FlarumConfirmUserAndPost(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// FlarumComments 获取评论
-func FlarumComments(w http.ResponseWriter, r *http.Request) {
+// FlarumPosts 获取评论
+func FlarumPosts(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	logger := ctx.GetLogger()
 	h := ctx.h
@@ -484,7 +484,7 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 		logger.Warning("Can't process post api")
 	}
 
-	coreData, err = createFlarumReplyAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err = createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
@@ -498,8 +498,8 @@ func FlarumComments(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// FlarumCommentsUtils 对于评论的一些操作
-func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
+// FlarumPostsUtils 对于评论的一些操作
+func FlarumPostsUtils(w http.ResponseWriter, r *http.Request) {
 	var err error
 	ctx := GetRetContext(r)
 	logger := ctx.GetLogger()
@@ -547,7 +547,7 @@ func FlarumCommentsUtils(w http.ResponseWriter, r *http.Request) {
 		AID: cobj.AID,
 	}
 
-	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
+	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, ctx.h.App.Cf.Site.TimeZone)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
 		return
