@@ -31,6 +31,7 @@ type Topic struct {
 	CommentCount uint64
 
 	ClientIP string `json:"clientip"`
+	IsSticky bool
 
 	Tags []Tag `gorm:"many2many:topic_tags;"`
 }

@@ -30,6 +30,8 @@ func main() {
 	util.CheckError(app.GormDB.AutoMigrate(model.Topic{}), "migrate topic")
 	util.CheckError(app.GormDB.AutoMigrate(model.Reply{}), "migrate reply")
 	util.CheckError(app.GormDB.AutoMigrate(model.ReplyLikes{}), "migrate reply likes")
+	util.CheckError(app.GormDB.AutoMigrate(model.UserTopic{}), "migrate user topic")
+	util.CheckError(app.GormDB.AutoMigrate(model.ActionRecord{}), "migrate action record")
 
 	logger.Info(app.GormDB, app.RedisDB)
 	model.RankMapInit(app.GormDB, app.RedisDB)

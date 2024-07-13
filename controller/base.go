@@ -65,13 +65,14 @@ type (
 
 	// ReqContext 请求时将会携带的contex信息
 	ReqContext struct {
-		currentUser *model.User
-		inAPI       bool
-		inAdmin     bool
-		h           *BaseHandler
-		realIP      string
-		locale      string
-		err         error
+		currentUser   *model.User
+		inAPI         bool
+		inAdmin       bool
+		h             *BaseHandler
+		realIP        string
+		locale        string
+		err           error
+		actionRecords string
 	}
 
 	// PageData 每个页面中的全部信息

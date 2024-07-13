@@ -140,8 +140,9 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Post("/discussions/:aid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
+			ct.ActionRecordsMiddleware,
 		},
-		ct.FlarumArticleDetail,
+		ct.FlarumDiscussionEdit,
 	))
 
 	// Create discussion

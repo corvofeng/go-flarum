@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,41 @@ import (
 
 	"goji.io/pat"
 )
+
+func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
+	ctx := GetRetContext(r)
+	h := ctx.h
+	// gormDB := h.App.GormDB
+	// inAPI := ctx.inAPI
+	// scf := h.App.Cf.Site
+	// redisDB := h.App.RedisDB
+	logger := ctx.GetLogger()
+
+	type PostedDiscussion struct {
+		Data struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			Attributes struct {
+				IsSticky           bool   `json:"isSticky"`
+				LastReadPostNumber uint64 `json:"lastReadPostNumber"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	qf := PostedDiscussion{}
+	bytedata, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Read body error:"+err.Error()))
+		return
+	}
+	err = json.Unmarshal(bytedata, &qf)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("json Decode err:"+err.Error()))
+		return
+	}
+
+	ctx.actionRecords = string(bytedata)
+	logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
+}
 
 // FlarumArticleDetail 获取flarum中的某篇帖子
 // TODO: #12
@@ -20,18 +56,19 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
-	type QueryFilter struct {
+	type PostedDiscussion struct {
 		Data struct {
 			Type       string `json:"type"`
 			ID         string `json:"id"`
 			Attributes struct {
+				IsSticky           bool   `json:"isSticky"`
 				LastReadPostNumber uint64 `json:"lastReadPostNumber"`
 			} `json:"attributes"`
 		} `json:"data"`
 	}
 	getLastReadPostNumber := false
 
-	qf := QueryFilter{}
+	qf := PostedDiscussion{}
 	if inAPI {
 		if err := json.NewDecoder(r.Body).Decode(&qf); err == nil {
 			getLastReadPostNumber = true
@@ -112,8 +149,10 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Data struct {
 			Type       string `json:"type"`
 			Attributes struct {
-				Title   string `json:"title"`
-				Content string `json:"content"`
+				Title        string `json:"title"`
+				Content      string `json:"content"`
+				Subscription string `json:"subscription"`
+				IsSticky     bool   `json:"isSticky"`
 			} `json:"attributes"`
 			Relationships struct {
 				Tags struct {
@@ -127,10 +166,22 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	diss := PostedDiscussion{}
-	err := json.NewDecoder(r.Body).Decode(&diss)
+	bytedata, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Read body error:"+err.Error()))
+		return
+	}
+	logger.Debugf("Upate discussion with: %s", string(bytedata))
 
+	err = json.Unmarshal(bytedata, &diss)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("json Decode err:"+err.Error()))
+		return
+	}
+	err = model.CreateActionRecord(gormDB, ctx.currentUser.ID, string(bytedata))
+	if err != nil {
+		logger.Error("Can't create action record", err)
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create action record"+err.Error()))
 		return
 	}
 
@@ -140,6 +191,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Content:      diss.Data.Attributes.Content,
 		CommentCount: 1,
 		ClientIP:     ctx.realIP,
+		IsSticky:     diss.Data.Attributes.IsSticky,
 	}
 
 	for _, rela := range diss.Data.Relationships.Tags.Data {
