@@ -31,3 +31,9 @@
 [submodule "view/framework"]
 	path = view/framework
 	url = https://github.com/flarum/framework.git
+[submodule "view/extensions/flarum-subscriptions"]
+	path = view/extensions/flarum-subscriptions
+	url = https://github.com/flarum/subscriptions
+[submodule "view/extensions/flarum-sticky"]
+	path = view/extensions/flarum-sticky
+	url = https://github.com/flarum/sticky.git

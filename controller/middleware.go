@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/corvofeng/go-flarum/model"
 	"github.com/corvofeng/go-flarum/model/flarum"
 	"github.com/corvofeng/go-flarum/util"
 )
@@ -107,7 +108,6 @@ func (h *BaseHandler) OriginMiddleware(inner http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 		}
 		inner.ServeHTTP(w, r)
-		return
 	}
 	return http.HandlerFunc(mw)
 }
@@ -228,4 +228,33 @@ func RealIPMiddleware(inner http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(mw)
+}
+
+// Record user actions
+// If you want to make records, here is an example:
+//
+//	ctx.actionRecords = "Create a new discussion"
+func ActionRecordsMiddleware(inner HTTPHandleFunc) HTTPHandleFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		inner(w, r)
+		reqCtx := GetRetContext(r)
+		uid := uint64(0)
+		if reqCtx.currentUser != nil {
+			uid = reqCtx.currentUser.ID
+		}
+		if reqCtx.actionRecords == "" {
+			return
+		}
+
+		logger := reqCtx.h.App.Logger
+		if err := model.CreateActionRecord(
+			reqCtx.h.App.GormDB,
+			uid,
+			reqCtx.actionRecords,
+		); err != nil {
+			logger.Error(
+				"Can't create action record %s for %s", err, reqCtx.actionRecords)
+		}
+		logger.Debugf("Create action record %s for %d", reqCtx.actionRecords, uid)
+	}
 }

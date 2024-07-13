@@ -31,6 +31,7 @@ type Topic struct {
 	CommentCount uint64
 
 	ClientIP string `json:"clientip"`
+	IsSticky bool
 
 	Tags []Tag `gorm:"many2many:topic_tags;"`
 }
@@ -66,8 +67,6 @@ type ArticleListItem struct {
 	 * we need tell users that we do not return a random list.
 	 */
 	HighlightContent template.HTML `json:"highlight_content"`
-
-	LastComment *CommentListItem
 }
 
 // ArticlePageInfo data in every list page
@@ -135,15 +134,6 @@ func SQLArticleGetByID(gormDB *gorm.DB, redisDB *redis.Client, aid uint64) (Topi
 	return obj, err
 }
 
-// GetCommentsSize 获取评论
-/*
- * db (*sql.DB): TODO
- * redisDB (redis.Client): TODO
- */
-// func (topic *Topic) GetCommentsSize(db *sql.DB) uint64 {
-// 	return topic.CommentCount
-// }
-
 // GetWeight 获取当前帖子的权重
 /**
  * (Log10(QView) * 2 + 4 * comments)/ QAge
@@ -176,7 +166,6 @@ func (article *Topic) GetWeight(redisDB *redis.Client) float64 {
 // category是帖子比较大的分类, 每个帖子只能有一个
 // tag只是这个帖子具有的某种特征, 每个帖子可以有多个tag
 func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB) (bool, error) {
-	// func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB, tags flarum.RelationArray) (bool, error) {
 	logger := util.GetLogger()
 	tx := gormDB.Begin()
 	defer clearGormTransaction(tx)
@@ -261,8 +250,6 @@ func SQLGetTopicByUser(gormDB *gorm.DB, userID, start uint64, limit uint64) (top
 	return
 }
 
-// func  SQLGetTopicByUser(gormDB, df.UID, int(df.PageOffset), int(df.pageLimit+1))
-
 // only for rank
 func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {
 	var articles []ArticleMini
@@ -308,53 +295,6 @@ func sqlGetAllArticleWithCID(cid uint64, active bool) ([]ArticleMini, error) {
 	return articles, nil
 }
 
-// IncrArticleCntFromRedisDB 增加点击次数
-/*
-func (article *Topic) IncrArticleCntFromRedisDB(redisDB *redis.Client) uint64 {
-	var clickCnt uint64 = 0
-	aid := article.ID
-	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
-	_, err := rep.Uint64()
-	if err == redis.Nil { // 只有当redis中的数据不存在时，才向mysql与内存数据库请求
-		if clickCnt == 0 {
-			// 首先从sqlDB中查找
-			// fmt.Println("Get data from sqlDB", aid)
-			rows, err := sqlDB.Query("SELECT hits FROM topic where id = ?", aid)
-			defer func() {
-				if rows != nil {
-					rows.Close()
-				}
-			}()
-			if err != nil {
-				fmt.Printf("Query failed,err:%v", err)
-				clickCnt = 0
-			} else {
-				for rows.Next() {
-					err = rows.Scan(&clickCnt)
-					if err != nil {
-						fmt.Printf("Scan failed,err:%v", err)
-					}
-
-				}
-			}
-		}
-		if clickCnt == 0 {
-			fmt.Println("Get data from cntDB", aid)
-			redisDB.HSet("article_views", fmt.Sprintf("%d", aid), clickCnt)
-		}
-		if clickCnt == 0 {
-			rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aid), 1)
-			clickCnt = uint64(rep.Val())
-		}
-	} else {
-		rep := redisDB.HIncrBy("article_views", fmt.Sprintf("%d", aid), 1)
-		clickCnt = uint64(rep.Val())
-	}
-
-	return clickCnt
-}
-*/
-
 // GetArticleCntFromRedisDB 从不同的数据库中获取点击数
 func GetArticleCntFromRedisDB(redisDB *redis.Client, aid uint64) uint64 {
 	rep := redisDB.HGet("article_views", fmt.Sprintf("%d", aid))
@@ -374,7 +314,7 @@ func (topic *Topic) toKeyForComments() string {
 
 // CacheCommentList 缓存当前话题对应的评论ID, 该函数可以用于进行增加或是减少
 // 注意这里是有顺序的, 顺序为发帖时间
-func (topic *Topic) CacheCommentList(redisDB *redis.Client, comments []CommentListItem, done chan bool) error {
+func (topic *Topic) CacheCommentList(redisDB *redis.Client, comments []Comment, done chan bool) error {
 	logger := util.GetLogger()
 	logger.Debugf("Cache comment list for: %d, and %d comments", topic.ID, len(comments))
 	for _, c := range comments {

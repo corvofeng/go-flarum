@@ -108,6 +108,9 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	data.CreatedAt = topic.CreatedAt.Format(time.RFC3339)
 	data.FirstPostID = topic.FirstPostID
 	data.CanReply = true
+	// data.CanHide = true
+	// data.CanSticky = true
+	// data.Subscription = "follow"
 
 	data.LastPostNumber = topic.LastPostID
 	data.LastPostedAt = topic.UpdatedAt.Format(time.RFC3339)
@@ -205,7 +208,7 @@ func FlarumCreateGroup() flarum.Resource {
 }
 
 // FlarumCreatePost 创建评论
-func FlarumCreatePost(comment CommentListItem, currentUser *User) flarum.Resource {
+func FlarumCreatePost(comment Comment, currentUser *User) flarum.Resource {
 	obj := flarum.NewResource(flarum.EPost, comment.ID)
 	data := obj.Attributes.(*flarum.Post)
 
