@@ -75,6 +75,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 		if err != nil {
 			logger.Errorf("yamlFile.Get err %v ", err)
 		}
+		logger.Debugf("Reading file %s", fn)
 		localeData := make(map[string]interface{})
 
 		err = yaml.Unmarshal(yamlFile, &localeData)
@@ -90,6 +91,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 	flarumDatas, err := os.ReadDir(path.Join(flarumDir, "locale"))
 	if err == nil {
 		for _, fi := range flarumDatas {
+			fmt.Println("Get fi", fi.Name())
 			// 过滤指定格式
 			if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
 				doParseFile(path.Join(flarumDir, "locale", fi.Name()))
@@ -100,15 +102,17 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 	// 解析flarum-lang中携带的语言包
 	// locale/en/*.yml, locale/zh/*.yml
 	dirPath := path.Join(localeDir, locale, "locale")
-	dir, err := os.ReadDir(dirPath)
-	if err != nil {
-		logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
-		return localeDataArr
-	}
-	for _, fi := range dir {
-		// 过滤指定格式
-		if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
-			doParseFile(path.Join(dirPath, fi.Name()))
+	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
+		dir, err := os.ReadDir(dirPath)
+		if err != nil {
+			logger.Errorf("Can't read '%s' with err '%v'", dirPath, err)
+			// return localeDataArr
+		}
+		for _, fi := range dir {
+			// 过滤指定格式
+			if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+				doParseFile(path.Join(dirPath, fi.Name()))
+			}
 		}
 	}
 

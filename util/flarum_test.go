@@ -34,6 +34,12 @@ func TestReadLocale(t *testing.T) {
 	if localeDataArr["flarum-likes.forum.user.likes_link"] != "Likes" {
 		t.Errorf("Get wrong likes link")
 	}
+	if localeDataArr["core.forum.post_scrubber.viewing_text"] != "{count, plural, one {{index} of {formattedCount} post} other {{index} of {formattedCount} posts}}" {
+		t.Errorf("Get wrong viewing text %s", localeDataArr["core.forum.post_scrubber.viewing_text"])
+	}
+	if localeDataArr["flarum-subscriptions.forum.index.following_link"] != "Following" {
+		t.Errorf("Get wrong following link %s", localeDataArr["flarum-subscriptions.forum.index.following_link"])
+	}
 }
 
 func TestReadLocaleZh(t *testing.T) {
