@@ -46,9 +46,9 @@ func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
 }
 
-// FlarumArticleDetail 获取flarum中的某篇帖子
+// FlarumDiscussionDetail 获取flarum中的某篇帖子
 // TODO: #12
-func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
+func FlarumDiscussionDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	inAPI := ctx.inAPI
@@ -113,7 +113,7 @@ func FlarumArticleDetail(w http.ResponseWriter, r *http.Request) {
 			rf.StartNumber = sn
 		}
 	}
-	coreData, err := createFlarumReplyAPIDoc(
+	coreData, err := createFlarumPostAPIDoc(
 		ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
@@ -215,7 +215,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		FT:  eArticle,
 		AID: aobj.ID,
 	}
-	coreData, err := createFlarumReplyAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
