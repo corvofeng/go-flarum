@@ -399,8 +399,9 @@ func FlarumUserUpdate(w http.ResponseWriter, r *http.Request) {
 
 	type UserUpdate struct {
 		Data struct {
-			Type       string `json:"type"`
-			ID         string `json:"id"`
+			Type string `json:"type"`
+			ID   string `json:"id"`
+
 			Attributes struct {
 				Preferences flarum.Preferences `json:"preferences"`
 			} `json:"attributes"`

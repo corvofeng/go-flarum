@@ -14,22 +14,27 @@ import (
 func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
-	// gormDB := h.App.GormDB
-	// inAPI := ctx.inAPI
-	// scf := h.App.Cf.Site
-	// redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
 	type PostedDiscussion struct {
 		Data struct {
-			Type       string `json:"type"`
-			ID         string `json:"id"`
-			Attributes struct {
-				IsSticky           bool   `json:"isSticky"`
-				LastReadPostNumber uint64 `json:"lastReadPostNumber"`
-			} `json:"attributes"`
+			Type       string                 `json:"type"`
+			ID         string                 `json:"id"`
+			Attributes map[string]interface{} `json:"attributes"`
 		} `json:"data"`
 	}
+	_aid := pat.Param(r, "aid")
+	aid, err := strconv.ParseUint(_aid, 10, 64)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("aid type error"))
+		return
+	}
+	topic, err := model.SQLArticleGetByID(h.App.GormDB, h.App.RedisDB, aid)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't get discussion for: "+_aid+err.Error()))
+		return
+	}
+
 	qf := PostedDiscussion{}
 	bytedata, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -41,9 +46,17 @@ func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("json Decode err:"+err.Error()))
 		return
 	}
+	if val, ok := qf.Data.Attributes["lastReadPostNumber"]; ok {
+		logger.Debugf("LastReadPostNumber: %d %v", aid, val)
+	}
 
-	ctx.actionRecords = string(bytedata)
-	logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
+	if val, ok := qf.Data.Attributes["isSticky"]; ok {
+		logger.Debugf("IsSticky: %v", val)
+		ctx.actionRecords = string(bytedata)
+		logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
+	}
+	diss := model.FlarumCreateDiscussion(topic)
+	h.jsonify(w, diss)
 }
 
 // FlarumDiscussionDetail 获取flarum中的某篇帖子
@@ -56,38 +69,12 @@ func FlarumDiscussionDetail(w http.ResponseWriter, r *http.Request) {
 	redisDB := h.App.RedisDB
 	logger := ctx.GetLogger()
 
-	type PostedDiscussion struct {
-		Data struct {
-			Type       string `json:"type"`
-			ID         string `json:"id"`
-			Attributes struct {
-				IsSticky           bool   `json:"isSticky"`
-				LastReadPostNumber uint64 `json:"lastReadPostNumber"`
-			} `json:"attributes"`
-		} `json:"data"`
-	}
-	getLastReadPostNumber := false
-
-	qf := PostedDiscussion{}
-	if inAPI {
-		if err := json.NewDecoder(r.Body).Decode(&qf); err == nil {
-			getLastReadPostNumber = true
-		}
-	}
-
 	_aid := pat.Param(r, "aid")
 	aid, err := strconv.ParseUint(_aid, 10, 64)
 	if err != nil {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("aid type error"))
 		return
 	}
-
-	// if !getLastReadPostNumber {
-	// 	if near, err := strconv.ParseUint(_near, 10, 64); err == nil {
-	// 		getLastReadPostNumber = true
-	// 		qf.Data.Attributes.LastReadPostNumber = near
-	// 	}
-	// }
 
 	article, err := model.SQLArticleGetByID(h.App.GormDB, redisDB, aid)
 	if err != nil {
@@ -103,13 +90,10 @@ func FlarumDiscussionDetail(w http.ResponseWriter, r *http.Request) {
 
 		LastReadPostNumber: 0,
 	}
-	if getLastReadPostNumber {
-		rf.LastReadPostNumber = qf.Data.Attributes.LastReadPostNumber
-	}
+
 	_sn, err := h.safeGetParm(r, "sn")
 	if err == nil {
 		if sn, err := strconv.ParseUint(_sn, 10, 64); err == nil {
-			getLastReadPostNumber = true
 			rf.StartNumber = sn
 		}
 	}
@@ -152,7 +136,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 				Title        string `json:"title"`
 				Content      string `json:"content"`
 				Subscription string `json:"subscription"`
-				IsSticky     bool   `json:"isSticky"`
+				// IsSticky     bool   `json:"isSticky"`
 			} `json:"attributes"`
 			Relationships struct {
 				Tags struct {
@@ -191,7 +175,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		Content:      diss.Data.Attributes.Content,
 		CommentCount: 1,
 		ClientIP:     ctx.realIP,
-		IsSticky:     diss.Data.Attributes.IsSticky,
+		// IsSticky:     diss.Data.Attributes.IsSticky,
 	}
 
 	for _, rela := range diss.Data.Relationships.Tags.Data {
