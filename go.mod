@@ -20,7 +20,7 @@ require (
 	github.com/weint/config v0.0.0-20170804020532-16809f7a2214
 	github.com/weint/httpclient v0.0.0-20180504101821-32544e5b5992
 	goji.io v2.0.2+incompatible
-	golang.org/x/image v0.14.0 // indirect
+	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/oauth2 v0.15.0
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
