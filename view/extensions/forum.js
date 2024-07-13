@@ -11,8 +11,10 @@ import * as flarum_subscriptions from './flarum-subscriptions/js/forum';
 
 export * from './auth-github/js/forum';
 export * from './analytics/js/forum';
+import * as flarum_sticky from './flarum-sticky/js/forum';
 // export * from './custom-footer/js/forum';
 // export * from './flarum-pipetables/js/forum';
+flarum.extensions["flarum-sticky"] = flarum_sticky;
 flarum.extensions["flarum-subscriptions"] = flarum_subscriptions;
 flarum.extensions["flarum-mentions"] = flarum_mentions;
 flarum.extensions["tags"] = flarum_tags;
