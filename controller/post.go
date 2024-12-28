@@ -539,6 +539,8 @@ func FlarumPostsUtils(w http.ResponseWriter, r *http.Request) {
 	}
 	if val, ok := commentUtils.Data.Attributes["content"]; ok {
 		logger.Errorf("Didn't apply the method to update the comment, Update content to ", val.(string))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Didn't support modify comment"))
+		return
 	}
 
 	rf := replyFilter{
@@ -559,5 +561,4 @@ func FlarumPostsUtils(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.flarumErrorJsonify(w, createSimpleFlarumError("此接口仅在API中使用"))
-	return
 }

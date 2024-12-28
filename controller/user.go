@@ -131,6 +131,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := GetRetContext(r)
 	h := ctx.h
 	rsp := response{}
+	logger := ctx.h.App.Logger
 	type recForm struct {
 		Identification  string `json:"identification"`
 		Password        string `json:"password"`
@@ -173,6 +174,7 @@ func FlarumUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if uobj.Password != rec.Password {
+		logger.Debugf("For user %s, want %s but get %s", uobj.Name, uobj.Password, rec.Password)
 		rsp = normalRsp{405, "登录失败, 请检查用户名与密码"}
 		h.jsonify(w, rsp)
 		return
