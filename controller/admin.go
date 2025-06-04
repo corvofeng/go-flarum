@@ -64,6 +64,7 @@ func createFlarumAdminAPIDoc(
 
 	// coreData.Settings.ExtensionsEnabled = "[\"flarum-flags\",\"flarum-mentions\",\"flarum-bbcode\",\"flarum-markdown\",\"flarum-approval\",\"flarum-statistics\",\"flarum-sticky\",\"flarum-emoji\",\"flarum-tags\",\"flarum-suspend\",\"flarum-subscriptions\",\"flarum-lock\",\"flarum-likes\",\"flarum-lang-english\"]"
 	enabledExtensions := []string{
+		"flarum-auth-github",
 		"flarum-flags",
 		"flarum-mentions",
 		"flarum-bbcode",
