@@ -10,6 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func isValidFilename(filename string) bool {
+	return strings.HasSuffix(filename, ".yml") || strings.HasSuffix(filename, ".yaml")
+}
+
 func recursiveRead(localeData map[string]interface{}, prefix string, localeDataArr *map[string]string) {
 	logger := GetLogger()
 	// 递归的获取信息
@@ -91,7 +95,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 	if err == nil {
 		for _, fi := range flarumDatas {
 			// 过滤指定格式
-			if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+			if ok := isValidFilename(fi.Name()); ok {
 				doParseFile(path.Join(flarumDir, "locale", fi.Name()))
 			}
 		}
@@ -107,7 +111,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 	}
 	for _, fi := range dir {
 		// 过滤指定格式
-		if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+		if ok := isValidFilename(fi.Name()); ok {
 			doParseFile(path.Join(dirPath, fi.Name()))
 		}
 	}
@@ -132,7 +136,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 			}
 			for _, fi := range dir {
 				// 过滤指定格式
-				if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+				if ok := isValidFilename(fi.Name()); ok {
 					doParseFile(path.Join(extDir, fi.Name()))
 				}
 			}
@@ -159,7 +163,7 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 
 			for _, fi := range dir {
 				// 过滤指定格式
-				if ok := strings.HasSuffix(fi.Name(), ".yml"); ok {
+				if ok := isValidFilename(fi.Name()); ok {
 					doParseFile(path.Join(extLocaleDir, fi.Name()))
 				}
 			}

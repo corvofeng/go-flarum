@@ -7,6 +7,7 @@
   <meta charset="utf-8">
   <title>{{.SiteCf.Name}}</title>
   <link rel="stylesheet" href="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}.css">
+  <link rel="stylesheet" href="{{.SiteCf.CDNBaseURL}}/static/flarum/fof_{{.FlarumJSPrefix}}.css">
   <link rel="canonical" href="{{.SiteCf.MainDomain}}">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
   <meta name="description" content="">
@@ -37,6 +38,7 @@
   flarum.core.compat = window.flarum_core_compat;
 </script>
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}_ext.js"></script>
+<script src="{{.SiteCf.CDNBaseURL}}/static/flarum/fof_{{.FlarumJSPrefix}}_ext.js"></script>
 <script src="/locale/{{ .FlarumInfo.Locale }}/flarum-lang.js"></script>
 
 <script>

@@ -37,3 +37,12 @@
 [submodule "view/extensions/flarum-sticky"]
 	path = view/extensions/flarum-sticky
 	url = https://github.com/flarum/sticky.git
+[submodule "view/extensions/flarum-blog"]
+	path = view/extensions/flarum-blog
+	url = https://github.com/v17development/flarum-blog.git
+[submodule "view/extensions/fof-discussion-language"]
+	path = view/extensions/fof-discussion-language
+	url = https://github.com/FriendsOfFlarum/discussion-language.git
+[submodule "view/extensions/fof-follow-tags"]
+	path = view/extensions/fof-follow-tags
+	url = https://github.com/FriendsOfFlarum/follow-tags.git
