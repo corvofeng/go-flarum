@@ -4,6 +4,7 @@ import * as flarum_tags from '../framework/extensions/tags/js/forum';
 export * from '../framework/extensions/markdown/js/forum';
 import * as flarum_likes from '../framework/extensions/likes/js/forum';
 import * as flarum_mentions from './mentions/js/forum';
+import * as flarum_lock from  '../framework/extensions/lock/js/forum';
 
 export * from './recaptcha/js/forum';
 import * as flarum_subscriptions from './flarum-subscriptions/js/forum';
@@ -19,6 +20,7 @@ flarum.extensions["flarum-subscriptions"] = flarum_subscriptions;
 flarum.extensions["flarum-mentions"] = flarum_mentions;
 flarum.extensions["tags"] = flarum_tags;
 flarum.extensions["likes"] = flarum_likes;
+flarum.extensions["lock"] = flarum_lock;
 
 // flarum.extensions['fof-upload'] = {};
 // flarum.extensions['v17development-seo'] = {};
