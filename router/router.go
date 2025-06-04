@@ -83,7 +83,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	sp.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
 	sp.HandleFunc(pat.Get("/blog"), ct.FlarumIndex)
-	sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)
 
 	// robots.txt
@@ -105,6 +104,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.HandleFunc(pat.Get("/d/:aid"), ct.FlarumDiscussionDetail)
 	sp.HandleFunc(pat.Get("/d/:aid/:sn"), ct.FlarumDiscussionDetail) // startNumber
 	sp.HandleFunc(pat.Post("/d/:aid"), ct.FlarumDiscussionDetail)
+	sp.HandleFunc(pat.Get("/blog/:aid"), ct.FlarumDiscussionDetail)
 
 	// user
 	sp.HandleFunc(pat.Get("/u/:username"), ct.FlarumUserPage)
