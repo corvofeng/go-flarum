@@ -83,6 +83,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 
 	sp.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
 	sp.HandleFunc(pat.Get("/blog"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)
 
 	// robots.txt
