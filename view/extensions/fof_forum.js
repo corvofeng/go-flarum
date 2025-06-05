@@ -11,6 +11,7 @@
 
 
 export * from './flarum-blog/js/forum';
+export * from './fof-upload/js/forum';
 // import * as flarum_discussion_languages from './fof-discussion-language/js/forum';
 // flarum.extensions['fof-discussion-language'] = flarum_discussion_languages;
 // console.log("get components", components)
