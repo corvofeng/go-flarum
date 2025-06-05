@@ -46,3 +46,6 @@
 [submodule "view/extensions/fof-follow-tags"]
 	path = view/extensions/fof-follow-tags
 	url = https://github.com/FriendsOfFlarum/follow-tags.git
+[submodule "view/extensions/fof-upload"]
+	path = view/extensions/fof-upload
+	url = https://github.com/FriendsOfFlarum/upload.git

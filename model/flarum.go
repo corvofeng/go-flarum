@@ -43,6 +43,8 @@ func FlarumCreateForumInfo(
 	data.MaxSecondaryTags = 3
 	data.MinPrimaryTags = 1
 	data.MinSecondaryTags = 0
+	data.FofUploadCanUpload = true
+	data.FofUploadComposerButtonVisibility = "both"
 
 	data.BasePath = ""
 	// data.BaseURL = "/"
