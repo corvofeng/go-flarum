@@ -1,5 +1,5 @@
-import { app, compat } from "./framework/framework/core/js/admin";
+import { app } from "./framework/framework/core/js/admin";
 
 window.flarum_core_app = app;
-window.flarum_core_compat = compat;
+// window.flarum_core_compat = compat;
 

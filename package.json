@@ -1,4 +1,6 @@
 {
+  "type": "module",
+  "prettier": "@flarum/prettier-config",
   "scripts": {
     "dev": "webpack server --mode development --progress",
     "build": "webpack --mode production",
@@ -35,19 +37,23 @@
     "textarea-caret": "^3.1.0",
     "throttle-debounce": "^3.0.1",
     "ts-loader": "^8.0.2",
+    "format-message": "^6.2.4",
     "twemoji": "^13.0.0"
   },
   "devDependencies": {
+    "@flarum/jest-config": "^2.0.0",
+    "@flarum/prettier-config": "^1.0.0",
     "@types/jquery": "^3.5.10",
     "@types/mithril": "^2.0.8",
-    "@types/punycode": "^2.1.0",
     "@types/textarea-caret": "^3.0.1",
+    "@types/ua-parser-js": "^0.7.36",
+    "@types/punycode": "^2.1.0",
     "bundlewatch": "^0.3.2",
     "cross-env": "^7.0.3",
     "expose-loader": "^3.1.0",
     "file-loader": "^6.2.0",
-    "flarum-tsconfig": "^1.0.2",
-    "flarum-webpack-config": "^2.0.0",
+    "flarum-tsconfig": "^2.0.0",
+    "flarum-webpack-config": "^3.0.0",
     "husky": "^4.3.8",
     "prettier": "^2.5.1",
     "typescript": "^4.5.4",
