@@ -124,6 +124,7 @@ func createFlarumPostAPIDoc(
 	// 针对某个话题时, 这里直接进行添加
 	if rf.FT == eArticle || rf.FT == ePost || rf.FT == ePosts {
 		article, err := model.SQLArticleGetByID(gormDB, redisDB, rf.AID)
+		logger.Debugf("Get article for %+v", article)
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
 		} else {

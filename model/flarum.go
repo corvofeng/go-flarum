@@ -231,13 +231,12 @@ func FlarumCreatePost(comment Comment, currentUser *User) flarum.Resource {
 
 	if currentUser != nil {
 		data.CanLike = true
-	}
-
-	if currentUser != nil && currentUser.IsAdmin() {
-		data.CanEdit = true
-		data.CanHide = true
-		data.IsApproved = true
-		data.IPAddress = comment.ClientIP
+		if currentUser.IsAdmin() {
+			data.CanEdit = true
+			data.CanHide = true
+			data.IsApproved = true
+			data.IPAddress = comment.ClientIP
+		}
 	}
 
 	obj.BindRelations(
