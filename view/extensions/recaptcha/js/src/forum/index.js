@@ -1,9 +1,10 @@
-import { extend, override } from 'flarum/extend';
-import SignUpModal from 'flarum/components/SignUpModal';
-import LogInModal from 'flarum/components/LogInModal';
-import LogInButtons from 'flarum/components/LogInButtons';
-import LogInButton from 'flarum/components/LogInButton';
-import Alert from 'flarum/components/Alert';
+import app from 'flarum/forum/app';
+import { extend, override } from 'flarum/common/extend';
+import SignUpModal from 'flarum/forum/components/SignUpModal';
+import LogInModal from 'flarum/forum/components/LogInModal';
+import LogInButtons from 'flarum/forum/components/LogInButtons';
+import LogInButton from 'flarum/forum/components/LogInButton';
+import Alert from 'flarum/forum/components/Alert';
 import md5 from 'md5';
 import SelfCaptcha from "./components/captcha";
 import Captcha from "./captcha";
@@ -20,7 +21,7 @@ app.initializers.add('recaptcha', () => {
   let isOverrideLogIn = false;  // 是否重写了重要函数
 
   // 处理注册页面
-  extend(SignUpModal.prototype, 'submitData', function (data) {
+  extend('flarum/forum/components/SignUpModal', 'submitData', function (data) {
     const recaptcha = this.fields().items.recaptcha;
     if (recaptcha) {
       data['captcha-solution'] = Captcha.captchaSolution;
@@ -28,10 +29,10 @@ app.initializers.add('recaptcha', () => {
     }
   });
 
-  extend(SignUpModal.prototype, 'fields', function (fields) {
+  extend('flarum/forum/components/SignUpModal', 'fields', function (fields) {
     if (!isOverrideSignUp) {
       isOverrideSignUp = true;
-      override(SignUpModal.prototype, 'onsubmit', function (original, e) {
+      override('flarum/forum/components/SignUpModal', 'onsubmit', function (original, e) {
         e.preventDefault();
         this.loading = true;
         const data = this.submitData();
@@ -64,11 +65,11 @@ app.initializers.add('recaptcha', () => {
 
   let recaptcha = new SelfCaptcha();
   // 处理登录页面
-  extend(LogInModal.prototype, 'fields', function (fields) {
+  extend('flarum/forum/components/LogInModal', 'fields', function (fields) {
     if (!isOverrideLogIn) {
       isOverrideLogIn = true;
 
-      override(LogInModal.prototype, 'onsubmit', function (original, e) {
+      override('flarum/forum/components/LogInModal', 'onsubmit', function (original, e) {
         e.preventDefault();
         this.loading = true;
 
