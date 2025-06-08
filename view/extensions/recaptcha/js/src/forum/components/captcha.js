@@ -1,4 +1,7 @@
-import Component from 'flarum/Component';
+// import Component from 'flarum/Component';
+import Component from 'flarum/common/Component';
+
+
 import Stream from 'mithril/stream';
 import Captcha from "../captcha";
 

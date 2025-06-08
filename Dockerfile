@@ -1,27 +1,20 @@
 # 静态资源编译阶段
-FROM node:14.16.0-alpine3.12 as build-static
+FROM node:22.14.0-alpine AS build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
-WORKDIR /home/go-flarum
-COPY package.json *.lock ./
+WORKDIR /home/go-flarum/
+RUN mkdir -p view
+COPY view/package.json  ./view/
+COPY view/*.lock  ./view/
 
-# 只安装dependencies依赖
-# node镜像自带yarn
-# ## BOF CLEAN
-# # 国内用户可能设置 regietry
-ARG registry=https://registry.npm.taobao.org
-ARG disturl=https://npm.taobao.org/dist
-RUN yarn config set disturl $disturl
-RUN yarn config set registry $registry
-# ## EOF CLEAN
-RUN yarn --only=prod
-
-COPY webpack.config.js ./
-COPY view ./view
-RUN yarn build
+RUN cd view && yarn --only=prod
+COPY composer.json /home/go-flarum/composer.json
+# COPY view/webpack.config.cjs ./
+COPY view view/
+RUN  cd view && yarn build
 
 # Golang编译阶段
-FROM golang:1.20.5-alpine3.18 as build-backend
+FROM golang:1.20.5-alpine3.18 AS build-backend
 # All these steps will be cached
 WORKDIR /home/go-flarum
 

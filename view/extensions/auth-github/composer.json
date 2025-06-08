@@ -1,0 +1,33 @@
+{
+    "name": "flarum/auth-github",
+    "description": "Allow users to log in with GitHub.",
+    "type": "flarum-extension",
+    "keywords": ["authentication"],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/flarum/core/issues",
+        "source": "https://github.com/flarum/auth-github"
+    },
+    "require": {
+        "flarum/core": "^0.1.0-beta.13",
+        "league/oauth2-github": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flarum\\Auth\\Github\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.x-dev"
+        },
+        "flarum-extension": {
+            "title": "GitHub Login",
+            "icon": {
+                "name": "fab fa-github",
+                "backgroundColor": "#eee",
+                "color": "#333"
+            }
+        }
+    }
+}

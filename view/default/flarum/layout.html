@@ -24,6 +24,8 @@
 
 <div id="modal"></div>
 <div id="alerts"></div>
+<div id="notices"></div>
+<div id="footer"></div>
 
 <script>
   document.getElementById('flarum-loading').style.display = 'block';
@@ -34,7 +36,7 @@
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}.js"></script>
 <script>
   flarum.core.app = window.flarum_core_app;
-  flarum.core.compat = window.flarum_core_compat;
+  // flarum.core.compat = window.flarum_core_compat;
 </script>
 <script src="{{.SiteCf.CDNBaseURL}}/static/flarum/{{.FlarumJSPrefix}}_ext.js"></script>
 <script src="/locale/{{ .FlarumInfo.Locale }}/flarum-lang.js"></script>

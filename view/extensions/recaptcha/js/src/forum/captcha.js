@@ -18,4 +18,5 @@ var Captcha = {
   }
 }
 
-module.exports = Captcha;
+// module.exports = Captcha;
+export default Captcha;

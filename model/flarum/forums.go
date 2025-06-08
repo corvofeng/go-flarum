@@ -13,6 +13,7 @@ type Forum struct {
 	Description          string      `json:"description"`
 	ShowLanguageSelector bool        `json:"showLanguageSelector"`
 	BaseURL              string      `json:"baseUrl"`
+	JsChunksBaseUrl      string      `json:"jsChunksBaseUrl"`
 	BasePath             string      `json:"basePath"`
 	Debug                bool        `json:"debug"`
 	APIURL               string      `json:"apiUrl"`
@@ -40,6 +41,11 @@ type Forum struct {
 	MaxPrimaryTags       int         `json:"maxPrimaryTags"`
 	MinSecondaryTags     int         `json:"minSecondaryTags"`
 	MaxSecondaryTags     int         `json:"maxSecondaryTags"`
+
+	// (new Extend\Settings)
+	//     ->serializeToForum('flarum-emoji.cdn', 'flarum-emoji.cdn')
+	//     ->default('flarum-emoji.cdn', 'https://cdn.jsdelivr.net/gh/twitter/twemoji@[version]/assets/'),
+	FlarumEmojiCDN string `json:"flarum-emoji.cdn,omitempty"` // Emoji CDN URL, optional
 }
 
 // ForumRelations 站点关系
