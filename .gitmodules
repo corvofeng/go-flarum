@@ -37,3 +37,6 @@
 [submodule "view/extensions/flarum-sticky"]
 	path = view/extensions/flarum-sticky
 	url = https://github.com/flarum/sticky.git
+[submodule "view/extensions/flarum-blog"]
+	path = view/extensions/flarum-blog
+	url = https://github.com/v17development/flarum-blog.git
