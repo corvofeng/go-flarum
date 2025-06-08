@@ -7,9 +7,6 @@
 [submodule "view/extensions/diff"]
 	path = view/extensions/diff
 	url = https://github.com/the-turk/flarum-diff
-[submodule "view/extensions/auth-github"]
-	path = view/extensions/auth-github
-	url = https://github.com/flarum/auth-github.git
 [submodule "view/extensions/analytics"]
 	path = view/extensions/analytics
 	url = https://github.com/FriendsOfFlarum/analytics.git
