@@ -45,6 +45,10 @@ func FlarumCreateForumInfo(
 	data.MinSecondaryTags = 0
 	data.FofUploadCanUpload = true
 	data.FofUploadComposerButtonVisibility = "both"
+	data.BlogTags = []string{
+		"1",
+		"12",
+	}
 
 	data.BasePath = ""
 	// data.BaseURL = "/"
@@ -177,6 +181,11 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.IsEmailConfirmed = true
 	data.JoinTime = user.CreatedAt.String()
 	data.Slug = user.Name
+	// data.FofUploadDeleteOthersMediaLibrary = user.IsAdmin()
+	// data.FofUploadViewOthersMediaLibrary = user.IsAdmin()
+	data.FofUploadUploadCountCurrent = 0
+	data.FofUploadUploadCountAll = 0
+
 	if len(user.Preferences) > 0 {
 		err := json.Unmarshal(user.Preferences, &data.Preferences)
 		if err != nil {

@@ -30,6 +30,16 @@ func NewRouter(app *system.Application) *goji.Mux {
 	)
 
 	NewFlarumRouter(app, sp)
+	NewFlarumBlogRouter(app, sp)
+	return sp
+}
+
+func NewFlarumBlogRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	app.Logger.Notice("Init flarum blog router")
+	sp.HandleFunc(pat.Get("/blog"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/blog/category/:tag"), ct.FlarumIndex)
+
 	return sp
 }
 
@@ -82,8 +92,6 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	))
 
 	sp.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
-	sp.HandleFunc(pat.Get("/blog"), ct.FlarumIndex)
-	sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
 	sp.HandleFunc(pat.Get("/t/:tag"), ct.FlarumIndex)
 
 	// robots.txt
