@@ -1,11 +1,10 @@
-const webpack = require('webpack');
 const fs = require('fs');
 const path = require('path');
 const config = require('flarum-webpack-config')();
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 let devServer = {
-  publicPath: '/webpack/static/flarum/',
+  publicPath: '/webpack/static/flarum/core/',
   // contentBase: path.join(__dirname, 'dist'),
   // compress: true,
   host: '0.0.0.0',
@@ -16,21 +15,16 @@ let devServer = {
     "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
   }
 };
-let OUTPUT_PATH = path.resolve(process.cwd(), 'static', 'flarum');
-let FLARUM_DIR = path.resolve(process.cwd(), 'view', 'flarum');
-let STATIC_DIR = path.resolve(process.cwd(), 'view');
-let EXT_DIR = path.resolve(process.cwd(), "view", "extensions");
+let OUTPUT_PATH = path.resolve(process.cwd(), '..', 'static', 'flarum', 'core');
+let FLARUM_DIR = path.resolve(process.cwd(), 'flarum');
+let STATIC_DIR = path.resolve(process.cwd());
+let EXT_DIR = path.resolve(process.cwd(), "extensions");
 
-config.module.rules.push(
-  {
-    test: /\.m?js/,
-    resolve: {
-      fullySpecified: false,
-    },
-});
+
 module.exports = [
   // flarum.core配置
   {
+    context: path.resolve('framework/framework/core/js/'),
     entry: function () {
       const entries = {};
       for (const app of ['forum', 'admin']) {
@@ -109,6 +103,7 @@ module.exports = [
               lessOptions: {
                 paths: [
                   path.resolve(__dirname, 'node_modules/components-font-awesome/less/'),
+                  path.resolve(__dirname, 'node_modules/components-font-awesome/css/'),
                   path.resolve(__dirname, 'node_modules/bootstrap/less/'),
                   path.resolve(FLARUM_DIR, 'less'),
                   path.resolve(FLARUM_DIR, 'less', 'common'),
