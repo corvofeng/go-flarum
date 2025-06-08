@@ -107,9 +107,9 @@ func (cb *Reply) getUserComments(gormDB *gorm.DB, redisDB *redis.Client) (commen
 }
 
 func sqlCommentListByTopicID(gormDB *gorm.DB, redisDB *redis.Client, topicID uint64, limit uint64, tz int) (comments []Comment, err error) {
-	var baseComments []Reply
-	err = gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&baseComments).Error
-	for _, bc := range baseComments {
+	var replys []Reply
+	err = gormDB.Order("number asc").Where("topic_id = ?", topicID).Limit(int(limit)).Find(&replys).Error
+	for _, bc := range replys {
 		comments = append(comments, bc.toComment(gormDB, redisDB, tz))
 	}
 	return

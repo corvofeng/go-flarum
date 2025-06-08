@@ -55,8 +55,23 @@ func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
 		ctx.actionRecords = string(bytedata)
 		logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
 	}
-	diss := model.FlarumCreateDiscussion(topic)
-	h.jsonify(w, diss)
+	_ = model.FlarumCreateDiscussion(topic)
+
+	rf := replyFilter{
+		FT:    eArticle,
+		AID:   topic.ID,
+		Limit: topic.CommentCount,
+	}
+
+	redisDB := h.App.RedisDB
+	scf := h.App.Cf.Site
+	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
+	h.jsonify(w, coreData.APIDocument)
 }
 
 // FlarumDiscussionDetail 获取flarum中的某篇帖子
@@ -90,6 +105,7 @@ func FlarumDiscussionDetail(w http.ResponseWriter, r *http.Request) {
 
 		LastReadPostNumber: 0,
 	}
+	logger.Debugf("Get discussion detail for %+v", rf)
 
 	_sn, err := h.safeGetParm(r, "sn")
 	if err == nil {

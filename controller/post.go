@@ -71,6 +71,7 @@ func createFlarumPostAPIDoc(
 	} else {
 		rf.StartNumber = rf.StartNumber - 10
 	}
+	logger.Debugf("Get comments with filter: %+v", rf)
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
 		comments, err = model.SQLCommentListByTopic(gormDB, redisDB, rf.AID, rf.Limit, tz)
@@ -188,6 +189,7 @@ func createFlarumPostAPIDoc(
 		}
 
 		post := model.FlarumCreatePost(comment, currentUser)
+		logger.Debugf("Create comment post for %+v", post)
 		apiDoc.AppendResources(post)
 		flarumPosts = append(flarumPosts, post)
 
@@ -221,9 +223,14 @@ func createFlarumPostAPIDoc(
 	))
 
 	if rf.FT == eArticle {
+		// apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 		if rf.NearNumber != 0 {
 			apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 		} else {
+			// if inAPI {
+			// 	apiDoc.SetData(flarumPosts) // 主要信息为当前帖子
+			// } else {
+			// }
 			apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
 		}
 	} else if rf.FT == ePost {
@@ -239,6 +246,7 @@ func createFlarumPostAPIDoc(
 	} else if rf.FT == eUserPost || rf.FT == ePosts {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
+	logger.Debugf("Update the api doc: %+v", apiDoc)
 	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	// apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	model.FlarumCreateLocale(&coreData, reqctx.locale)
