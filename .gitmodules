@@ -1,12 +1,6 @@
 [submodule "view/locale/en"]
 	path = view/locale/en
 	url = https://github.com/flarum/lang-english.git
-[submodule "view/extensions/emoji"]
-	path = view/extensions/emoji
-	url = https://github.com/flarum/emoji.git
-[submodule "view/extensions/mentions"]
-	path = view/extensions/mentions
-	url = https://github.com/flarum/mentions
 [submodule "view/extensions/markdown"]
 	path = view/extensions/markdown
 	url = https://github.com/flarum/markdown.git
