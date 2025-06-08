@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/corvofeng/go-flarum/model/flarum"
@@ -31,6 +32,8 @@ func FlarumCreateForumInfo(
 	}
 	// data.BasePath = "http://192.168.101.35:8082"
 	data.BaseURL = mainConf.BaseURL
+	data.JsChunksBaseUrl = fmt.Sprintf("%s/static/flarum", siteConf.CDNBaseURL)
+	data.FlarumEmojiCDN = "https://cdn.jsdelivr.net/gh/twitter/twemoji@[version]/assets/"
 	data.CanStartDiscussion = true
 	data.AllowSignUp = siteConf.AllowSignup
 	data.ShowLanguageSelector = true

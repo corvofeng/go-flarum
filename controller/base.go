@@ -109,11 +109,11 @@ func InitPageData(r *http.Request) *PageData {
 			SiteInfo:    model.GetSiteInfo(redisDB),
 		},
 		PluginHTML:     make(map[string]string),
-		FlarumJSPrefix: "forum",
+		FlarumJSPrefix: "core/forum",
 		// SiteInfo: model.GetSiteInfo(redisDB),
 	}
 	if pd.IsInAdmin {
-		pd.FlarumJSPrefix = "admin"
+		pd.FlarumJSPrefix = "core/admin"
 	}
 
 	if ctx.currentUser != nil {
