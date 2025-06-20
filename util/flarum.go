@@ -170,5 +170,33 @@ func FlarumReadLocale(flarumDir string, extDirs []string, localeDir, locale stri
 
 		}
 	}
+
+	// fof-upload/resources/locale/en.yml
+	for _, extDir := range extDirs {
+		extDirDatas, err := os.ReadDir(extDir)
+		if err != nil {
+			continue
+		}
+		for _, fi := range extDirDatas {
+			if !fi.IsDir() {
+				continue
+			}
+
+			extLocaleDir := path.Join(extDir, fi.Name(), "resources", "locale")
+			dir, err := os.ReadDir(extLocaleDir)
+			if err != nil {
+				continue
+			}
+
+			for _, fi := range dir {
+				// 过滤指定格式
+				if ok := isValidFilename(fi.Name()); ok {
+					doParseFile(path.Join(extLocaleDir, fi.Name()))
+				}
+			}
+
+		}
+	}
+
 	return localeDataArr
 }
