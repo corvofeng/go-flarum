@@ -34,6 +34,9 @@ const (
 
 	// EGroup 信息
 	EGroup EResourceType = "group"
+
+	// FoFUpload FoF上传文件
+	EFoFUploadFiles EResourceType = "files"
 )
 
 // IDataBase flarum数据
@@ -204,6 +207,9 @@ func NewResource(resourceType EResourceType, id uint64) Resource {
 		defaultRelation = &TagRelations{}
 	case EPost:
 		data = &Post{}
+		defaultRelation = &PostRelations{}
+	case EFoFUploadFiles:
+		data = &FlarumFoFFiles{}
 		defaultRelation = &PostRelations{}
 	case EGroup:
 		data = &Group{}

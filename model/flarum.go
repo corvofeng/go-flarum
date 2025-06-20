@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/corvofeng/go-flarum/model/flarum"
@@ -44,7 +45,7 @@ func FlarumCreateForumInfo(
 	data.MinPrimaryTags = 1
 	data.MinSecondaryTags = 0
 	data.FofUploadCanUpload = true
-	data.FofUploadComposerButtonVisibility = "both"
+	data.FofUploadComposerButtonVisiblity = "both"
 	data.BlogTags = []string{
 		"1",
 		"12",
@@ -161,6 +162,27 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 			},
 		)
 	}
+
+	return obj
+}
+
+func FlarumCreateFoFUploadFiles(uf UserFiles, user User) flarum.Resource {
+	obj := flarum.NewResource(flarum.EFoFUploadFiles, uf.ID)
+	data := obj.Attributes.(*flarum.FlarumFoFFiles)
+
+	data.BaseName = uf.FileName
+	data.BBCode = fmt.Sprintf("![%s](%s)", uf.FileName, uf.FilePath)
+	data.CanDelete = user.IsAdmin()
+	data.URL = uf.FilePath
+
+	data.Type = uf.FileType // for example: image/png
+
+	obj.BindRelations(
+		"User",
+		flarum.RelationDict{
+			Data: flarum.InitBaseResources(uf.UserID, "users"),
+		},
+	)
 
 	return obj
 }

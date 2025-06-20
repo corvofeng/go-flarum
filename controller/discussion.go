@@ -171,7 +171,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Read body error:"+err.Error()))
 		return
 	}
-	logger.Debugf("Upate discussion with: %s", string(bytedata))
+	logger.Debugf("Update discussion with: %s", string(bytedata))
 
 	err = json.Unmarshal(bytedata, &diss)
 	if err != nil {
@@ -185,7 +185,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aobj := model.Topic{
+	tobj := model.Topic{
 		UserID:       ctx.currentUser.ID,
 		Title:        diss.Data.Attributes.Title,
 		Content:      diss.Data.Attributes.Content,
@@ -201,10 +201,10 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 			logger.Warning("Get wrong tag id", rela.ID)
 			continue
 		}
-		aobj.Tags = append(aobj.Tags, tag)
+		tobj.Tags = append(tobj.Tags, tag)
 	}
 
-	_, err = aobj.CreateFlarumTopic(gormDB)
+	_, err = tobj.CreateFlarumTopic(gormDB)
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
@@ -213,7 +213,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 
 	rf := replyFilter{
 		FT:  eArticle,
-		AID: aobj.ID,
+		AID: tobj.ID,
 	}
 	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 

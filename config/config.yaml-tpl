@@ -6,6 +6,7 @@ Main:
     MySQLURL: "root:password@tcp(127.0.0.1:3306)/db?charset=utf8mb4&parseTime=True"
     MongoURL: "mongodb://localhost"
     RedisURL: "redis://:@localhost:6379"
+    UploadDir: "static/upload"
     StaticDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
@@ -20,6 +21,15 @@ Main:
     TLSKeyFile: ""
     SCHashKey: "BBt4fdaFlLFDlFDFLJiFFD8FD7876631345FDFDF998fdFD9fdF896766FFfdfa5"
     SCBlockKey: "cfdaFFiooVV7785565NL9876OTU0MGQ2"
+    S3Config:
+        Endpoint: ""
+        Bucket: "blog"
+        Region: "auto"
+        AccessKeyID : ""
+        SecretAccessKey: ""
+        UseSSL: false
+        Path: "flarum/%d/%m/%d/"
+        S3BaseURL: "https://xxx.com"
 Site:
     Name: "Zoe测试"
     Desc: "zoe & ez"

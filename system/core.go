@@ -99,6 +99,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	logger.Debug(pong, err)
 
 	logger.Debugf("Get mongo db url: %s", mcf.MongoURL)
+	logger.Debugf("Get S3 config: %+v", mcf.S3Config)
 	// mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mcf.MongoURL))
 	// if err != nil {
 	// 	logger.Errorf("Connect mongo error, %s", err)
@@ -125,7 +126,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 }
 
 func (app *Application) CanServeAdmin() bool {
-	return true
+	return app.Cf.Main.CanServeAdmin
 }
 
 // Close 清理程序连接

@@ -69,9 +69,9 @@ type Forum struct {
 	// $attributes['fof-upload.canDownload'] = $serializer->getActor()->can('fof-upload.download');
 	// $attributes['fof-upload.composerButtonVisiblity'] = $this->settings->get('fof-upload.composerButtonVisiblity', 'both');
 	// FofUploadCanUpload bool `json:"fof-upload.canUpload"`
-	FofUploadCanUpload                bool   `json:"fof-upload.canUpload"`
-	FofUploadCanDownload              bool   `json:"fof-upload.canDownload"`
-	FofUploadComposerButtonVisibility string `json:"fof-upload.composerButtonVisibility"` // "both", "none", "upload", "download"
+	FofUploadCanUpload               bool   `json:"fof-upload.canUpload"`
+	FofUploadCanDownload             bool   `json:"fof-upload.canDownload"`
+	FofUploadComposerButtonVisiblity string `json:"fof-upload.composerButtonVisiblity"` // "both", "none", "upload", "download"
 }
 
 // ForumRelations 站点关系

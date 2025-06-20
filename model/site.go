@@ -13,6 +13,17 @@ const (
 	FlarumExtensionAPI = "/api/extensions" // 用于网站管理员
 )
 
+type S3ConfigConf struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	Bucket          string
+	UseSSL          bool
+	Region          string
+	Path            string
+	S3BaseURL       string
+}
+
 // MainConf 主配置
 type MainConf struct {
 	HTTPPort int
@@ -30,14 +41,18 @@ type MainConf struct {
 	LocaleDir     string
 	ExtensionsDir string
 	ViewDir       string
+	UploadDir     string // 上传文件目录
 	Debug         bool
 
 	ServerName     string
+	CanServeAdmin  bool
 	CookieSecure   bool
 	CookieHttpOnly bool
 	OldSiteDomain  string
 	TLSCrtFile     string
 	TLSKeyFile     string
+
+	S3Config S3ConfigConf // S3配置
 
 	// secure cookie 初始化时需要
 	SCHashKey  string
