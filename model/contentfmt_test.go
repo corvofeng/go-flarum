@@ -51,6 +51,31 @@ world
 	}
 }
 
+func TestQuote(t *testing.T) {
+	str := `> hello world
+> > this is a quote >
+> > > this is a nested quote`
+	output := `<blockquote>
+<p>hello world</p>
+
+<blockquote>
+<p>this is a quote &gt;</p>
+
+<blockquote>
+<p>this is a nested quote</p>
+</blockquote>
+</blockquote>
+</blockquote>
+`
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+	html := string(markdown.ToHTML([]byte(str), nil, renderer))
+	if html != output {
+		t.Error(html, output)
+	}
+}
+
 func TestSkipHTML(t *testing.T) {
 	str := `<a href="/d/939/4" class="PostMention" data-id="141">@corvofeng</a>`
 	htmlFlags := html.CommonFlags | html.HrefTargetBlank

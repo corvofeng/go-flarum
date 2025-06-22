@@ -138,6 +138,15 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 		FlarumCreateTagRelations(flarumTags),
 	)
 
+	if topic.BlogMetaData.ID != 0 {
+		obj.BindRelations(
+			"BlogMeta",
+			flarum.RelationDict{
+				Data: flarum.InitBaseResources(topic.BlogMetaData.ID, "blogMeta"),
+			},
+		)
+	}
+
 	obj.BindRelations(
 		"FirstPost",
 		flarum.RelationDict{
@@ -237,6 +246,18 @@ func FlarumCreateGroup() flarum.Resource {
 	data.Icon = "fas fa-wrench"
 	data.NamePlural = "Admins"
 	data.NameSingular = "Admin"
+	return obj
+}
+
+func FlarumCreateBlogMeta(blogMeta BlogMeta, currentUser *User) flarum.Resource {
+	obj := flarum.NewResource(flarum.EBlogMeta, blogMeta.ID)
+	data := obj.Attributes.(*flarum.FlarumBlogMeta)
+	data.Summary = blogMeta.Summary
+	data.FeaturedImage = blogMeta.FeaturedImage
+	data.IsFeatured = blogMeta.IsFeatured
+	data.IsPendingReview = blogMeta.IsPendingReview
+	data.IsSized = blogMeta.IsSized
+
 	return obj
 }
 
@@ -346,5 +367,16 @@ func FlarumCreateTagRelations(tagArr []flarum.Resource) flarum.IRelation {
 		)
 	}
 
+	return obj
+}
+
+func FlarumCreateBlogMetaRelations(blogMetaArr []flarum.FlarumBlogMeta) flarum.IRelation {
+	var obj flarum.RelationArray
+	for _, p := range blogMetaArr {
+		obj.Data = append(
+			obj.Data,
+			flarum.InitBaseResources(p.GetID(), p.Type),
+		)
+	}
 	return obj
 }

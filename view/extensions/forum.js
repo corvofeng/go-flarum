@@ -25,7 +25,7 @@ flarum.extensions["flarum-markdown"] = flarum_markdown;
 flarum.extensions["tags"] = flarum_tags;
 flarum.extensions["likes"] = flarum_likes;
 flarum.extensions["lock"] = flarum_lock;
-flarum.extensions['flarum-fof-upload'] = flarum_fof_upload;
+flarum.extensions['fof-upload'] = flarum_fof_upload;
 // flarum.extensions['v17development-seo'] = {};
 // flarum.extensions['fof-follow-tags'] = require('./fof-follow-tags/js/forum');
 

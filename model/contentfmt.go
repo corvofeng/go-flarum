@@ -143,11 +143,11 @@ func ContentRich(input string) string {
 		}
 	}
 
-	// 将原有的字符串中的<>全部进行转义
-	input = htmlEscape(input)
-
 	// 对markdown文本进行解析
 	input = string(markdown.ToHTML([]byte(input), nil, renderer))
+
+	// 将原有的字符串中的<>全部进行转义
+	// input = htmlEscape(input)
 
 	// 将原有被替换成uuid的内容进行恢复
 	for k, v := range replaceDict {

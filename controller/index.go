@@ -98,7 +98,13 @@ func createFlarumPageAPIDoc(
 	var res []flarum.Resource
 	// 添加当前页面的的帖子与用户信息, 已经去重
 	for idx, topic := range topics {
-		logger.Debugf("Get topic %d %+v", topic.ID, topic.Tags)
+		logger.Debugf("Get topic %d with tags: %+v title: %s", topic.ID, func() []string {
+			var urlNames []string
+			for _, tag := range topic.Tags {
+				urlNames = append(urlNames, tag.URLName)
+			}
+			return urlNames
+		}(), topic.Title)
 		if idx == int(df.pageLimit) {
 			hasNext = true
 			continue
@@ -123,6 +129,10 @@ func createFlarumPageAPIDoc(
 		}
 
 		getUser(topic.UserID)
+		if topic.BlogMetaData.ID != 0 {
+			logger.Debugf("Create blog meta for article: %+v", topic.BlogMetaData)
+			apiDoc.AppendResources(model.FlarumCreateBlogMeta(topic.BlogMetaData, currentUser))
+		}
 
 		if topic.LastPostUserID == 0 {
 			// logger.Warning("Can't get last post user id for", topic.ID)

@@ -34,6 +34,9 @@ type Topic struct {
 	IsSticky bool
 
 	Tags []Tag `gorm:"many2many:topic_tags;"`
+
+	BlogMetaData BlogMeta
+	//  `gorm:"foreignKey:TopicID"`
 }
 
 // TopicTags 帖子的标签
@@ -133,6 +136,14 @@ func SQLArticleGetByID(gormDB *gorm.DB, redisDB *redis.Client, aid uint64) (Topi
 
 	return obj, err
 }
+func SQLGetTopicGetByTitle(gormDB *gorm.DB, title string) (Topic, error) {
+	var obj Topic
+	err := gormDB.Where("title = ?", title).First(&obj).Error
+	if err != nil {
+		return obj, err
+	}
+	return obj, nil
+}
 
 // GetWeight 获取当前帖子的权重
 /**
@@ -159,6 +170,14 @@ func (article *Topic) GetWeight(redisDB *redis.Client) float64 {
 	// qAge := now.Sub(editTime).Hours()
 	// weight := (math.Log10(float64(article.ClickCnt))*2 + 4*float64(article.GetCommentsSize(db))) / (qAge * 1.0)
 	return 0
+}
+func (article *Topic) GetFormatedString() string {
+	return fmt.Sprintf(
+		"[Article] ID: %d, UserID: %d, Title: %s",
+		article.ID,
+		article.UserID,
+		article.Title,
+	)
 }
 
 // CreateFlarumTopic 创建flarum的帖子
@@ -207,7 +226,10 @@ func (topic *Topic) CreateFlarumTopic(gormDB *gorm.DB) (bool, error) {
 
 // sqlGetTopicByList 获取帖子信息, NOTE: 请尽量调用该函数, 而不是自己去写sql语句
 func sqlGetTopicByList(gormDB *gorm.DB, articleList []uint64) (topics []Topic, err error) {
-	err = gormDB.Preload("Tags").Find(&topics, articleList).Error
+	err = gormDB.
+		Preload("Tags").
+		Preload("BlogMetaData").
+		Find(&topics, articleList).Error
 	return
 }
 
@@ -215,8 +237,7 @@ func sqlGetTopicByList(gormDB *gorm.DB, articleList []uint64) (topics []Topic, e
 func SQLGetTopicByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint64, limit uint64) (topics []Topic, err error) {
 	logger := util.GetLogger()
 	var tag Tag
-
-	ormFilter := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start))
+	ormFilter := gormDB.Preload("Tags").Preload("BlogMetaData").Limit(int(limit)).Offset(int(start))
 	if tagID != 0 {
 		tag, err = SQLGetTagByID(gormDB, tagID)
 		if err != nil {
@@ -236,7 +257,7 @@ func SQLGetTopicByTag(gormDB *gorm.DB, redisDB *redis.Client, tagID, start uint6
 
 func SQLGetTopicByUser(gormDB *gorm.DB, userID, start uint64, limit uint64) (topics []Topic, err error) {
 	var user User
-	ormFilter := gormDB.Preload("Tags").Limit(int(limit)).Offset(int(start))
+	ormFilter := gormDB.Preload("Tags").Preload("BlogMetaData").Limit(int(limit)).Offset(int(start))
 	if userID != 0 {
 		user, err = SQLUserGetByID(gormDB, userID)
 		if err != nil {
@@ -338,8 +359,8 @@ func (topic *Topic) GetCommentIDList(redisDB *redis.Client) (comments []uint64) 
 	return
 }
 
-func (article *Topic) CleanCache() {
+func (topic *Topic) CleanCache() {
 	logger := util.GetLogger()
-	rankRedisDB.Del(article.toKeyForComments())
-	logger.Info("Delete comment list cache for: ", article.ID)
+	rankRedisDB.Del(topic.toKeyForComments())
+	logger.Info("Delete comment list cache for: ", topic.ID)
 }

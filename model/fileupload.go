@@ -1,6 +1,10 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type UserFiles struct {
 	gorm.Model
@@ -24,11 +28,16 @@ func SQLGetUserFiles(gormDB *gorm.DB, userID uint64) (files []UserFiles, err err
 	return
 }
 
+func getCurDate() string {
+	// 获取当前日期的字符串表示, 兼容 MySQL 和 PostgreSQL
+	return time.Now().Format("2006-01-02")
+}
+
 // 获取用户当日上传的文件数
 func SQLGetUserDailyUploads(gormDB *gorm.DB, userID uint64) (count int64, err error) {
 	// 获取用户当日上传的文件数
 	err = gormDB.Model(&UserFiles{}).
-		Where("user_id = ? AND DATE(created_at) = CURDATE()", userID).
+		Where("user_id = ? AND DATE(created_at) = ?", userID, getCurDate()).
 		Count(&count).Error
 	return
 }

@@ -32,9 +32,11 @@ type MainConf struct {
 	BaseURL string
 
 	// 数据库地址
-	MySQLURL string
-	MongoURL string
-	RedisURL string
+	DB          string
+	MySQLURL    string
+	PostgresURL string
+	MongoURL    string
+	RedisURL    string
 
 	StaticDir     string
 	WebpackDir    string
