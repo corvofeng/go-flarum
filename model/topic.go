@@ -33,7 +33,7 @@ type Topic struct {
 	ClientIP string `json:"clientip"`
 	IsSticky bool
 
-	Tags []Tag `gorm:"many2many:topic_tags;"`
+	Tags []Tag `gorm:"many2many:topic_tags;",json:"tags"`
 
 	BlogMetaData BlogMeta
 	//  `gorm:"foreignKey:TopicID"`

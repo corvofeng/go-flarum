@@ -1,4 +1,5 @@
 var/
+export/
 db.json
 index/
 venv/

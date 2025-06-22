@@ -110,13 +110,13 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 	// 	return
 	// }
 
-	logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
-	sqlDb, err := sql.Open("mysql", mcf.MySQLURL)
-	if err != nil {
-		logger.Errorf("Connect mysql error, %s", err)
-		return
-	}
-	sqlDb.SetConnMaxLifetime(time.Minute * 10)
+	// logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
+	// sqlDb, err := sql.Open("mysql", mcf.MySQLURL)
+	// if err != nil {
+	// 	logger.Errorf("Connect mysql error, %s", err)
+	// 	return
+	// }
+	// sqlDb.SetConnMaxLifetime(time.Minute * 10)
 
 	app.RedisDB = rdsClient
 	ormLogLevel := ormLogger.Silent
@@ -137,6 +137,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 		),
 	}
 	if mcf.DB == "mysql" {
+		logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
 		gormConfig.Dialector = mysql.New(mysql.Config{
 			DSN:                       mcf.MySQLURL, // DSN data source name
 			DefaultStringSize:         256,          // string 类型字段的默认长度
@@ -146,6 +147,7 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 			SkipInitializeWithVersion: false,        // 根据当前 MySQL 版本自动配置
 		})
 	} else if mcf.DB == "postgres" {
+		logger.Debugf("Get postgres db url: %s", mcf.PostgresURL)
 		gormConfig.Dialector = postgres.New(postgres.Config{
 			DSN:                  mcf.PostgresURL, // DSN data source name
 			PreferSimpleProtocol: true,            // disables implicit prepared statement usage
@@ -172,5 +174,5 @@ func (app *Application) Close() {
 		app.RedisDB.Close()
 		app.RedisDB = nil
 	}
-	app.Logger.Debug("db cloded")
+	app.Logger.Info("db cloded")
 }

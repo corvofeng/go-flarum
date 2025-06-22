@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -72,7 +71,7 @@ func FlarumBlogMeta(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debugf("Update blog meta with: %+v", diss)
 	if _mid != "" && diss.Data.ID != "" && diss.Data.ID != _mid {
-		h.flarumErrorJsonify(w, createSimpleFlarumError("mid not match: "+_mid+" != "+fmt.Sprintf("%d", diss.Data.ID)))
+		h.flarumErrorJsonify(w, createSimpleFlarumError("mid not match: "+_mid+" != "+diss.Data.ID))
 		return
 	}
 	bmID := uint64(0)
