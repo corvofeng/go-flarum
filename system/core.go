@@ -1,7 +1,9 @@
 package system
 
 import (
+	"log"
 	"math/rand"
+	"os"
 	"runtime"
 	"time"
 
@@ -17,7 +19,9 @@ import (
 	logging "github.com/op/go-logging"
 	"github.com/weint/config"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	ormLogger "gorm.io/gorm/logger"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -108,16 +112,49 @@ func (app *Application) Init(c *config.Engine, currentFilePath string) {
 
 	logger.Debugf("Get mysql db url: %s", mcf.MySQLURL)
 	sqlDb, err := sql.Open("mysql", mcf.MySQLURL)
-	sqlDb.SetConnMaxLifetime(time.Minute * 10)
 	if err != nil {
 		logger.Errorf("Connect mysql error, %s", err)
 		return
 	}
+	sqlDb.SetConnMaxLifetime(time.Minute * 10)
 
 	app.RedisDB = rdsClient
-	app.GormDB, err = gorm.Open(mysql.New(mysql.Config{
-		Conn: sqlDb,
-	}), &gorm.Config{})
+	ormLogLevel := ormLogger.Silent
+	if mcf.Debug {
+		ormLogLevel = ormLogger.Info
+	}
+
+	gormConfig := gorm.Config{
+		Logger: ormLogger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			ormLogger.Config{
+				SlowThreshold:             time.Second, // Slow SQL threshold
+				LogLevel:                  ormLogLevel, // Log level
+				IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+				ParameterizedQueries:      false,       // Don't include params in the SQL log
+				Colorful:                  false,       // Disable color
+			},
+		),
+	}
+	if mcf.DB == "mysql" {
+		gormConfig.Dialector = mysql.New(mysql.Config{
+			DSN:                       mcf.MySQLURL, // DSN data source name
+			DefaultStringSize:         256,          // string 类型字段的默认长度
+			DisableDatetimePrecision:  true,         // 禁用 datetime 精度
+			DontSupportRenameIndex:    true,         // 重命名索引不支持
+			DontSupportRenameColumn:   true,         // 重命名列不支持
+			SkipInitializeWithVersion: false,        // 根据当前 MySQL 版本自动配置
+		})
+	} else if mcf.DB == "postgres" {
+		gormConfig.Dialector = postgres.New(postgres.Config{
+			DSN:                  mcf.PostgresURL, // DSN data source name
+			PreferSimpleProtocol: true,            // disables implicit prepared statement usage
+		})
+	} else {
+		logger.Fatalf("Unsupported database type: %s", mcf.DB)
+	}
+
+	app.GormDB, err = gorm.Open(&gormConfig)
 	util.CheckError(err, "gorm open error")
 	app.Sc = securecookie.New(
 		[]byte(app.Cf.Main.SCHashKey),

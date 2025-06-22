@@ -5,6 +5,7 @@ Main:
     Domain: ""
     MySQLURL: "root:password@tcp(127.0.0.1:3306)/db?charset=utf8mb4&parseTime=True"
     MongoURL: "mongodb://localhost"
+    PostgresURL: "user=postgres password=p@ssw0rd dbname=flarum host=192.168.191.110 port=5432 sslmode=disable"
     RedisURL: "redis://:@localhost:6379"
     UploadDir: "static/upload"
     StaticDir: "static"

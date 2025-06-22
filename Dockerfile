@@ -1,5 +1,5 @@
 # 静态资源编译阶段
-FROM node:14.16.0-alpine3.12 as build-static
+FROM node:22.16-alpine3.22 AS build-static
 
 # 创建工作目录，对应的是应用代码存放在容器内的路径
 WORKDIR /home/go-flarum
@@ -9,10 +9,10 @@ COPY package.json *.lock ./
 # node镜像自带yarn
 # ## BOF CLEAN
 # # 国内用户可能设置 regietry
-ARG registry=https://registry.npm.taobao.org
-ARG disturl=https://npm.taobao.org/dist
-RUN yarn config set disturl $disturl
-RUN yarn config set registry $registry
+# ARG registry=https://registry.npmmirror.com/
+# ARG disturl=https://npm.taobao.org/dist
+# RUN yarn config set disturl $disturl
+# RUN yarn config set registry https://registry.yarnpkg.com
 # ## EOF CLEAN
 RUN yarn --only=prod
 
@@ -21,7 +21,7 @@ COPY view ./view
 RUN yarn build
 
 # Golang编译阶段
-FROM golang:1.20.5-alpine3.18 as build-backend
+FROM golang:1.23.10-alpine3.22 AS build-backend
 # All these steps will be cached
 WORKDIR /home/go-flarum
 
@@ -53,7 +53,7 @@ RUN GIT_COMMIT=$(git rev-list -1 HEAD) CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go 
 	-o go-flarum-migration ./cmd/migration/main.go
 
 # 构建最终镜像
-FROM alpine:3.7
+FROM alpine:3.22
 WORKDIR /home/go-flarum
 
 COPY ./view view

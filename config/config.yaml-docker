@@ -3,9 +3,12 @@ Main:
     HttpsPort: 443
     HttpsOn: false
     Domain: ""
+    DB: postgres
     MySQLURL: "root:password@tcp(mysql-db:3306)/flarum?charset=utf8mb4&parseTime=True"
+    PostgresURL: "user=postgres password=p@ssw0rd dbname=flarum host=postgres-db port=5432 sslmode=disable"
     MongoURL: "mongodb://172.17.0.1"
     RedisURL: "redis://:@redis-db:6379"
+    UploadDir: "static/upload"
     StaticDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
@@ -21,6 +24,15 @@ Main:
     TLSKeyFile: ""
     SCHashKey: "BBt4fdaFlLFDlFDFLJiFFD8FD7876631345FDFDF998fdFD9fdF896766FFfdfa5"
     SCBlockKey: "cfdaFFiooVV7785565NL9876OTU0MGQ2"
+    S3Config:
+        Endpoint: ""
+        Bucket: "blog"
+        Region: "auto"
+        AccessKeyID : ""
+        SecretAccessKey: ""
+        UseSSL: false
+        Path: "flarum/%d/%m/%d/"
+        S3BaseURL: "https://xxx.com"
 Site:
     Name: "youBBS"
     Desc: "Yet another bbs in go"
