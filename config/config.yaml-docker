@@ -12,7 +12,6 @@ Main:
     StaticDir: "static"
     WebpackDir: "webpack"
     ViewDir: "view/default"
-    Youdb: "mydata.db"
     LocaleDir: "view/locale"
     ExtensionsDir: "view/extensions"
     BaseURL: "http://127.0.0.1:8082"
@@ -31,7 +30,7 @@ Main:
         AccessKeyID : ""
         SecretAccessKey: ""
         UseSSL: false
-        Path: "flarum/%d/%m/%d/"
+        Path: "flarum"
         S3BaseURL: "https://xxx.com"
 Site:
     Name: "youBBS"

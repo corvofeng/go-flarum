@@ -29,7 +29,7 @@ Main:
         AccessKeyID : ""
         SecretAccessKey: ""
         UseSSL: false
-        Path: "flarum/%d/%m/%d/"
+        Path: "flarum"
         S3BaseURL: "https://xxx.com"
 Site:
     Name: "Zoe测试"
