@@ -30,6 +30,48 @@ func NewRouter(app *system.Application) *goji.Mux {
 	)
 
 	NewFlarumRouter(app, sp)
+	NewFlarumBlogRouter(app, sp)
+
+	apiSP := goji.SubMux()
+	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
+	apiSP.Use(ct.InAPIMiddleware)
+
+	NewFlarumAPIRouter(app, apiSP)
+	NewFlarumBlogAPIRouter(app, apiSP)
+
+	return sp
+}
+
+func NewFlarumBlogRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	app.Logger.Notice("Init flarum blog router")
+	sp.HandleFunc(pat.Get("/blog"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
+	sp.HandleFunc(pat.Get("/blog/:aid"), ct.FlarumDiscussionDetail)
+	sp.HandleFunc(pat.Get("/blog/:aid/:sn"), ct.FlarumDiscussionDetail) // startNumber
+	sp.HandleFunc(pat.Get("/blog/category/:tag"), ct.FlarumIndex)
+
+	// sp.HandleFunc(pat.Get("/blog/"), ct.FlarumIndex)
+
+	return sp
+}
+
+func NewFlarumBlogAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
+	// http://127.0.0.1:8082/api/v1/flarum/blogMeta/1
+	sp.HandleFunc(pat.Post("/blogMeta"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustCSRFMiddleware,
+		},
+		ct.FlarumBlogMeta,
+	))
+	sp.HandleFunc(pat.Post("/blogMeta/:mid"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustCSRFMiddleware,
+		},
+		ct.FlarumBlogMeta,
+	))
+
 	return sp
 }
 
@@ -117,10 +159,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	return sp
 }
 
-func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
-	apiSP := goji.SubMux()
-	sp.Handle(pat.New(model.FlarumAPIPath+"/*"), apiSP)
-	apiSP.Use(ct.InAPIMiddleware)
+func NewFlarumAPIRouter(app *system.Application, apiSP *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Get("/users/:uid"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			ct.MustAuthMiddleware,
@@ -189,5 +228,21 @@ func NewFlarumAPIRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	apiSP.HandleFunc(pat.Get("/tags"), ct.FlarumTagAll)
 	apiSP.HandleFunc(pat.Get("/tags/:tag"), ct.FlarumAPIDiscussions)
 
-	return sp
+	// http://127.0.0.1:8082/api/v1/flarum/fof/upload
+
+	apiSP.HandleFunc(pat.Post("/fof/upload"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+			ct.MustCSRFMiddleware,
+		},
+		ct.FlarumUpload,
+	))
+	apiSP.HandleFunc(pat.Get("/fof/uploads"), ct.MiddlewareArrayToChains(
+		[]ct.HTTPMiddleWareFunc{
+			ct.MustAuthMiddleware,
+		},
+		ct.FlarumUploadsAll,
+	))
+
+	return apiSP
 }

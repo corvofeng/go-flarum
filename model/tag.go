@@ -38,6 +38,6 @@ func SQLGetTagByID(gormDB *gorm.DB, id uint64) (tag Tag, err error) {
 	return
 }
 
-func (tag *Tag) CreateFlarumTag(gormDB *gorm.DB) {
-	gormDB.Create(tag)
+func (tag *Tag) CreateFlarumTag(gormDB *gorm.DB) error {
+	return gormDB.Create(tag).Error
 }

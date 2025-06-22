@@ -9,6 +9,7 @@ import (
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 )
 
 var (
@@ -67,6 +68,20 @@ func ContentFmt(input string) string {
 type urlInfo struct {
 	Href  string
 	Click string
+}
+
+func mdToHTML(md []byte) []byte {
+	// create markdown parser with extensions
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse(md)
+
+	// create HTML renderer with extensions
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+
+	return markdown.Render(doc, renderer)
 }
 
 // ContentRich 用来转换文本, 转义以及允许用户添加一些富文本样式
@@ -142,7 +157,6 @@ func ContentRich(input string) string {
 			input = strings.ReplaceAll(input, k, v)
 		}
 	}
-
 	// 将原有的字符串中的<>全部进行转义
 	input = htmlEscape(input)
 

@@ -31,11 +31,12 @@ type User struct {
 	About    string `json:"about"`
 	Hidden   bool   `json:"hidden"`
 	Session  string `json:"session"`
+	Admin    bool   `json:"admin"` // 是否为管理员
 	Token    string `json:"token"`
 
 	Description string
 	WebSite     string
-	Reputation  uint64 `json:"reputation"` // 声望值
+	// Reputation  uint64 `json:"reputation"` // 声望值
 
 	// Preferences *flarum.Preferences `gorm:"foreignKey:PreferencesRefer"`
 	Preferences []byte
@@ -59,6 +60,14 @@ func (user *User) StrID() string {
 func (user *User) IsValid() bool {
 	return user.ID != 0
 }
+
+func (user *User) CreateFlarumUser(gormDB *gorm.DB) error {
+	return gormDB.Create(user).Error
+}
+
+// func (tag *Tag) CreateFlarumTag(gormDB *gorm.DB) error {
+// 	return gormDB.Create(tag).Error
+// }
 
 // SQLUserGet 获取用户
 // 当你不确定用户传来的是用户名还是用户id时, 可以调用该函数获取用户
@@ -95,10 +104,9 @@ func SQLUserGetByID(gormDB *gorm.DB, uid uint64) (User, error) {
 }
 
 // SQLUserGetByName 获取数据库中用户
-func SQLUserGetByName(gormDB *gorm.DB, name string) (User, error) {
-	user := User{}
-	result := gormDB.Where("name = ?", name).First(&user)
-	return user, result.Error
+func SQLUserGetByName(gormDB *gorm.DB, name string) (user User, err error) {
+	err = gormDB.Where("name = ?", name).First(&user).Error
+	return
 }
 
 // SQLUserGetByEmail 获取数据库中用户
@@ -113,7 +121,6 @@ func SQLUserRegister(gormDB *gorm.DB, name, email, password string) (User, error
 		Name:        name,
 		Email:       email,
 		Password:    password,
-		Reputation:  20,
 		Avatar:      fmt.Sprintf("https://robohash.org/%s", name),
 		Preferences: []byte(`{}`),
 	}
@@ -157,7 +164,6 @@ func SQLGithubRegister(gormDB *gorm.DB, gu *github.User) (User, error) {
 	user := User{
 		Name:        gu.GetLogin(),
 		Email:       gu.GetEmail(),
-		Reputation:  20,
 		Password:    "NoPassWordForGithub",
 		Avatar:      gu.GetAvatarURL(),
 		Description: gu.GetBio(),
@@ -177,13 +183,6 @@ func SQLGithubRegister(gormDB *gorm.DB, gu *github.User) (User, error) {
 
 // IsForbid 检查当前用户是否被禁用
 func (user *User) IsForbid() bool {
-	if user == nil {
-		return true
-	}
-	// flag为0 并且 声望值较小
-	if user.Flag == 0 && user.Reputation < 10 {
-		return true
-	}
 	return false
 }
 
@@ -202,21 +201,18 @@ func (user *User) IsAdmin() bool {
 	if user == nil {
 		return false
 	}
-	if user.Reputation > 99 {
-		return true
-	}
-	return false
+	return user.Admin
 }
 
 // CanEdit 检查当前用户是否可以编辑帖子
-func (user *User) CanEdit(aobjBase *Topic) bool {
+func (user *User) CanEdit(topic *Topic) bool {
 	if user == nil {
 		return false
 	}
-	if aobjBase == nil {
+	if topic == nil {
 		return false
 	}
-	return user.IsAdmin() || user.ID == aobjBase.UserID
+	return user.IsAdmin() || user.ID == topic.UserID
 }
 
 // SaveAvatar 更新用户头像

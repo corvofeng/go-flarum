@@ -1,7 +1,15 @@
 const webpack = require('webpack');
 const fs = require('fs');
 const path = require('path');
-const config = require('flarum-webpack-config')();
+const config = require('flarum-webpack-config')({
+  useExtensions: [
+    'flarum-blog',
+    'fof-upload',
+    'fof-discussion-language',
+    'v17development-seo',
+    'fof-follow-tags',
+  ],
+});
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 let devServer = {
@@ -28,6 +36,8 @@ config.module.rules.push(
       fullySpecified: false,
     },
 });
+console.log(config.externals);
+
 module.exports = [
   // flarum.core配置
   {
@@ -79,10 +89,31 @@ module.exports = [
       path: OUTPUT_PATH,
     }
   },
+  // fof-flarum的一些扩展功能
   {
     entry: function () {
       const entries = {};
-      for (const app of ['forum', 'admin']) {
+      for (const app of ['fof_forum', 'fof_admin']) {
+        const file = path.resolve(EXT_DIR, app + ".js");
+        entries[`${app}_ext`] = file;
+      }
+      return entries;
+    }(),
+
+    module: config.module,
+    externals: config.externals,
+    resolve: config.resolve,
+    devtool: config.devtool,
+
+    output: {
+      path: OUTPUT_PATH,
+    }
+  },
+
+  {
+    entry: function () {
+      const entries = {};
+      for (const app of ['forum', 'admin', 'fof_forum', 'fof_admin']) {
         const file = path.resolve(EXT_DIR, app + '.less');
         if (fs.existsSync(file)) {
           entries[app] = file;
@@ -109,6 +140,7 @@ module.exports = [
               lessOptions: {
                 paths: [
                   path.resolve(__dirname, 'node_modules/components-font-awesome/less/'),
+                  path.resolve(__dirname, 'node_modules/components-font-awesome/css'),
                   path.resolve(__dirname, 'node_modules/bootstrap/less/'),
                   path.resolve(FLARUM_DIR, 'less'),
                   path.resolve(FLARUM_DIR, 'less', 'common'),

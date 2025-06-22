@@ -59,6 +59,16 @@ type CurrentUser struct {
 	UnreadNotificationCount int       `json:"unreadNotificationCount"`
 	NewNotificationCount    int       `json:"newNotificationCount"`
 
+	// new Extend.Model(User) //
+	//     .attribute<boolean>('fof-upload-viewOthersMediaLibrary')
+	//     .attribute<boolean>('fof-upload-deleteOthersMediaLibrary')
+	//     .attribute<number>('fof-upload-uploadCountCurrent')
+	//     .attribute<number>('fof-upload-uploadCountAll'),
+	FofUploadViewOthersMediaLibrary   bool `json:"fof-upload-viewOthersMediaLibrary"`
+	FofUploadDeleteOthersMediaLibrary bool `json:"fof-upload-deleteOthersMediaLibrary"`
+	FofUploadUploadCountCurrent       int  `json:"fof-upload-uploadCountCurrent"`
+	FofUploadUploadCountAll           int  `json:"fof-upload-uploadCountAll"`
+
 	Preferences Preferences `json:"preferences"`
 }
 

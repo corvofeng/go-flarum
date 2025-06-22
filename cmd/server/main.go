@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-
 	"flag"
 	"log"
 	"net/http"
@@ -70,27 +69,27 @@ func main() {
 
 	// http
 	srv := &http.Server{Addr: ":" + strconv.Itoa(mcf.HTTPPort), Handler: root}
-	// srv = &http.Server{Addr: ":" + *httpPort, Handler: root}
 	go func() {
-		log.Fatal(srv.ListenAndServe())
+		// log.Fatal(srv.ListenAndServe())
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
 	}()
 
 	logger.Debug("Web server Listen port", strconv.Itoa(mcf.HTTPPort))
 
 	<-stopChan // wait for SIGINT
-	logger.Notice("Shutting down server...")
+	logger.Info("Shutting down server...")
 
 	// refer to https://medium.com/honestbee-tw-engineer/gracefully-shutdown-in-go-http-server-5f5e6b83da5a
 	// shut down gracefully, but wait no longer than 10 seconds before halting
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	defer func() {
-		app.Close()
-	}()
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5-second timeout
+	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Errorf("Server shutdown error: %+v", err)
 	}
-	logger.Notice("Server gracefully stopped")
+	app.Close()
+	logger.Info("Server gracefully stopped")
 }
 
 func redirectHandler(w http.ResponseWriter, r *http.Request) {

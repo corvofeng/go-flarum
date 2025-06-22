@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -61,7 +62,28 @@ func createFlarumAdminAPIDoc(
 	//     "flarum-tags.min_primary_tags": "1",
 	//     "flarum-tags.min_secondary_tags": "0",
 
-	coreData.Settings.ExtensionsEnabled = "[\"flarum-flags\",\"flarum-mentions\",\"flarum-bbcode\",\"flarum-markdown\",\"flarum-approval\",\"flarum-statistics\",\"flarum-sticky\",\"flarum-emoji\",\"flarum-tags\",\"flarum-suspend\",\"flarum-subscriptions\",\"flarum-lock\",\"flarum-likes\",\"flarum-lang-english\"]"
+	// coreData.Settings.ExtensionsEnabled = "[\"flarum-flags\",\"flarum-mentions\",\"flarum-bbcode\",\"flarum-markdown\",\"flarum-approval\",\"flarum-statistics\",\"flarum-sticky\",\"flarum-emoji\",\"flarum-tags\",\"flarum-suspend\",\"flarum-subscriptions\",\"flarum-lock\",\"flarum-likes\",\"flarum-lang-english\"]"
+	enabledExtensions := []string{
+		"flarum-auth-github",
+		"flarum-flags",
+		"flarum-mentions",
+		"flarum-bbcode",
+		"flarum-markdown",
+		"flarum-approval",
+		"flarum-statistics",
+		"flarum-sticky",
+		"flarum-emoji",
+		"flarum-tags",
+		"flarum-suspend",
+		"flarum-subscriptions",
+		"flarum-lock",
+		"flarum-likes",
+		"flarum-lang-english",
+		"v17development-flarum-blog",
+	}
+
+	enabledExtensionsRaw, _ := json.Marshal(&enabledExtensions)
+	coreData.Settings.ExtensionsEnabled = string(enabledExtensionsRaw)
 
 	coreData.PhpVersion = "8.0.6"
 	coreData.MysqlVersion = "10.4.8-MariaDB-1:10.4.8+maria~bionic"

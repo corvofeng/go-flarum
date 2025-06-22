@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/corvofeng/go-flarum/model/flarum"
@@ -43,6 +44,12 @@ func FlarumCreateForumInfo(
 	data.MaxSecondaryTags = 3
 	data.MinPrimaryTags = 1
 	data.MinSecondaryTags = 0
+	data.FofUploadCanUpload = true
+	data.FofUploadComposerButtonVisiblity = "both"
+	data.BlogTags = []string{
+		"1",
+		"12",
+	}
 
 	data.BasePath = ""
 	// data.BaseURL = "/"
@@ -131,6 +138,15 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 		FlarumCreateTagRelations(flarumTags),
 	)
 
+	if topic.BlogMetaData.ID != 0 {
+		obj.BindRelations(
+			"BlogMeta",
+			flarum.RelationDict{
+				Data: flarum.InitBaseResources(topic.BlogMetaData.ID, "blogMeta"),
+			},
+		)
+	}
+
 	obj.BindRelations(
 		"FirstPost",
 		flarum.RelationDict{
@@ -159,6 +175,27 @@ func FlarumCreateDiscussion(topic Topic) flarum.Resource {
 	return obj
 }
 
+func FlarumCreateFoFUploadFiles(uf UserFiles, user User) flarum.Resource {
+	obj := flarum.NewResource(flarum.EFoFUploadFiles, uf.ID)
+	data := obj.Attributes.(*flarum.FlarumFoFFiles)
+
+	data.BaseName = uf.FileName
+	data.BBCode = fmt.Sprintf("![%s](%s)", uf.FileName, uf.FilePath)
+	data.CanDelete = user.IsAdmin()
+	data.URL = uf.FilePath
+
+	data.Type = uf.FileType // for example: image/png
+
+	obj.BindRelations(
+		"User",
+		flarum.RelationDict{
+			Data: flarum.InitBaseResources(uf.UserID, "users"),
+		},
+	)
+
+	return obj
+}
+
 // FlarumCreateCurrentUser 创建用户资源
 func FlarumCreateCurrentUser(user User) flarum.Resource {
 	return FlarumCreateUser(user)
@@ -175,6 +212,11 @@ func FlarumCreateUser(user User) flarum.Resource {
 	data.IsEmailConfirmed = true
 	data.JoinTime = user.CreatedAt.String()
 	data.Slug = user.Name
+	// data.FofUploadDeleteOthersMediaLibrary = user.IsAdmin()
+	// data.FofUploadViewOthersMediaLibrary = user.IsAdmin()
+	data.FofUploadUploadCountCurrent = 0
+	data.FofUploadUploadCountAll = 0
+
 	if len(user.Preferences) > 0 {
 		err := json.Unmarshal(user.Preferences, &data.Preferences)
 		if err != nil {
@@ -207,6 +249,18 @@ func FlarumCreateGroup() flarum.Resource {
 	return obj
 }
 
+func FlarumCreateBlogMeta(blogMeta BlogMeta, currentUser *User) flarum.Resource {
+	obj := flarum.NewResource(flarum.EBlogMeta, blogMeta.ID)
+	data := obj.Attributes.(*flarum.FlarumBlogMeta)
+	data.Summary = blogMeta.Summary
+	data.FeaturedImage = blogMeta.FeaturedImage
+	data.IsFeatured = blogMeta.IsFeatured
+	data.IsPendingReview = blogMeta.IsPendingReview
+	data.IsSized = blogMeta.IsSized
+
+	return obj
+}
+
 // FlarumCreatePost 创建评论
 func FlarumCreatePost(comment Comment, currentUser *User) flarum.Resource {
 	obj := flarum.NewResource(flarum.EPost, comment.ID)
@@ -220,13 +274,12 @@ func FlarumCreatePost(comment Comment, currentUser *User) flarum.Resource {
 
 	if currentUser != nil {
 		data.CanLike = true
-	}
-
-	if currentUser != nil && currentUser.IsAdmin() {
-		data.CanEdit = true
-		data.CanHide = true
-		data.IsApproved = true
-		data.IPAddress = comment.ClientIP
+		if currentUser.IsAdmin() {
+			data.CanEdit = true
+			data.CanHide = true
+			data.IsApproved = true
+			data.IPAddress = comment.ClientIP
+		}
 	}
 
 	obj.BindRelations(
@@ -314,5 +367,16 @@ func FlarumCreateTagRelations(tagArr []flarum.Resource) flarum.IRelation {
 		)
 	}
 
+	return obj
+}
+
+func FlarumCreateBlogMetaRelations(blogMetaArr []flarum.FlarumBlogMeta) flarum.IRelation {
+	var obj flarum.RelationArray
+	for _, p := range blogMetaArr {
+		obj.Data = append(
+			obj.Data,
+			flarum.InitBaseResources(p.GetID(), p.Type),
+		)
+	}
 	return obj
 }

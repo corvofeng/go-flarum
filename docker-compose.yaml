@@ -2,21 +2,35 @@ version: '3.3'
 # name: flarum
 
 services:
-  mysql-db:
-    image: mysql:8.0
-    restart: always
+  postgres-db:
+    image: postgres:17.5-alpine3.22
+    restart: unless-stopped
+
     environment:
-      - MYSQL_DATABASE=flarum
-      - MYSQL_ROOT_PASSWORD=password
-    ports:
-      - '3306:3306'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: p@ssw0rd
+      PGDATA: /data/postgres
+      POSTGRES_DB: flarum
     volumes:
-      - mysql:/var/lib/mysql
+      - postgres:/data/postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      start_period: 5s
+      # interval: 30s
+      # timeout: 10s
+      # retries: 5
 
   redis-db:
     image: redis:6.0
     volumes:
       - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+
+      # interval: 30s
+      # timeout: 10s
+      # retries: 5
 
   go-flarum-init:
     build: .
@@ -26,12 +40,15 @@ services:
       - /home/go-flarum/config.yml
       - -initdb
     depends_on:
-      - mysql-db
-      - redis-db
+      postgres-db:
+        condition: service_healthy
+      redis-db:
+        condition: service_healthy
+
   go-flarum:
     build: .
     ports:
-      - "8083:8082"
+      - "8082:8082"
     environment:
       type: "web"
     deploy:
@@ -45,11 +62,15 @@ services:
     volumes:
       - flarum-static:/home/go-flarum/static
     depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis-db:
+        condition: service_healthy
       go-flarum-init:
         condition: service_completed_successfully
 
 volumes:
-  mysql:
+  postgres:
     driver: local
   redis:
     driver: local

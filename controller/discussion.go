@@ -55,8 +55,23 @@ func FlarumDiscussionEdit(w http.ResponseWriter, r *http.Request) {
 		ctx.actionRecords = string(bytedata)
 		logger.Debugf("Update %s,%s with: %s", qf.Data.Type, qf.Data.ID, string(bytedata))
 	}
-	diss := model.FlarumCreateDiscussion(topic)
-	h.jsonify(w, diss)
+	_ = model.FlarumCreateDiscussion(topic)
+
+	rf := replyFilter{
+		FT:    eArticle,
+		AID:   topic.ID,
+		Limit: topic.CommentCount,
+	}
+
+	redisDB := h.App.RedisDB
+	scf := h.App.Cf.Site
+	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
+	if err != nil {
+		h.flarumErrorJsonify(w, createSimpleFlarumError("Get api doc error"+err.Error()))
+		return
+	}
+
+	h.jsonify(w, coreData.APIDocument)
 }
 
 // FlarumDiscussionDetail 获取flarum中的某篇帖子
@@ -90,6 +105,7 @@ func FlarumDiscussionDetail(w http.ResponseWriter, r *http.Request) {
 
 		LastReadPostNumber: 0,
 	}
+	logger.Debugf("Get discussion detail for %+v", rf)
 
 	_sn, err := h.safeGetParm(r, "sn")
 	if err == nil {
@@ -155,7 +171,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Read body error:"+err.Error()))
 		return
 	}
-	logger.Debugf("Upate discussion with: %s", string(bytedata))
+	logger.Debugf("Update discussion with: %s", string(bytedata))
 
 	err = json.Unmarshal(bytedata, &diss)
 	if err != nil {
@@ -169,7 +185,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aobj := model.Topic{
+	tobj := model.Topic{
 		UserID:       ctx.currentUser.ID,
 		Title:        diss.Data.Attributes.Title,
 		Content:      diss.Data.Attributes.Content,
@@ -185,10 +201,10 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 			logger.Warning("Get wrong tag id", rela.ID)
 			continue
 		}
-		aobj.Tags = append(aobj.Tags, tag)
+		tobj.Tags = append(tobj.Tags, tag)
 	}
 
-	_, err = aobj.CreateFlarumTopic(gormDB)
+	_, err = tobj.CreateFlarumTopic(gormDB)
 	if err != nil {
 		logger.Error("Can't create topic", err)
 		h.flarumErrorJsonify(w, createSimpleFlarumError("Can't create topic"+err.Error()))
@@ -197,7 +213,7 @@ func FlarumAPICreateDiscussion(w http.ResponseWriter, r *http.Request) {
 
 	rf := replyFilter{
 		FT:  eArticle,
-		AID: aobj.ID,
+		AID: tobj.ID,
 	}
 	coreData, err := createFlarumPostAPIDoc(ctx, h.App.GormDB, redisDB, *h.App.Cf, rf, scf.TimeZone)
 

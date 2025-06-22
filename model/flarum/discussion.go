@@ -65,9 +65,12 @@ type DiscussionRelations struct {
 	User           RelationDict `json:"user"` // 创建帖子的用户
 	FirstPost      RelationDict `json:"firstPost"`
 	LastPostedUser RelationDict `json:"lastPostedUser"`
+	BlogMeta       RelationDict `json:"blogMeta"`
 
 	Tags  RelationArray `json:"tags"`
 	Posts RelationArray `json:"posts"`
+
+	// BlogMetas RelationArray `json:"blogMeta"`
 	// LatestViews    RelationArray `json:"latestViews"`
 	// RecipientUsers RelationArray `json:"recipientUsers"`
 

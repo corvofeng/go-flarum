@@ -1,4 +1,5 @@
 var/
+export/
 db.json
 index/
 venv/
@@ -8,6 +9,7 @@ go-flarum
 static/flarum
 static/avatar
 static/captcha
+static/upload/
 config/
 !config/config.yaml-tpl
 !config/config.yaml-docker

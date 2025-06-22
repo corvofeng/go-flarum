@@ -71,6 +71,7 @@ func createFlarumPostAPIDoc(
 	} else {
 		rf.StartNumber = rf.StartNumber - 10
 	}
+	logger.Debugf("Get comments with filter: %+v", rf)
 
 	if rf.FT == eArticle { // 获取一个帖子的所有评论
 		comments, err = model.SQLCommentListByTopic(gormDB, redisDB, rf.AID, rf.Limit, tz)
@@ -121,20 +122,35 @@ func createFlarumPostAPIDoc(
 	hasUpdateComments := make(chan bool)
 
 	// 针对某个话题时, 这里直接进行添加
-	if rf.FT == eArticle || rf.FT == ePost || rf.FT == ePosts {
+	for rf.FT == eArticle || rf.FT == ePost || rf.FT == ePosts {
 		article, err := model.SQLArticleGetByID(gormDB, redisDB, rf.AID)
+		logger.Debugf("Get article for %s", article.GetFormatedString())
 		if err != nil {
 			logger.Warning("Can't get article: ", rf.AID, err)
-		} else {
-			diss := model.FlarumCreateDiscussion(article)
-			curDisscussion = &diss
-			apiDoc.AppendResources(*curDisscussion)
+			break
 		}
+
+		diss := model.FlarumCreateDiscussion(article)
+		curDisscussion = &diss
+		apiDoc.AppendResources(*curDisscussion)
 		allDiscussions[rf.AID] = true
 		if rf.FT == eArticle || rf.FT == ePost { // 查询当前帖子的信息时, 更新redis中的帖子的评论信息, ePost为刚刚添加帖子的操作
 			go article.CacheCommentList(redisDB, comments, hasUpdateComments)
 		}
+
+		if article.BlogMetaData.ID != 0 {
+			logger.Debugf("Create blog meta for article: %s", article.BlogMetaData.GetFormatedString())
+			apiDoc.AppendResources(model.FlarumCreateBlogMeta(article.BlogMetaData, currentUser))
+		}
+		break
 	}
+	logger.Debugf("Get topic comments: %+v", func() []string {
+		cs := []string{}
+		for _, c := range comments {
+			cs = append(cs, fmt.Sprintf("%d", c.ID))
+		}
+		return cs
+	}())
 
 	for _, comment := range comments {
 		// lastReadPostNumber只用于记录读取到的位置, 不需要返回评论信息
@@ -188,6 +204,7 @@ func createFlarumPostAPIDoc(
 		}
 
 		post := model.FlarumCreatePost(comment, currentUser)
+		logger.Debugf("Create comment %d post for %s", comment.ID, post.ID)
 		apiDoc.AppendResources(post)
 		flarumPosts = append(flarumPosts, post)
 
@@ -221,9 +238,14 @@ func createFlarumPostAPIDoc(
 	))
 
 	if rf.FT == eArticle {
+		// apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 		if rf.NearNumber != 0 {
 			apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 		} else {
+			// if inAPI {
+			// 	apiDoc.SetData(flarumPosts) // 主要信息为当前帖子
+			// } else {
+			// }
 			apiDoc.SetData(*curDisscussion) // 主要信息为当前帖子
 		}
 	} else if rf.FT == ePost {
@@ -239,6 +261,7 @@ func createFlarumPostAPIDoc(
 	} else if rf.FT == eUserPost || rf.FT == ePosts {
 		apiDoc.SetData(flarumPosts) // 主要信息为全部评论
 	}
+	logger.Debugf("Update the api doc: %+v", apiDoc)
 	// apiDoc.Links["first"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	// apiDoc.Links["next"] = "https://flarum.yjzq.fun/api/v1/flarum/discussions?sort=&page%5Blimit%5D=20"
 	model.FlarumCreateLocale(&coreData, reqctx.locale)
