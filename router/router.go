@@ -115,6 +115,7 @@ func NewFlarumRouter(app *system.Application, sp *goji.Mux) *goji.Mux {
 	sp.Use(ct.RealIPMiddleware)
 	sp.Use(ct.AdjustLocaleMiddleware)
 
+	sp.HandleFunc(pat.Get("/healthz"), ct.FlarumHealthFunc)
 	sp.HandleFunc(pat.Get("/"), ct.MiddlewareArrayToChains(
 		[]ct.HTTPMiddleWareFunc{
 			// ct.TestMiddleware,
